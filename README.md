@@ -343,7 +343,7 @@ We welcome contributions from the community!
 2. Create a feature branch
 3. Add tests for new functionality
 4. Submit a pull request
-5. Follow our [Contributing Guidelines](CONTRIBUTING.md)
+5. Follow our [Contributing Guidelines](Contributing.md)
 
 For detailed documentation, see our [Documentation Hub](docs/)
 
