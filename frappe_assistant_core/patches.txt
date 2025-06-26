@@ -1,0 +1,2 @@
+# Patches for frappe_assistant_core
+# Format: patches.patch_file

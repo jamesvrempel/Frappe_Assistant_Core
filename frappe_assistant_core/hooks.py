@@ -1,0 +1,219 @@
+
+
+from . import __version__ as app_version
+
+app_name = "frappe_assistant_core"
+app_title = "Frappe Assistant Core"
+app_publisher = "Paul Clinton"
+app_description = "AI Assistant integration core for Frappe Framework"
+app_icon = "octicon octicon-server"
+app_color = "blue"
+app_email = "jypaulclinton@gmail.com"
+app_license = "Dual License (AGPL-3.0 / Commercial)"
+app_version = app_version
+
+# Includes in <head>
+# ------------------
+
+# include js, css files in header of desk.html
+# app_include_css = "/assets/frappe_assistant_core/css/frappe_assistant_core.css"
+# app_include_js = "/assets/frappe_assistant_core/js/frappe_assistant_core.js"
+
+# include js, css files in header of web template
+# web_include_css = "/assets/frappe_assistant_core/css/frappe_assistant_core.css"
+# web_include_js = "/assets/frappe_assistant_core/js/frappe_assistant_core.js"
+
+# include custom scss in every website theme (without file extension ".scss")
+# website_theme_scss = "frappe_assistant_core/public/scss/website"
+
+# include js, css files in header of web form
+# webform_include_js = {"doctype": "public/js/doctype.js"}
+# webform_include_css = {"doctype": "public/css/doctype.css"}
+
+# include js in page
+# page_js = {"page" : "public/js/file.js"}
+
+# include js in doctype views
+# doctype_js = {"doctype" : "public/js/doctype.js"}
+# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+# doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
+# doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
+
+# Home Pages
+# ----------
+
+# application home page (will override Website Settings)
+# home_page = "login"
+
+# website user home page (by Role)
+# role_home_page = {
+#	"Role": "home_page"
+# }
+
+# Generators
+# ----------
+
+# automatically create page for each record of this doctype
+# website_generators = ["Web Page"]
+
+# Jinja
+# ----------
+
+# add methods and filters to jinja environment
+jenv = {
+    "methods": [
+        "frappe_assistant_core.utils.template_helpers.get_assistant_status",
+        "frappe_assistant_core.utils.template_helpers.get_tool_count"
+    ]
+}
+
+# Installation
+# ------------
+
+# before_install = "frappe_assistant_core.install.before_install"
+after_install = "frappe_assistant_core.install.after_install"
+
+# Uninstallation
+# ------------
+
+# before_uninstall = "frappe_assistant_core.uninstall.before_uninstall"
+# after_uninstall = "frappe_assistant_core.uninstall.after_uninstall"
+
+# Desk Notifications
+# ------------------
+# See frappe.core.notifications.get_notification_config
+
+# notification_config = "frappe_assistant_core.notifications.get_notification_config"
+
+# Permissions
+# -----------
+# Permissions evaluated in scripted ways
+
+permission_query_conditions = {
+    "Assistant Connection Log": "frappe_assistant_core.utils.permissions.get_permission_query_conditions",
+    "Assistant Audit Log": "frappe_assistant_core.utils.permissions.get_audit_permission_query_conditions"
+}
+
+# has_permission = {
+#	"Event": "frappe.desk.doctype.event.event.has_permission",
+# }
+
+# DocType Class
+# ---------------
+# Override standard doctype classes
+
+# override_doctype_class = {
+#	"ToDo": "custom_app.overrides.CustomToDo"
+# }
+
+# Document Events
+# ---------------
+# Hook on document methods and events
+
+doc_events = {
+    "*": {
+        "on_update": "frappe_assistant_core.utils.audit_trail.log_document_change",
+        "on_submit": "frappe_assistant_core.utils.audit_trail.log_document_submit",
+        "on_cancel": "frappe_assistant_core.utils.audit_trail.log_document_cancel"
+    }
+}
+
+# Scheduled Tasks
+# ---------------
+
+scheduler_events = {
+    "cron": {
+        "0 0 * * *": [
+            "frappe_assistant_core.assistant_core.server.cleanup_old_logs"
+        ]
+    },
+    "hourly": [
+        "frappe_assistant_core.assistant_core.server.update_connection_stats"
+    ]
+}
+
+# Testing
+# -------
+
+# before_tests = "frappe_assistant_core.install.before_tests"
+
+# Overriding Methods
+# ------------------------------
+#
+# override_whitelisted_methods = {
+#	"frappe.desk.doctype.event.event.get_events": "frappe_assistant_core.event.get_events"
+# }
+#
+# each overriding function accepts a `data` argument;
+# generated from the base implementation of the doctype dashboard,
+# along with any modifications made in other Frappe apps
+# override_doctype_dashboards = {
+#	"Task": "frappe_assistant_core.task.get_dashboard_data"
+# }
+
+# exempt linked doctypes from being automatically cancelled
+#
+# auto_cancel_exempted_doctypes = ["Auto Repeat"]
+
+# Ignore links to specified DocTypes when deleting documents
+# -----------------------------------------------------------
+
+# ignore_links_on_delete = ["Communication", "ToDo"]
+
+
+# User Data Protection
+# --------------------
+
+# user_data_fields = [
+#	{
+#		"doctype": "{doctype_1}",
+#		"filter_by": "{filter_by}",
+#		"redact_fields": ["{field_1}", "{field_2}"],
+#		"partial": 1,
+#	},
+#	{
+#		"doctype": "{doctype_2}",
+#		"filter_by": "{filter_by}",
+#		"partial": 1,
+#	},
+#	{
+#		"doctype": "{doctype_3}",
+#		"strict": False,
+#	},
+#	{
+#		"doctype": "{doctype_4}"
+#	}
+# ]
+
+# Authentication and authorization
+# --------------------------------
+
+# auth_hooks = [
+#	"frappe_assistant_core.auth.validate"
+# ]
+
+# Automatically update python controller files with type annotations for DocTypes
+# Use Developer Mode in Bench set up to auto append type annotation
+# export_python_type_annotations = True
+
+# default_log_clearing_doctypes = {
+#	"Logging DocType Name": 30  # days to retain logs
+# }
+
+# Standard Roles
+# ---------------
+
+standard_roles = [
+    {"role": "Assistant User", "role_color": "#3498db"},
+    {"role": "Assistant Admin", "role_color": "#e74c3c"}
+]
+
+# Boot
+# -----
+
+boot_session = "frappe_assistant_core.boot.boot_session"
+
+# Startup
+# -------
+
+after_migrate = "frappe_assistant_core.startup.startup"
