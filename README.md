@@ -406,18 +406,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-## 🎉 What's Next?
-
-### 🛣️ Roadmap
-- **Q2 2025**: Enhanced AI model support and vector search
-- **Q3 2025**: Mobile AI assistant and voice interface
-- **Q4 2025**: Advanced workflow automation and custom AI agents
-
-### 📈 Success Stories
-*"Frappe Assistant Core reduced our data entry time by 70% and improved our reporting accuracy significantly."* - Enterprise Customer
-
----
-
 ⭐ **Star this repository** if you find it valuable!  
 🔄 **Share** with your network to help others discover AI-powered ERP  
 📧 **Contact us** for enterprise demonstrations and custom solutions
