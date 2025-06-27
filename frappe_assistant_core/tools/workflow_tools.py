@@ -107,3 +107,33 @@ class WorkflowTools:
         except Exception as e:
             frappe.log_error(f"Get Workflow Actions Error: {str(e)}")
             return {"success": False, "error": str(e)}
+
+    @staticmethod
+    def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> str:
+        """Execute a workflow tool by name"""
+        try:
+            if tool_name == "start_workflow":
+                result = WorkflowTools.start_workflow(
+                    arguments.get("doctype"),
+                    arguments.get("name"),
+                    arguments.get("workflow"),
+                    arguments.get("action")
+                )
+            elif tool_name == "get_workflow_state":
+                result = WorkflowTools.get_workflow_state(
+                    arguments.get("doctype"),
+                    arguments.get("name")
+                )
+            elif tool_name == "get_workflow_actions":
+                result = WorkflowTools.get_workflow_actions(
+                    arguments.get("doctype"),
+                    arguments.get("name")
+                )
+            else:
+                return f"Unknown workflow tool: {tool_name}"
+                
+            return frappe.as_json(result, indent=2)
+            
+        except Exception as e:
+            frappe.log_error(f"Workflow tool execution error: {e}")
+            return f"Error executing {tool_name}: {str(e)}"

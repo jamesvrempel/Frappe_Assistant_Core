@@ -99,6 +99,40 @@ class AssistantCoreSettings(Document):
         except Exception as e:
             frappe.log_error(f"Failed to stop assistant server: {str(e)}")
             raise
+    
+    def get_streaming_protocol(self):
+        """Get current streaming protocol configuration"""
+        # Check if streaming-related fields exist in the DocType
+        streaming_config = {
+            "artifact_streaming_enforced": True,  # Default to enforced
+            "protocol_status": "active",
+            "limit_prevention_active": True,
+            "streaming_behavior_instructions": """
+Always create analysis workspace artifacts before performing data analysis.
+Stream all detailed work to artifacts to prevent response limits.
+Keep responses minimal with artifact references.
+Build unlimited analysis depth via progressive artifact updates.
+            """
+        }
+        
+        # If fields exist in DocType, use their values
+        if hasattr(self, "enforce_artifact_streaming"):
+            streaming_config["artifact_streaming_enforced"] = self.enforce_artifact_streaming
+            streaming_config["protocol_status"] = "active" if self.enforce_artifact_streaming else "optional"
+        
+        if hasattr(self, "response_limit_prevention"):
+            streaming_config["limit_prevention_active"] = self.response_limit_prevention
+            
+        if hasattr(self, "streaming_behavior_instructions"):
+            streaming_config["custom_instructions"] = self.streaming_behavior_instructions
+        
+        return streaming_config
+    
+    def get_enhanced_settings(self):
+        """Get all settings including streaming protocol"""
+        settings = self.as_dict()
+        settings["streaming_protocol"] = self.get_streaming_protocol()
+        return settings
 
 def get_context(context):
     context.title = _("assistant Server Settings")

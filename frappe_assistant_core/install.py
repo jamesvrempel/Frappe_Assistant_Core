@@ -4,10 +4,12 @@ import frappe
 from frappe import _
 import json
 
+from frappe_assistant_core.utils.logger import api_logger
+
 def after_install():
     """Run after app installation"""
     
-    print("Installing Frappe assistant Server...")
+    api_logger.info("Installing Frappe assistant Server...")
     
     # First, make sure all DocTypes are synced
     frappe.db.commit()
@@ -27,8 +29,8 @@ def after_install():
     # Register default tools (after DocTypes are available)
     register_default_tools()
     
-    print("Frappe assistant Server installed successfully!")
-    print("Please configure assistant Server Settings to enable the server.")
+    api_logger.info("Frappe assistant Server installed successfully!")
+    api_logger.info("Please configure assistant Server Settings to enable the server.")
 
 def create_default_settings():
     """Create default Assistant Core Settings"""
@@ -50,11 +52,11 @@ def create_default_settings():
                 "cleanup_logs_after_days": 30
             })
             doc.insert(ignore_permissions=True)
-            print("✓ Created default Assistant Core Settings")
+            api_logger.info("Created default Assistant Core Settings")
         else:
-            print("✓ Assistant Core Settings already exists")
+            api_logger.info("Assistant Core Settings already exists")
     except Exception as e:
-        print(f"Warning: Could not create Assistant Core Settings: {e}")
+        api_logger.warning(f"Could not create Assistant Core Settings: {e}")
 
 def register_default_tools():
     """Register default assistant tools"""
@@ -64,7 +66,7 @@ def register_default_tools():
         
         # Check if Assistant Tool Registry DocType exists
         if not frappe.db.table_exists("tabAssistant Tool Registry"):
-            print("Warning: Assistant Tool Registry table not found, skipping tool registration")
+            api_logger.warning("Assistant Tool Registry table not found, skipping tool registration")
             return
 
         # Import tools with error handling
@@ -82,7 +84,7 @@ def register_default_tools():
                 tool_class = getattr(module, class_name)
                 all_tools.extend(tool_class.get_tools())
             except Exception as e:
-                print(f"Warning: Could not load tools from {module_path}: {e}")
+                api_logger.warning(f"Could not load tools from {module_path}: {e}")
                 continue
         
         tools_created = 0
@@ -126,12 +128,12 @@ def register_default_tools():
                     doc.insert(ignore_permissions=True)
                     tools_created += 1
             except Exception as e:
-                print(f"Warning: Could not create tool {tool['name']}: {e}")
+                api_logger.warning(f"Could not create tool {tool['name']}: {e}")
         
-        print(f"✓ Registered {tools_created} default assistant tools")
+        api_logger.info(f"Registered {tools_created} default assistant tools")
         
     except Exception as e:
-        print(f"Warning: Could not register default tools: {e}")
+        api_logger.warning(f"Could not register default tools: {e}")
 
 def create_default_roles():
     """Create default roles for assistant Server"""
@@ -157,10 +159,10 @@ def create_default_roles():
                 })
                 role_doc.insert(ignore_permissions=True)
         
-        print("✓ Created default assistant roles")
+        api_logger.info("Created default assistant roles")
         
     except Exception as e:
-        print(f"Warning: Could not create default roles: {e}")
+        api_logger.warning(f"Could not create default roles: {e}")
 
 def create_custom_fields():
     """Create any necessary custom fields"""
@@ -182,10 +184,10 @@ def create_custom_fields():
             if not frappe.db.exists("Custom Field", {"dt": field_config["dt"], "fieldname": field_config["fieldname"]}):
                 frappe.get_doc(field_config).insert(ignore_permissions=True)
         
-        print("✓ Created custom fields")
+        api_logger.info("Created custom fields")
         
     except Exception as e:
-        print(f"Warning: Could not create custom fields: {e}")
+        api_logger.warning(f"Could not create custom fields: {e}")
 
 def setup_permissions():
     """Setup default permissions"""
@@ -222,7 +224,7 @@ def setup_permissions():
                         "amend": 0
                     }).insert(ignore_permissions=True)
         
-        print("✓ Setup default permissions")
+        api_logger.info("Setup default permissions")
         
     except Exception as e:
-        print(f"Warning: Could not setup permissions: {e}")
+        api_logger.warning(f"Could not setup permissions: {e}")

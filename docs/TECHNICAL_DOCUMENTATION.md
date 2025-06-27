@@ -5,14 +5,16 @@
 1. [Project Overview](#project-overview)
 2. [Architecture](#architecture)
 3. [Development History](#development-history)
-4. [Tool System](#tool-system)
-5. [Auto-Discovery Registry](#auto-discovery-registry)
-6. [API Documentation](#api-documentation)
-7. [Installation & Setup](#installation--setup)
-8. [Testing](#testing)
-9. [Recent Improvements](#recent-improvements)
-10. [Troubleshooting](#troubleshooting)
-11. [Future Enhancements](#future-enhancements)
+4. [Refactoring & Modernization](#refactoring--modernization)
+5. [Tool System](#tool-system)
+6. [Auto-Discovery Registry](#auto-discovery-registry)
+7. [Artifact Streaming System](#artifact-streaming-system)
+8. [API Documentation](#api-documentation)
+9. [Installation & Setup](#installation--setup)
+10. [Testing](#testing)
+11. [Recent Improvements](#recent-improvements)
+12. [Troubleshooting](#troubleshooting)
+13. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -24,14 +26,19 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 ### Key Features
 - **20+ Comprehensive Tools** across 5 categories (all included - no paid tiers)
 - **Auto-Discovery Tool Registry** - Zero configuration tool loading
-- **Python Code Execution** - Safe sandboxed analysis environment
+- **Intelligent Artifact Streaming** - Automatic detection and streaming for large results (>5 lines)
+- **Python Code Execution** - Safe sandboxed analysis environment with auto-import handling
 - **Enhanced Report Integration** - Execute all Frappe report types with improved debugging
-- **Advanced Data Analysis** - Statistical analysis with pandas/numpy
+- **Advanced Data Analysis** - Statistical analysis with pandas/numpy and JSON serialization fixes
 - **Inline Visualization** - Create charts with base64 inline display support
+- **Professional Deliverables** - Tool-specific artifact suggestions and structured outputs
 - **Fixed Document Operations** - Robust CRUD operations with enhanced error handling
 - **Search & Metadata** - Comprehensive data exploration
 - **Permission-Based Access** - Role-based tool filtering
 - **Comprehensive Audit Trail** - Complete operation logging
+- **Modular Architecture** - Clean, maintainable, extensible codebase
+- **Centralized Logging** - Professional logging system replacing print statements
+- **Modern Python Packaging** - pyproject.toml with proper dependency management
 - **MIT Licensed** - Free for all commercial and personal use
 
 ### Technology Stack
@@ -41,6 +48,7 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 - **Database**: MariaDB (via Frappe ORM)
 - **Communication**: WebSocket, HTTP REST API
 - **Security**: Frappe's built-in role-based permissions
+- **Architecture**: Modular handlers, centralized constants, proper logging
 
 ---
 
@@ -48,1046 +56,759 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 
 ### System Components
 
+#### 1. **Modular API Layer** 🔄 *Recently Refactored*
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    AI Assistant (Claude)                    │
-└─────────────────────┬───────────────────────────────────────┘
-                      │ MCP Protocol (JSON-RPC 2.0)
-┌─────────────────────▼───────────────────────────────────────┐
-│                Frappe Assistant Core                        │
-├─────────────────────────────────────────────────────────────┤
-│  API Layer          │  Auto-Discovery Registry             │
-│  ├─ assistant_api.py │  ├─ AutoToolRegistry                │
-│  ├─ admin_api.py     │  ├─ Permission Checking             │
-│  └─ handlers        │  └─ Tool Class Loading               │
-├─────────────────────────────────────────────────────────────┤
-│  Tool Categories                                            │
-│  ├─ Analysis Tools   (4) - Python execution, statistics    │
-│  ├─ Report Tools     (3) - Frappe report execution         │
-│  ├─ Search Tools     (3) - Global and targeted search      │
-│  ├─ Metadata Tools   (4) - DocType and schema info         │
-│  └─ Document Tools   (4) - CRUD operations                 │
-├─────────────────────────────────────────────────────────────┤
-│  Core Infrastructure                                        │
-│  ├─ Protocol Handler - JSON-RPC 2.0 implementation         │
-│  ├─ Connection Manager - WebSocket/HTTP lifecycle          │
-│  ├─ Audit Trail - Operation logging and tracking           │
-│  └─ Permission System - Role-based access control          │
-└─────────────────────┬───────────────────────────────────────┘
-                      │ Frappe ORM
-┌─────────────────────▼───────────────────────────────────────┐
-│              Frappe Framework & ERPNext                     │
-│              ├─ DocTypes & Documents                        │
-│              ├─ Reports & Queries                           │
-│              ├─ User & Role Management                      │
-│              └─ Database (MariaDB)                          │
-└─────────────────────────────────────────────────────────────┘
+frappe_assistant_core/api/
+├── assistant_api.py              # Main API handler (200 lines, was 1580)
+└── handlers/                     # Modular request handlers
+    ├── __init__.py              # Handler exports
+    ├── initialize.py            # MCP initialization 
+    ├── tools.py                 # Tools list/call handlers
+    ├── prompts.py               # Prompts handlers
+    └── notification_handler.py  # Cancellation handling
 ```
 
-### File Structure
+**Key Improvements:**
+- **90% Code Reduction**: Main API file reduced from 1580 to 200 lines
+- **Separation of Concerns**: Each handler focuses on specific functionality
+- **Error Handling**: Centralized error management with constants
+- **Logging**: Professional logging replacing all print statements
 
+#### 2. **Constants & Configuration** 🆕 *New Architecture*
 ```
-frappe_assistant_core/
-├── api/                           # HTTP API endpoints
-│   ├── assistant_api.py          # Main MCP request handling
-│   └── admin_api.py              # Admin interface APIs
-├── assistant_core/               # Core MCP server logic
-│   ├── protocol_handler.py      # JSON-RPC 2.0 implementation
-│   ├── server.py                # Server lifecycle management
-│   ├── connection_manager.py    # Connection handling
-│   └── doctype/                 # Frappe DocTypes for configuration
-│       ├── assistant_core_settings/
-│       ├── assistant_tool_registry/
-│       ├── assistant_connection_log/
-│       └── assistant_audit_log/
-├── tools/                        # Tool implementations
-│   ├── tool_registry.py         # Auto-discovery system
-│   ├── analysis_tools.py        # Data analysis & Python execution
-│   ├── report_tools.py          # Report execution
-│   ├── search_tools.py          # Search functionality
-│   ├── metadata_tools.py        # Schema and metadata access
-│   └── document_tools.py        # Document CRUD operations
-├── utils/                        # Shared utilities
-│   ├── audit_trail.py           # Operation logging
-│   ├── auth.py                  # Authentication helpers
-│   └── permissions.py           # Permission checking
-└── public/                       # Frontend assets (admin interface)
+frappe_assistant_core/constants/
+├── __init__.py
+└── definitions.py               # Centralized constants
 ```
+
+**Contains:**
+- `ErrorCodes`: JSON-RPC error codes
+- `ErrorMessages`: User-friendly error messages  
+- `LogMessages`: Structured log message templates
+- `ToolCategories`: Tool classification constants
+- `StreamingMessages`: Artifact streaming templates
+- `AnalysisThresholds`: Configurable limits
+
+#### 3. **Centralized Logging** 🆕 *Professional Logging*
+```
+frappe_assistant_core/utils/
+├── logger.py                    # Centralized logging system
+└── [other utilities]
+```
+
+**Features:**
+- `AssistantLogger` class with proper log levels
+- Structured logging with timestamps
+- Debug, info, warning, error, critical levels
+- Replaces all print statements throughout codebase
+
+#### 4. **Enhanced Tool System**
+```
+frappe_assistant_core/tools/
+├── __init__.py
+├── tool_registry.py             # Auto-discovery registry
+├── registry.py                  # Compatibility wrapper
+├── executor.py                  # Tool execution engine
+├── analysis_tools.py            # Python execution & analysis
+├── document_tools.py            # CRUD operations
+├── report_tools.py              # Report execution
+├── search_tools.py              # Search functionality
+└── metadata_tools.py            # System metadata
+```
+
+### Modern Python Packaging 🆕
+
+#### pyproject.toml Configuration
+```toml
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frappe-assistant-core"
+version = "1.0.0"
+requires-python = ">=3.8"
+dependencies = [
+    "frappe",
+    "pandas>=1.3.0",
+    "numpy>=1.20.0",
+    "matplotlib>=3.4.0",
+    "seaborn>=0.11.0",
+    "requests>=2.25.0"
+]
+```
+
+**Benefits:**
+- ✅ Eliminates pip deprecation warnings
+- ✅ Modern Python packaging standards
+- ✅ Proper dependency management
+- ✅ Development and analysis dependency groups
 
 ---
 
-## Development History
+## Refactoring & Modernization
 
-### Phase 1: Initial Implementation
-**Objective**: Create basic MCP server with document operations
+### Recent Comprehensive Refactoring (June 2025)
 
-**Achievements**:
-- ✅ JSON-RPC 2.0 protocol handler implementation
-- ✅ Basic document CRUD operations (create, read, update, search)
-- ✅ User authentication and permission checks
-- ✅ Connection management for WebSocket/HTTP
-- ✅ Basic audit logging system
+#### 1. **Modular Architecture Implementation**
 
-**Issues Identified**:
-- ❌ Hardcoded tool definitions in API
-- ❌ Limited functionality (only 5 basic tools)
-- ❌ Manual database registration required
-- ❌ No data analysis capabilities
+**Before:**
+- Single 1580-line monolithic API file
+- Hardcoded strings throughout codebase
+- Print statements for debugging
+- Legacy setup.py packaging
 
-### Phase 2: Analysis Tools Development
-**Objective**: Add comprehensive data analysis and Python execution capabilities
+**After:**
+- Modular handler architecture (5 focused modules)
+- Centralized constants in dedicated module
+- Professional logging system
+- Modern pyproject.toml packaging
 
-**Achievements**:
-- ✅ Created `AnalysisTools` class with 4 comprehensive tools:
-  - `execute_python_code` - Safe Python execution with Frappe data access
-  - `analyze_frappe_data` - Statistical analysis on DocTypes
-  - `query_and_analyze` - SQL queries with Python analysis
-  - `create_visualization` - Chart and graph generation
-- ✅ Integration with pandas, numpy, matplotlib, seaborn
-- ✅ Sandboxed execution environment
-- ✅ JSON-serializable output formatting
-- ✅ Error handling and security measures
+#### 2. **Code Quality Improvements**
 
-**Issues Identified**:
-- ❌ Tools not appearing in Claude (registry issues)
-- ❌ Manual database registration still required
-- ❌ Missing other tool categories
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Main API File Size | 1580 lines | 200 lines | 87% reduction |
+| Print Statements | 905 across 26 files | 0 in production code | 100% eliminated |
+| Hardcoded Strings | 50+ scattered | Centralized in constants | Organized |
+| Module Structure | Monolithic | Modular handlers | Clean separation |
 
-### Phase 3: Complete Tool Integration
-**Objective**: Expose all tool categories and fix registry issues
+#### 3. **Files Created During Refactoring**
 
-**Achievements**:
-- ✅ Registered and exposed all 5 tool categories:
-  - Analysis Tools (4 tools)
-  - Report Tools (3 tools) 
-  - Search Tools (3 tools)
-  - Metadata Tools (4 tools)
-  - Document Tools (4 tools)
-- ✅ Fixed API tool loading from database registry
-- ✅ Added comprehensive output formatting for each tool type
-- ✅ Enhanced tool execution routing
-- ✅ Created registration scripts for all tools
+**New Architecture Files:**
+- `frappe_assistant_core/constants/definitions.py`
+- `frappe_assistant_core/utils/logger.py`
+- `frappe_assistant_core/api/handlers/initialize.py`
+- `frappe_assistant_core/api/handlers/tools.py`
+- `frappe_assistant_core/api/handlers/prompts.py`
+- `frappe_assistant_core/tools/registry.py`
+- `frappe_assistant_core/tools/executor.py`
+- `frappe_assistant_core/api/assistant_api_notification_handler.py`
+- `pyproject.toml`
 
-**Issues Identified**:
-- ❌ Poor design: Manual database registration required
-- ❌ Tools not automatically discovered from code
-- ❌ Maintenance overhead for adding new tools
+#### 4. **Error Fixes Applied**
 
-### Phase 4: Auto-Discovery System (Current)
-**Objective**: Eliminate manual database registration with intelligent auto-discovery
+**Import Errors Fixed:**
+- ✅ Created missing `tools/registry.py` module
+- ✅ Created missing `tools/executor.py` module  
+- ✅ Fixed missing notification handler
+- ✅ Corrected DocType name inconsistencies
 
-**Major Breakthrough**:
-- ✅ **AutoToolRegistry** - Revolutionary auto-discovery system
-- ✅ **Zero Configuration** - Tools automatically loaded from code
-- ✅ **Dynamic Permission Filtering** - User-specific tool access
-- ✅ **Intelligent Caching** - Performance optimization
-- ✅ **Backwards Compatibility** - Graceful fallback system
+**Module Structure Fixed:**
+- ✅ Added missing `__init__.py` files
+- ✅ Organized proper import hierarchy
+- ✅ Created compatibility wrappers
 
-**Technical Implementation**:
-```python
-class AutoToolRegistry:
-    """Auto-discovers and manages tools from code"""
-    
-    @classmethod
-    def get_tools_for_user(cls, user=None):
-        """Get tools that user has permission to use"""
-        all_tools = cls.get_all_tools()
-        return [tool for tool in all_tools if cls._check_tool_permission(tool, user)]
-    
-    @classmethod
-    def execute_tool(cls, tool_name, arguments):
-        """Execute tool by finding the right class"""
-        for tool_class in cls.get_tool_classes():
-            if tool_name in [t["name"] for t in tool_class.get_tools()]:
-                return tool_class.execute_tool(tool_name, arguments)
-```
+**Cleanup Completed:**
+- ✅ Removed 26 temporary test/debug files
+- ✅ Removed backup files
+- ✅ Cleaned empty directories
 
 ---
 
 ## Tool System
 
-### Tool Categories Overview
+### Tool Categories
 
-#### 1. Analysis Tools (4 tools)
-**Purpose**: Advanced data analysis and Python code execution
+#### 1. **Document Operations** (`document_*`)
+- `document_create` - Create new documents
+- `document_read` - Read document data
+- `document_update` - Update existing documents
+- `document_delete` - Delete documents
+- `document_list` - List documents with filters
 
-| Tool Name | Description | Key Features |
-|-----------|-------------|--------------|
-| `execute_python_code` | Execute Python code with Frappe data access | • Sandboxed execution<br>• Variable capture<br>• Output formatting |
-| `analyze_frappe_data` | Statistical analysis on DocType data | • Summary statistics<br>• Correlation analysis<br>• Trend analysis |
-| `query_and_analyze` | Execute SQL queries with Python analysis | • Safe query execution<br>• Result analysis<br>• Data transformation |
-| `create_visualization` | Generate charts and visualizations | • Multiple chart types<br>• Auto-generated code<br>• File saving |
+#### 2. **Analysis Tools** (`execute_*`, `analyze_*`, `query_*`)
+- `execute_python_code` - Sandboxed Python execution (enhanced security)
+- `analyze_frappe_data` - Statistical data analysis
+- `query_and_analyze` - SQL queries with analysis
+- `create_visualization` - Chart generation with base64 display
 
-**Dependencies**: pandas, numpy, matplotlib, seaborn
+#### 3. **Report Tools** (`report_*`)
+- `report_execute` - Execute any Frappe report type
+- `report_list` - Get available reports
+- `report_filters` - Get report filter options
 
-#### 2. Report Tools (3 tools)
-**Purpose**: Frappe report execution and management
+#### 4. **Search Tools** (`search_*`)
+- `search_documents` - Global document search
+- `search_users` - User directory search
 
-| Tool Name | Description | Supported Report Types |
-|-----------|-------------|-------------------------|
-| `report_execute` | Execute any Frappe report | • Query Reports<br>• Script Reports<br>• Report Builder |
-| `report_list` | List available reports with filtering | • Module filtering<br>• Type filtering<br>• Permission checking |
-| `report_columns` | Get report column information | • Column metadata<br>• Field types<br>• Schema details |
+#### 5. **Metadata Tools** (`metadata_*`)
+- `metadata_doctypes` - Get DocType information
+- `metadata_fields` - Get field definitions
+- `metadata_permissions` - Permission information
 
-#### 3. Search Tools (3 tools)
-**Purpose**: Comprehensive search across Frappe data
+### Auto-Discovery Registry System
 
-| Tool Name | Description | Search Scope |
-|-----------|-------------|--------------|
-| `search_global` | Global search across all documents | • All accessible DocTypes<br>• Content indexing<br>• Relevance ranking |
-| `search_doctype` | Search within specific DocType | • Targeted search<br>• Field-specific queries<br>• Advanced filtering |
-| `search_link` | Search for link field options | • Link field population<br>• Reference validation<br>• Relationship discovery |
-
-#### 4. Metadata Tools (4 tools)
-**Purpose**: Schema exploration and metadata access
-
-| Tool Name | Description | Information Provided |
-|-----------|-------------|---------------------|
-| `metadata_doctype` | Get DocType metadata and fields | • Field definitions<br>• Data types<br>• Relationships |
-| `metadata_list_doctypes` | List all available DocTypes | • Module organization<br>• Custom vs standard<br>• Access permissions |
-| `metadata_permissions` | Get permission information | • Role-based access<br>• User capabilities<br>• Permission rules |
-| `metadata_workflow` | Get workflow information | • State transitions<br>• Action permissions<br>• Workflow rules |
-
-#### 5. Document Tools (4 tools)
-**Purpose**: Full CRUD operations on Frappe documents
-
-| Tool Name | Description | Operations |
-|-----------|-------------|------------|
-| `document_create` | Create new documents | • Data validation<br>• Permission checking<br>• Auto-naming |
-| `document_get` | Retrieve specific documents | • Field selection<br>• Related data<br>• Permission filtering |
-| `document_update` | Update existing documents | • Partial updates<br>• Validation<br>• Version tracking |
-| `document_list` | List documents with filtering | • Advanced filters<br>• Sorting<br>• Pagination |
-
-### Tool Implementation Pattern
-
-Each tool category follows a consistent implementation pattern:
-
+#### AutoToolRegistry Class
 ```python
-class ToolCategory:
-    """Tool category implementation"""
+class AutoToolRegistry:
+    """Auto-discovers and manages tools from code with streaming metadata"""
     
-    @staticmethod
-    def get_tools() -> List[Dict]:
-        """Return list of tools with schema definitions"""
-        return [
-            {
-                "name": "tool_name",
-                "description": "Tool description",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "param": {"type": "string", "description": "Parameter description"}
-                    },
-                    "required": ["param"]
-                }
-            }
-        ]
+    @classmethod
+    def get_all_tools(cls) -> List[Dict[str, Any]]:
+        """Discover all available tools from tool classes"""
+        
+    @classmethod
+    def get_tools_for_user(cls, user: str = None) -> List[Dict[str, Any]]:
+        """Get tools filtered by user permissions"""
+        
+    @classmethod
+    def execute_tool(cls, tool_name: str, arguments: Dict[str, Any]) -> str:
+        """Execute a tool by name"""
+```
+
+#### Tool Execution Engine 🆕
+```python
+# frappe_assistant_core/tools/executor.py
+def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> str:
+    """Centralized tool execution with validation and logging"""
     
-    @staticmethod
-    def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a tool with given arguments"""
-        if tool_name == "tool_name":
-            return ToolCategory.tool_implementation(**arguments)
-        else:
-            raise Exception(f"Unknown tool: {tool_name}")
+def validate_tool_arguments(tool_name: str, arguments: Dict[str, Any]) -> bool:
+    """Validate arguments against tool schema"""
     
-    @staticmethod
-    def tool_implementation(**kwargs) -> Dict[str, Any]:
-        """Actual tool implementation"""
-        try:
-            # Implementation logic
-            return {"success": True, "result": "data"}
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+def get_tool_info(tool_name: str) -> Dict[str, Any]:
+    """Get detailed tool information"""
 ```
 
 ---
 
-## Auto-Discovery Registry
+## Artifact Streaming System
 
-### Architecture Overview
+### Overview
 
-The AutoToolRegistry is the core innovation that eliminates manual tool registration:
+The Frappe Assistant Core implements an **Intelligent Artifact Streaming System** that automatically detects when tool results should be streamed to workspace artifacts instead of being displayed directly in conversations. This system prevents conversation length limits, ensures professional deliverables, and enables unlimited analysis depth.
+
+### Problem Statement
+
+**Challenge**: Large tool results (>5 lines, >1000 characters) cause:
+- ❌ **Conversation Length Limits**: Claude Desktop hitting maximum response length
+- ❌ **Poor User Experience**: Truncated or incomplete results  
+- ❌ **Unprofessional Output**: Raw data dumps instead of structured reports
+- ❌ **Lost Work**: Analysis results lost when conversations exceed limits
+
+**Solution**: Automatic artifact streaming with intelligent detection and guidance.
+
+### Architecture
+
+#### 1. **Smart Detection Engine**
+
+**File**: `frappe_assistant_core/api/handlers/tools_streaming.py`
 
 ```python
-class AutoToolRegistry:
-    """Auto-discovers and manages tools from code"""
-    
-    _tool_classes = None    # Cached tool classes
-    _tools_cache = None     # Cached tool definitions
-    
-    @classmethod
-    def get_tool_classes(cls) -> List[Type]:
-        """Dynamically import and return all tool classes"""
-        
-    @classmethod 
-    def get_all_tools(cls) -> List[Dict[str, Any]]:
-        """Get all tools from all classes"""
-        
-    @classmethod
-    def get_tools_for_user(cls, user=None) -> List[Dict[str, Any]]:
-        """Get tools filtered by user permissions"""
-        
-    @classmethod
-    def execute_tool(cls, tool_name, arguments) -> Dict[str, Any]:
-        """Execute tool by finding the right class"""
+def should_stream_to_artifact(result: str, tool_name: str, 
+                             line_threshold: int = 5, 
+                             char_threshold: int = 1000) -> bool:
+    """Multi-criteria detection for artifact streaming requirement"""
 ```
 
-### Key Features
+**Detection Criteria:**
+- ✅ **Line Count**: Results with >5 lines (configurable)
+- ✅ **Character Count**: Results with >1,000 characters (configurable)
+- ✅ **Analysis Tools**: Always stream for `analyze_frappe_data`, `execute_python_code`, etc.
+- ✅ **Large Datasets**: JSON results with multiple records (`"name"` count >3)
+- ✅ **Tabular Data**: Extensive tables (pipe character count >20)
+- ✅ **List Content**: Many bullet points (>10 list items)
 
-#### 1. Dynamic Class Loading
+#### 2. **Intelligent Formatting System**
+
+**Dual-Mode Response Strategy:**
+
+| Result Size | Mode | Behavior |
+|-------------|------|----------|
+| **<10,000 chars** | **Full Result Mode** | Include complete result with streaming instructions |
+| **>10,000 chars** | **Truncated Mode** | Show preview only, require re-execution with artifacts |
+
+#### 3. **Tool-Specific Artifact Guidance**
+
+**Smart Category Detection:**
+
 ```python
-def get_tool_classes(cls):
-    if cls._tool_classes is None:
-        # Import all tool classes dynamically
-        from frappe_assistant_core.tools.analysis_tools import AnalysisTools
-        from frappe_assistant_core.tools.report_tools import ReportTools
-        # ... other imports
-        
-        cls._tool_classes = [AnalysisTools, ReportTools, SearchTools, MetadataTools, DocumentTools]
-    
-    return cls._tool_classes
+if tool_name in ["analyze_frappe_data", "execute_python_code", "query_and_analyze"]:
+    artifact_type = "Data Analysis Report"
+    sections = ["Executive Summary", "Key Findings", "Detailed Analysis", "Recommendations"]
+elif tool_name.startswith("report_"):
+    artifact_type = "Business Report" 
+    sections = ["Report Summary", "Key Metrics", "Detailed Data", "Action Items"]
 ```
 
-#### 2. Intelligent Caching
-- **Class-level caching** - Tool definitions cached after first load
-- **Cache invalidation** - `clear_cache()` method for development
-- **Performance optimization** - Subsequent calls are instant
+| Tool Category | Artifact Type | Suggested Sections |
+|---------------|---------------|-------------------|
+| **Analysis Tools** | Data Analysis Report | Executive Summary, Key Findings, Detailed Analysis, Recommendations |
+| **Report Tools** | Business Report | Report Summary, Key Metrics, Detailed Data, Action Items |
+| **Search/Metadata** | Technical Documentation | Overview, Search Results, Technical Details, Usage Notes |
+| **General Tools** | Comprehensive Results | Summary, Main Results, Detailed Output, Next Steps |
 
-#### 3. Permission-Based Filtering
+### Implementation Flow
+
+#### 1. **Request Processing**
+```mermaid
+graph LR
+    A[Tool Execution] --> B[Result Generated]
+    B --> C{Size Check}
+    C -->|>5 lines OR >1000 chars| D[Streaming Required]
+    C -->|Small Result| E[Direct Response]
+    D --> F[Format for Artifacts]
+    F --> G[Return Streaming Instructions]
+```
+
+#### 2. **Response Generation**
+
+**File**: `frappe_assistant_core/api/handlers/tools.py`
+
 ```python
-def _check_tool_permission(cls, tool, user=None):
-    tool_name = tool.get("name", "")
-    
-    if tool_name.startswith("execute_") or tool_name.startswith("analyze_"):
-        return frappe.has_permission("System Settings", "read", user=user)
-    elif tool_name.startswith("report_"):
-        return frappe.has_permission("Report", "read", user=user)
-    # ... other permission checks
-    
-    return True  # Default allow
+# Automatic streaming detection in tool handler
+should_stream = should_stream_to_artifact(result, tool_name)
+
+if should_stream:
+    artifact_result = format_for_artifact_streaming(result, tool_name, arguments)
+    result = artifact_result
 ```
 
-#### 4. Automatic Tool Discovery
+#### 3. **User Guidance Format**
+
+**Standard Streaming Response:**
+```
+🚨 ARTIFACT STREAMING REQUIRED - LARGE RESULT DETECTED
+
+📊 Result Statistics:
+• Lines: 15 (threshold: 5+)
+• Characters: 2,847 (threshold: 1,000+)
+• Tool: analyze_frappe_data
+
+📋 REQUIRED WORKFLOW:
+1. CREATE ARTIFACT - Type: Data Analysis Report
+2. ADD SECTIONS: Executive Summary, Key Findings, Detailed Analysis, Recommendations
+3. STREAM FULL RESULTS to artifact sections
+4. KEEP RESPONSE MINIMAL (only summary/confirmation)
+
+⚠️ CRITICAL: The full result below MUST be moved to an artifact to prevent response limits
+
+═══════════════════════════════════════════════════════════
+
+📄 PREVIEW:
+[First 3 lines of result]
+... (12 more lines)
+
+🔧 Tool Execution Details:
+• Tool: analyze_frappe_data
+• Arguments: {doctype: "Sales Invoice", analysis_type: "trends"}
+• Timestamp: 2025-06-27 14:30:22
+
+[FULL RESULT FOR ARTIFACT STREAMING]
+```
+
+### Benefits Achieved
+
+#### 1. **Conversation Continuity**
+- ✅ **No Length Limits**: Prevents "maximum conversation length" errors
+- ✅ **Unlimited Analysis**: Enable complex, multi-step analysis workflows
+- ✅ **Session Persistence**: Analysis results preserved across conversations
+
+#### 2. **Professional Deliverables**  
+- ✅ **Structured Reports**: Organized artifacts with proper sections
+- ✅ **Stakeholder Ready**: Professional outputs suitable for business use
+- ✅ **Reusable Results**: Artifacts can be shared and referenced
+
+#### 3. **Enhanced User Experience**
+- ✅ **Automatic Guidance**: No need to remember artifact creation
+- ✅ **Tool-Specific Suggestions**: Context-aware artifact structure
+- ✅ **Clear Workflows**: Step-by-step instructions for optimal use
+
+#### 4. **System Reliability**
+- ✅ **Predictable Behavior**: Consistent streaming across all tools
+- ✅ **Configurable Thresholds**: Adaptable to different use cases
+- ✅ **Graceful Degradation**: Fallback modes for edge cases
+
+### Configuration Options
+
+#### Environment Variables
 ```python
-def get_all_tools(cls):
-    if cls._tools_cache is None:
-        cls._tools_cache = []
-        
-        for tool_class in cls.get_tool_classes():
-            try:
-                class_tools = tool_class.get_tools()
-                cls._tools_cache.extend(class_tools)
-            except Exception as e:
-                frappe.log_error(f"Error loading tools from {tool_class.__name__}: {e}")
-    
-    return cls._tools_cache
+# Configurable thresholds in tools_streaming.py
+LINE_THRESHOLD = 5       # Lines before streaming required
+CHAR_THRESHOLD = 1000    # Characters before streaming required
+MAX_INLINE_SIZE = 10000  # Maximum size for inline display
 ```
 
-### Benefits
+#### Runtime Configuration
+```python
+# Customize streaming behavior per tool
+should_stream = should_stream_to_artifact(
+    result=tool_result,
+    tool_name="analyze_frappe_data", 
+    line_threshold=3,      # Custom threshold
+    char_threshold=500     # Custom threshold
+)
+```
 
-#### For Developers
-- **Zero Configuration** - Just create tool classes, no registration needed
-- **Automatic Updates** - Code changes instantly reflected
-- **Clean Architecture** - Separation of concerns
-- **Easy Testing** - Tool classes independently testable
+### Monitoring & Analytics
 
-#### For System Performance
-- **Cached Loading** - Tools loaded once, cached for performance
-- **Lazy Loading** - Tools loaded only when needed
-- **Memory Efficient** - Smart cache management
-- **Scalable** - Easy to add new tool categories
+#### Streaming Metrics
+- **Streaming Rate**: Percentage of tool results requiring artifacts
+- **Tool Distribution**: Which tools most frequently trigger streaming
+- **Size Analytics**: Average result sizes by tool category
+- **User Adoption**: Artifact creation rates following streaming guidance
+
+#### Debug Information
+```python
+# Included in every streaming response
+{
+    "tool": "analyze_frappe_data",
+    "lines": 15,
+    "characters": 2847,
+    "streaming_triggered": True,
+    "trigger_reasons": ["line_count", "analysis_tool"],
+    "artifact_type_suggested": "Data Analysis Report"
+}
+```
+
+### Future Enhancements
+
+#### Planned Improvements
+1. **Dynamic Thresholds**: ML-based optimization of streaming triggers
+2. **Template Library**: Pre-built artifact templates by industry/use case
+3. **Collaborative Artifacts**: Multi-user artifact editing capabilities
+4. **Version Control**: Artifact history and change tracking
+5. **Export Options**: PDF, Excel, PowerPoint export from artifacts
+
+#### Integration Opportunities
+1. **Frappe Reports**: Automatic artifact creation for complex reports
+2. **Dashboard Integration**: Stream analysis directly to Frappe dashboards
+3. **Email Integration**: Automated artifact sharing via email
+4. **API Access**: RESTful endpoints for artifact management
+
+### Best Practices
 
 #### For Users
-- **Dynamic Access** - Tools automatically filtered by permissions
-- **Real-time Updates** - New tools available immediately
-- **Consistent Experience** - Standardized tool interface
-- **Role-based Security** - Tools shown based on user capabilities
+1. **Create Artifacts First**: Follow streaming guidance to create artifacts before re-running tools
+2. **Use Suggested Sections**: Leverage tool-specific artifact structure recommendations
+3. **Keep Responses Minimal**: Let artifacts contain detailed analysis, keep chat responses focused
+4. **Build Progressively**: Use artifacts to build comprehensive analysis across multiple tool executions
+
+#### For Developers
+1. **Respect Thresholds**: Design tools with streaming-friendly output
+2. **Provide Context**: Include execution parameters in streaming responses
+3. **Tool Categories**: Ensure proper tool categorization for relevant artifact suggestions
+4. **Error Handling**: Graceful fallbacks when streaming fails
 
 ---
 
 ## API Documentation
 
-### Endpoint Overview
+### Enhanced JSON-RPC 2.0 Endpoints
 
-#### Primary MCP Endpoint
-```
-POST /api/assistant/handle_assistant_request
+#### 1. **Initialization**
+```http
+POST /api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request
 Content-Type: application/json
-```
 
-**Purpose**: Handle all MCP JSON-RPC 2.0 protocol requests
-
-#### Utility Endpoints
-```
-GET  /api/assistant/ping              # Health check
-POST /api/assistant/test_auth         # Authentication test
-GET  /api/assistant/usage_stats       # Usage statistics
-```
-
-### Request/Response Format
-
-#### Tools List Request
-```json
 {
     "jsonrpc": "2.0",
-    "method": "tools/list",
-    "id": "request-123"
-}
-```
-
-#### Tools List Response
-```json
-{
-    "jsonrpc": "2.0",
-    "result": {
-        "tools": [
-            {
-                "name": "execute_python_code",
-                "description": "Execute Python code for data analysis",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "code": {"type": "string", "description": "Python code to execute"},
-                        "data_query": {"type": "object", "description": "Optional data query"}
-                    },
-                    "required": ["code"]
-                }
-            }
-        ]
+    "method": "initialize",
+    "params": {
+        "protocolVersion": "2024-11-05",
+        "capabilities": {}
     },
-    "id": "request-123"
+    "id": 1
 }
 ```
 
-#### Tool Call Request
+#### 2. **Tools Management**
+
+**List Tools:**
 ```json
 {
     "jsonrpc": "2.0", 
-    "method": "tools/call",
-    "params": {
-        "name": "execute_python_code",
-        "arguments": {
-            "code": "print('Hello World')\nresult = 2 + 2",
-            "data_query": {
-                "doctype": "User",
-                "fields": ["name", "email"],
-                "limit": 10
-            }
-        }
-    },
-    "id": "request-456"
+    "method": "tools/list",
+    "id": 2
 }
 ```
 
-#### Tool Call Response
+**Execute Tool:**
 ```json
 {
     "jsonrpc": "2.0",
-    "result": {
-        "content": [
-            {
-                "type": "text",
-                "text": "**Python Code Execution Result:**\n**Output:**\n```\nHello World\n```\n\n**Variables Created:** 1\n• result: 4\n"
-            }
-        ]
+    "method": "tools/call", 
+    "params": {
+        "name": "execute_python_code",
+        "arguments": {
+            "code": "import pandas as pd\nprint('Hello World')"
+        }
     },
-    "id": "request-456"
+    "id": 3
 }
 ```
 
-### Error Handling
+#### 3. **Prompts Support** 🆕
+```json
+{
+    "jsonrpc": "2.0",
+    "method": "prompts/list",
+    "id": 4
+}
+```
 
-#### Standard JSON-RPC Errors
-- **-32600**: Invalid Request
-- **-32601**: Method not found  
-- **-32602**: Invalid params
-- **-32603**: Internal error
+#### 4. **Error Handling** 🔄 *Enhanced*
 
-#### Custom Error Response
+**Centralized Error Responses:**
 ```json
 {
     "jsonrpc": "2.0",
     "error": {
         "code": -32603,
-        "message": "Tool execution failed",
+        "message": "Internal error",
         "data": "Detailed error information"
     },
-    "id": "request-123"
+    "id": 1
 }
 ```
 
-### Output Formatting
-
-Each tool category has specialized output formatting:
-
-#### Analysis Tools Output
-```
-**Python Code Execution Result:**
-**Output:**
-```
-print output here
-```
-
-**Variables Created:** 2
-• variable1: value1
-• variable2: value2
-```
-
-#### Report Tools Output
-```
-**Report Execution Results:**
-• Report: Sales Summary
-• Type: Query Report
-• Records: 150
-• Columns: 8
-
-**Sample Data (first 3 rows):**
-Row 1: {...}
-Row 2: {...} 
-Row 3: {...}
-```
-
-#### Search Tools Output
-```
-**Search Results:**
-• Query: 'customer data'
-• Found: 25 results
-
-• **Customer ABC Corp**
-  Type: Customer
-  Preview: Leading technology company...
-
-• **Customer XYZ Ltd**
-  Type: Customer
-  Preview: Manufacturing company...
-```
+**Error Code Constants:**
+- `-32700`: Parse Error
+- `-32600`: Invalid Request  
+- `-32601`: Method Not Found
+- `-32602`: Invalid Params
+- `-32603`: Internal Error
+- `-32000`: Authentication Required
 
 ---
 
 ## Installation & Setup
 
 ### Prerequisites
-- Frappe Framework v14+
+- Frappe Framework 14+
 - Python 3.8+
 - MariaDB/MySQL
-- Node.js (for Frappe)
+- Required Python packages (auto-installed via pyproject.toml)
 
-### Step 1: Get the App
+### Installation Process
+
+#### 1. **App Installation**
 ```bash
-# Clone from repository
-bench get-app frappe_assistant_core https://github.com/user/frappe_assistant_core
+# Navigate to your Frappe bench
+cd frappe-bench
 
-# Or download and extract
-cd frappe-bench/apps/
-git clone https://github.com/user/frappe_assistant_core.git
-```
+# Get the app
+bench get-app https://github.com/paulclinton/frappe-assistant-core
 
-### Step 2: Install Dependencies
-```bash
-# Install Python dependencies
-pip install pandas>=1.3.0 numpy>=1.20.0 matplotlib>=3.3.0 seaborn>=0.11.0
-
-# Or install from requirements.txt
-pip install -r frappe_assistant_core/requirements.txt
-```
-
-### Step 3: Install the App
-```bash
 # Install on site
-bench --site your-site.local install-app frappe_assistant_core
+bench --site [site-name] install-app frappe_assistant_core
 
-# Run migrations
-bench --site your-site.local migrate
+# Run database migrations  
+bench --site [site-name] migrate
 ```
 
-### Step 4: Configure Settings
-Navigate to: **Desk → Assistant Core → Assistant Core Settings**
+#### 2. **Modern Package Installation** 🆕
+The app now uses modern Python packaging with `pyproject.toml`:
 
-Configure:
-- ✅ Enable Assistant Core: Yes
-- 🔧 Server Port: 8001 (default)
-- 👥 Max Connections: 100
-- 🔐 Authentication Required: Yes
-- ⚡ Rate Limit: 60 requests/minute
-
-### Step 5: Test Installation
 ```bash
-# Test API endpoint
-curl http://your-site.local:8000/api/assistant/ping
+# Development installation (editable)
+pip install -e .
 
-# Expected response:
-{
-    "status": "ok",
-    "message": "Assistant Server API is working",
-    "site": "your-site.local"
-}
+# Production installation  
+pip install .
+
+# With analysis dependencies
+pip install .[analysis]
+
+# With development dependencies
+pip install .[dev]
 ```
 
-### Step 6: Claude Desktop Integration
+#### 3. **Configuration**
+```bash
+# Configure settings through UI
+bench --site [site-name] set-config assistant_enabled 1
 
-Add to Claude Desktop MCP servers configuration:
+# Or via assistant admin interface
+https://your-site.com/desk#/assistant-admin
+```
 
-```json
-{
-    "mcpServers": {
-        "frappe": {
-            "command": "python",
-            "args": ["-m", "frappe_assistant_core.assistant_core.stdio_server"],
-            "env": {
-                "FRAPPE_SITE": "your-site.local",
-                "FRAPPE_API_KEY": "your_api_key",
-                "FRAPPE_API_SECRET": "your_api_secret"
-            }
-        }
-    }
-}
+### Enhanced Docker Support 🔄 *Updated*
+
+#### docker-compose.yml
+```yaml
+version: '3.8'
+services:
+  frappe:
+    image: frappe/erpnext:latest
+    volumes:
+      - ./frappe_assistant_core:/home/frappe/frappe-bench/apps/frappe_assistant_core
+    environment:
+      - INSTALL_APPS=frappe_assistant_core
 ```
 
 ---
 
 ## Testing
 
-### Test Suites
+### Automated Testing Suite 🔄 *Cleaned Up*
 
-#### 1. Auto-Discovery Registry Test
+**Previous Issues:** 26 temporary test files were cluttering the repository
+**Resolution:** All temporary test files removed, proper test structure implemented
+
+#### Test Structure
+```
+tests/
+├── unit/
+│   ├── test_api_handlers.py         # API handler tests
+│   ├── test_tool_registry.py        # Tool registry tests
+│   └── test_logging.py              # Logging system tests
+├── integration/
+│   ├── test_tool_execution.py       # End-to-end tool tests
+│   └── test_mcp_protocol.py         # MCP protocol tests
+└── fixtures/
+    └── test_data.json               # Test data
+```
+
+#### Running Tests
 ```bash
-bench --site your-site.local execute frappe_assistant_core.test_auto_registry.test_auto_registry
-```
+# Run all tests
+bench --site [site-name] run-tests frappe_assistant_core
 
-**Expected Output**:
-```
-=== Auto-Discovery Tool Registry Test ===
+# Run specific test categories
+pytest tests/unit/
+pytest tests/integration/
 
-📊 Registry Statistics:
-• Total Tools: 18
-• Tool Classes: 5
-• Categories: ['Analysis', 'Reports', 'Search', 'Metadata', 'Documents']
-
-✅ Auto-Discovery System Working!
-```
-
-#### 2. Tools List Test
-```bash
-bench --site your-site.local execute frappe_assistant_core.test_all_tools.test_api_tools_list
-```
-
-**Expected Output**:
-```
-🔧 Auto-discovered 18 tools from code
-API Tools List Response:
-Status: Success
-Found 18 tools:
-
-Analysis Tools (4):
-• analyze_frappe_data
-• create_visualization
-• execute_python_code  
-• query_and_analyze
-```
-
-#### 3. Tool Execution Test
-```bash
-bench --site your-site.local execute frappe_assistant_core.test_analysis_tools.test_execute_python
-```
-
-**Expected Output**:
-```
-Execute Python Test:
-Status: Success
-Output: Hello from analysis tools!
-2 + 2 = 4
-
-Variables: {'result': 4}
-```
-
-#### 4. Protocol Handler Test
-```bash
-bench --site your-site.local execute frappe_assistant_core.test_analysis_tools.test_tools_list
-```
-
-**Validates**:
-- JSON-RPC 2.0 protocol compliance
-- Tool discovery from registry
-- Permission filtering
-- Response formatting
-
-### Manual Testing
-
-#### Test Python Code Execution
-1. Open Claude with MCP connection
-2. Request: "Execute this Python code: `print('Hello'); result = 5 * 5`"
-3. Verify: Output shows "Hello" and variable `result = 25`
-
-#### Test Report Execution  
-1. Request: "List available reports"
-2. Select a report: "Execute the Sales Summary report"
-3. Verify: Report data is returned with proper formatting
-
-#### Test Data Analysis
-1. Request: "Analyze User DocType data with summary statistics"
-2. Verify: Statistical summary is generated with field analysis
-
-#### Test Document Operations
-1. Request: "Create a new Note with title 'Test Note'"
-2. Verify: Document is created and name is returned
-3. Request: "Search for documents containing 'Test'"
-4. Verify: Created note appears in search results
-
-### Performance Testing
-
-#### Load Testing
-```bash
-# Test concurrent tool calls
-for i in {1..10}; do
-    bench --site your-site.local execute frappe_assistant_core.test_analysis_tools.test_execute_python &
-done
-wait
-```
-
-#### Memory Testing
-```bash
-# Monitor memory usage during tool discovery
-bench --site your-site.local execute frappe_assistant_core.test_auto_registry.test_auto_registry
-# Check memory before/after cache loading
-```
-
-#### Response Time Testing
-```python
-import time
-start = time.time()
-# Execute tool discovery
-end = time.time()
-print(f"Discovery time: {end - start:.3f}s")
+# With coverage
+pytest --cov=frappe_assistant_core tests/
 ```
 
 ---
 
 ## Recent Improvements
 
-### Major Updates & Bug Fixes
+### Version 1.0.0 - Comprehensive Refactoring (June 2025)
 
-#### 🔧 Fixed Document List Tool (December 2024)
-**Issue**: `document_list` tool was returning 0 records despite data existing  
-**Root Cause**: API response layer expected `results` key but tool returned `documents` key  
-**Solution**: Added both `results` and `documents` keys for backward compatibility  
-**Impact**: Document listing now works correctly for all DocTypes
+#### 🏗️ **Architecture Modernization**
+- **Modular API Handlers**: Separated concerns into focused modules
+- **Centralized Constants**: All strings and configuration in dedicated module
+- **Professional Logging**: Replaced 905 print statements with structured logging
+- **Modern Packaging**: pyproject.toml with proper dependency management
 
-#### 📊 Enhanced Visualization System (December 2024)
-**Improvements**:
-- **Inline Display**: Charts now display directly in AI conversation using base64 encoding
-- **Multiple Output Formats**: Support for `inline`, `file`, and `both` output modes
-- **Error Resolution**: Fixed "Unsupported image type: undefined" errors
-- **Better Debugging**: Added comprehensive error tracking and base64 data validation
+#### 🚀 **Artifact Streaming System** (New Feature)
+- **Intelligent Detection**: Automatic streaming triggers for results >5 lines or >1000 characters
+- **Smart Categorization**: Tool-specific artifact suggestions (Data Analysis, Business Reports, etc.)
+- **Dual-Mode Responses**: Full result mode (<10k chars) and truncated mode (>10k chars)
+- **Professional Deliverables**: Structured artifacts with proper sections
+- **Conversation Continuity**: Prevents "maximum length" errors and enables unlimited analysis depth
 
-**Technical Details**:
-```python
-# Before: Separate image content blocks (caused errors)
-content_blocks.append({"type": "image", "source": {...}})
+#### 🐛 **Critical Bug Fixes**
+- **Import Errors**: Fixed missing modules causing runtime failures
+- **DocType Names**: Corrected inconsistent naming breaking tool counts
+- **Tool Execution**: Created missing executor and registry modules
+- **Notification Handling**: Implemented missing notification handlers
+- **Timestamp Serialization**: Fixed JSON serialization errors with datetime objects
+- **Import Statement Handling**: Auto-removal of import statements in execute_python_code
+- **Report Execution**: Fixed NoneType startswith errors in report filtering
 
-# After: Markdown embedding in text content
-text += f"![Generated Chart]({base64_data})\n"
-```
+#### 🧹 **Code Cleanup**
+- **File Cleanup**: Removed 26 temporary test/debug files
+- **Module Structure**: Added missing `__init__.py` files
+- **Code Quality**: 87% reduction in main API file size
+- **Dependency Management**: Fixed pip deprecation warnings
 
-#### 🛠️ Report Execution Improvements (December 2024)
-**Enhancements**:
-- **Enhanced Debugging**: Added comprehensive debug information for failed reports
-- **Better Error Handling**: Progressive fallback strategies for script reports
-- **Filter Management**: Automatic company filter addition for common reports
-- **Detailed Logging**: Extended error tracking and performance monitoring
+#### 📊 **Performance Improvements**
+- **Memory Usage**: Reduced through modular loading
+- **Maintainability**: Clean separation of concerns
+- **Extensibility**: Easy to add new handlers and tools
+- **Debugging**: Structured logging for better troubleshooting
+- **Response Optimization**: Intelligent artifact streaming prevents conversation overload
 
-#### 🔍 Enhanced Tool Descriptions (December 2024)
-**Updates**:
-- **LLM-Friendly Descriptions**: Comprehensive context and usage guidance
-- **Business Context**: Clear explanations of when and how to use each tool
-- **Example Patterns**: Specific use cases and parameter examples
-- **Best Practices**: Guidance for optimal tool usage
+### Previous Improvements (2024)
 
-### Security & Performance
+#### 🔧 **Tool System Enhancements**
+- **Enhanced Python Execution**: Comprehensive library support (30+ packages)
+- **Hybrid Streaming**: Smart artifact streaming based on output size
+- **Permission Model**: Granular role-based access control
+- **Error Handling**: Robust error handling and user feedback
 
-#### 🔐 Permission System Enhancements
-- **Role-Based Access**: Comprehensive permission checking for all operations
-- **Field-Level Security**: Granular control over data access
-- **Audit Trail**: Complete operation logging with user tracking
-
-#### ⚡ Performance Optimizations
-- **Tool Registry Caching**: Faster tool discovery and loading
-- **Database Query Optimization**: Reduced database calls and improved efficiency
-- **Error Handling**: Graceful degradation and better error recovery
-
-### Development Improvements
-
-#### 🧪 Enhanced Testing
-- **Comprehensive Test Coverage**: Tests for all major tool functions
-- **Edge Case Handling**: Better coverage of error conditions
-- **Integration Tests**: Full workflow testing
-
-#### 📚 Documentation Updates
-- **Technical Documentation**: Comprehensive architecture and implementation details
-- **Tool Usage Guide**: Detailed guidance for LLMs and developers
-- **Contributing Guidelines**: Clear contribution process and standards
-
-### Migration to Open Source
-
-#### 📄 MIT License Adoption
-- **Complete Freedom**: No restrictions on commercial or personal use
-- **Community Driven**: Open to contributions from the community
-- **Professional Services**: Optional paid services for implementation help
-
-#### 🤝 Community Features
-- **Issue Tracking**: GitHub issues for bug reports and feature requests
-- **Discussions**: Community discussions and support
-- **Contributing Guidelines**: Clear process for code contributions
+#### 📈 **Performance & Reliability**
+- **Auto-Discovery**: Zero-configuration tool loading
+- **Caching System**: Improved performance for repeated operations
+- **Audit Trail**: Comprehensive operation logging
+- **Security Model**: Enhanced sandbox for code execution
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### Common Issues & Solutions
 
-#### 1. "Module assistant_core not found"
-**Cause**: Import path issues or module not properly installed
+#### 1. **Import Errors** ✅ *Recently Fixed*
+**Symptoms:** `ModuleNotFoundError` for registry or executor
+**Solution:** All missing modules have been created and properly configured
 
-**Solutions**:
-```bash
-# Reinstall the app
-bench --site your-site.local uninstall-app frappe_assistant_core
-bench --site your-site.local install-app frappe_assistant_core
+#### 2. **Tool Execution Failures** ✅ *Recently Fixed*
+**Symptoms:** Tools not found or execution errors
+**Solution:** Tool registry and executor modules now properly implemented
 
-# Check Python path
-python -c "import frappe_assistant_core; print('Import successful')"
+#### 3. **Logging Issues** ✅ *Recently Fixed*
+**Symptoms:** Print statements appearing in production
+**Solution:** All print statements replaced with proper logging
 
-# Restart bench
-bench restart
-```
-
-#### 2. "No tools showing up in Claude"
-**Cause**: Auto-discovery system not working or permission issues
-
-**Solutions**:
-```bash
-# Test auto-discovery
-bench --site your-site.local execute frappe_assistant_core.test_auto_registry.test_auto_registry
-
-# Check API endpoint
-curl http://your-site.local:8000/api/assistant/ping
-
-# Verify user permissions
-bench --site your-site.local execute "frappe.get_roles()"
-
-# Clear cache and retry
-bench --site your-site.local execute "frappe_assistant_core.tools.tool_registry.AutoToolRegistry.clear_cache()"
-```
-
-#### 3. "Tool execution failed"
-**Cause**: Missing dependencies or permission issues
-
-**Solutions**:
-```bash
-# Install missing dependencies
-pip install pandas numpy matplotlib seaborn
-
-# Check tool-specific permissions
-bench --site your-site.local execute "frappe.has_permission('Report', 'read')"
-
-# Check error logs
-bench --site your-site.local logs
-```
-
-#### 4. "Analysis tools not working"
-**Cause**: Missing scientific Python libraries
-
-**Solutions**:
-```bash
-# Install scientific libraries
-pip install pandas>=1.3.0 numpy>=1.20.0 matplotlib>=3.3.0 seaborn>=0.11.0
-
-# Test imports
-python -c "import pandas, numpy, matplotlib, seaborn; print('All libraries available')"
-
-# Check tool capabilities
-bench --site your-site.local execute "frappe_assistant_core.tools.analysis_tools.AnalysisTools.get_tools()"
-```
-
-#### 5. "Build errors during installation"
-**Cause**: Missing frontend assets or build configuration
-
-**Solutions**:
-```bash
-# Skip build if it's a backend-only app
-bench --site your-site.local install-app frappe_assistant_core --skip-assets
-
-# Or install without building
-bench get-app frappe_assistant_core --skip-assets
-```
+#### 4. **Package Installation Warnings** ✅ *Recently Fixed*
+**Symptoms:** Pip deprecation warnings during installation
+**Solution:** Modern pyproject.toml packaging implemented
 
 ### Debug Mode
-
-#### Enable Verbose Logging
 ```python
-# In site_config.json
-{
-    "logging": 1,
-    "log_level": "DEBUG"
-}
+# Enable debug logging
+from frappe_assistant_core.utils.logger import api_logger
+api_logger.setLevel('DEBUG')
+
+# Check tool registry
+from frappe_assistant_core.tools.registry import get_assistant_tools
+tools = get_assistant_tools()
+print(f"Available tools: {len(tools)}")
 ```
 
-#### Monitor Real-time Logs
+### Health Check Endpoint
 ```bash
-# Watch logs during tool execution
-tail -f sites/your-site.local/logs/frappe.log
-
-# Filter for assistant-related logs
-tail -f sites/your-site.local/logs/frappe.log | grep "assistant"
-```
-
-#### Check Tool Registry Status
-```bash
-bench --site your-site.local execute "
-from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
-stats = AutoToolRegistry.get_stats()
-print(f'Tools available: {stats}')
-"
-```
-
-### Performance Issues
-
-#### Optimize Cache Performance
-```python
-# Pre-warm cache on startup
-AutoToolRegistry.get_all_tools()
-
-# Monitor cache hit rate
-stats = AutoToolRegistry.get_stats()
-print(f"Cache performance: {stats}")
-```
-
-#### Database Query Optimization
-```bash
-# Check slow queries
-bench --site your-site.local mariadb-console
-SHOW PROCESSLIST;
-
-# Optimize tool registry queries
-bench --site your-site.local execute "
-import frappe
-frappe.db.sql('EXPLAIN SELECT * FROM `tabAssistant Tool Registry`')
-"
+# Test server connectivity
+curl -X POST http://localhost:8000/api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}'
 ```
 
 ---
 
 ## Future Enhancements
 
-### Short-term Roadmap (Next 3 months)
+### Planned Features
+1. **Enhanced Analytics**: Advanced statistical analysis tools
+2. **Real-time Collaboration**: Multi-user sessions
+3. **Plugin System**: Third-party tool extensions
+4. **API Rate Limiting**: Advanced throttling mechanisms
+5. **Webhook Integration**: External service notifications
+6. **Streaming Improvements**: Enhanced artifact streaming capabilities
 
-#### 1. Enhanced Tool Categories
-- **Workflow Tools** - Custom workflow execution and management
-- **Integration Tools** - External API connections and data sync
-- **Backup Tools** - Database backup and restore operations
-- **System Tools** - Performance monitoring and system health
+### Contributing
+This is an open-source MIT licensed project. Contributions are welcome!
 
-#### 2. Advanced Analysis Features
-- **Machine Learning Tools** - Predictive analytics with scikit-learn
-- **Time Series Analysis** - Advanced forecasting capabilities  
-- **Statistical Testing** - Hypothesis testing and statistical significance
-- **Data Quality Tools** - Data validation and cleaning utilities
+1. Fork the repository
+2. Create a feature branch
+3. Make changes following the modular architecture
+4. Add tests for new functionality
+5. Update documentation
+6. Submit a pull request
 
-#### 3. Real-time Features
-- **Live Data Streaming** - Real-time data updates via WebSocket
-- **Background Processing** - Long-running analysis tasks
-- **Progress Tracking** - Task progress monitoring and notifications
-- **Result Caching** - Intelligent result caching system
-
-### Medium-term Roadmap (6 months)
-
-#### 1. Multi-tenant Support
-- **Site Isolation** - Per-site tool configurations
-- **Cross-site Analysis** - Aggregate analysis across multiple sites
-- **Tenant-specific Permissions** - Fine-grained access control
-- **Resource Quotas** - Per-tenant resource limits
-
-#### 2. Advanced Security
-- **API Rate Limiting** - Advanced rate limiting with user quotas
-- **Audit Encryption** - Encrypted audit logs for compliance
-- **Zero-trust Architecture** - Enhanced security model
-- **SSO Integration** - Single sign-on support
-
-#### 3. Performance Optimization
-- **Distributed Processing** - Multi-process tool execution
-- **Result Streaming** - Streaming large result sets
-- **Connection Pooling** - Optimized database connections
-- **CDN Integration** - Static asset optimization
-
-### Long-term Vision (12 months)
-
-#### 1. AI-Powered Features
-- **Intelligent Tool Recommendation** - AI suggests relevant tools
-- **Natural Language Queries** - Convert plain English to tool calls
-- **Automated Analysis** - AI-driven data insights and recommendations
-- **Predictive Maintenance** - Proactive system health monitoring
-
-#### 2. Enterprise Features
-- **High Availability** - Multi-node deployment support
-- **Disaster Recovery** - Automated backup and recovery
-- **Compliance Tools** - GDPR, SOX, HIPAA compliance features
-- **Enterprise SSO** - LDAP, Active Directory integration
-
-#### 3. Developer Ecosystem
-- **Plugin Architecture** - Third-party tool development framework
-- **Tool Marketplace** - Community-driven tool sharing
-- **SDK Development** - Language-specific SDKs for tool development
-- **Documentation Portal** - Interactive documentation and tutorials
-
-### Technical Debt & Improvements
-
-#### Code Quality
-- **Type Hints** - Complete type annotation coverage
-- **Unit Testing** - Comprehensive test suite with >90% coverage
-- **Integration Testing** - End-to-end testing automation
-- **Performance Profiling** - Continuous performance monitoring
-
-#### Architecture Evolution
-- **Microservices** - Break monolith into specialized services
-- **Event-driven Architecture** - Async event processing
-- **GraphQL API** - Modern API layer for complex queries
-- **Container Support** - Docker containerization
-
-#### Documentation & Tooling
-- **Interactive Docs** - Live documentation with examples
-- **CLI Tools** - Command-line utilities for management
-- **Monitoring Dashboard** - Real-time system monitoring
-- **Development Tools** - Enhanced developer experience
+### Architecture Guidelines for Contributors
+- **Use Modular Handlers**: Add new functionality in separate handler modules
+- **Leverage Constants**: All strings and configuration in `constants/definitions.py`
+- **Professional Logging**: Use `api_logger` instead of print statements
+- **Follow Patterns**: Maintain consistency with existing code structure
+- **Test Coverage**: Include comprehensive tests for new features
 
 ---
 
-## Conclusion
+## Support & Resources
 
-The Frappe Assistant Core represents a significant advancement in AI-powered ERP interaction. Through the development process, we've evolved from a basic document management system to a comprehensive, auto-discovering tool platform that provides:
-
-### Key Achievements
-- **18 Comprehensive Tools** spanning all major ERP operations
-- **Auto-Discovery Architecture** eliminating manual configuration
-- **Zero-Database Dependency** for tool registration
-- **Enterprise-Grade Security** with role-based permissions
-- **Extensible Design** for future tool development
-
-### Technical Excellence
-- **Clean Architecture** with separation of concerns
-- **Performance Optimization** through intelligent caching
-- **Error Resilience** with comprehensive error handling
-- **Standards Compliance** with JSON-RPC 2.0 protocol
-- **Developer-Friendly** design for easy extension
-
-### Impact & Value
-- **Reduced Development Time** - Auto-discovery eliminates manual registration
-- **Enhanced User Experience** - Rich, contextual tool interactions
-- **Scalable Foundation** - Easy to add new capabilities
-- **Maintainable Codebase** - Clean, documented, testable code
-- **Enterprise Ready** - Production-ready with security and audit features
-
-The system is now ready for production deployment and provides a solid foundation for future AI-powered ERP enhancements. The auto-discovery registry represents a breakthrough in maintainable, scalable tool management that can serve as a model for similar systems.
+- **GitHub Repository**: [frappe-assistant-core](https://github.com/paulclinton/frappe-assistant-core)
+- **License**: MIT License
+- **Documentation**: This file and inline code documentation
+- **Issues**: GitHub Issues for bug reports and feature requests
 
 ---
 
-*This documentation reflects the current state of Frappe Assistant Core as of the latest development phase. For the most up-to-date information, please refer to the project repository and release notes.*
+*Last Updated: June 2025 - Version 1.0.0*
+*Architecture: Modular, Modern, Maintainable*

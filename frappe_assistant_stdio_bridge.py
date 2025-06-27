@@ -156,21 +156,6 @@ class StdioMCPWrapper:
             
         return response
     
-    def handle_prompts_list(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle prompts/list request"""
-        response = {
-            "jsonrpc": "2.0",
-            "result": {
-                "prompts": []  # Empty for now, can add prompts later
-            }
-        }
-        
-        # Only include id if it was present in request
-        if "id" in request and request["id"] is not None:
-            response["id"] = request["id"]
-            
-        return response
-    
     def handle_resources_list(self, request: Dict[str, Any]) -> Dict[str, Any]:
         """Handle resources/list request"""
         response = {
@@ -206,12 +191,10 @@ class StdioMCPWrapper:
                     # Handle methods locally or forward to HTTP server
                     if method == "initialize":
                         response = self.handle_initialization(request)
-                    elif method == "prompts/list":
-                        response = self.handle_prompts_list(request)
                     elif method == "resources/list":
                         response = self.handle_resources_list(request)
                     else:
-                        # Forward all other requests to HTTP server
+                        # Forward all other requests (including prompts/*) to HTTP server
                         response = self.send_to_server(request)
                     
                     # Only send response if request had an id (notifications don't get responses)

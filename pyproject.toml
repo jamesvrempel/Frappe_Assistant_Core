@@ -1,0 +1,114 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "frappe-assistant-core"
+version = "1.0.0"
+description = "AI-powered ERP assistant with comprehensive MCP integration for Frappe framework"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Paul Clinton", email = "jypaulclinton@gmail.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Framework :: Frappe",
+    "Topic :: Office/Business :: Enterprise Resource Planning (ERP)",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+keywords = ["frappe", "erp", "ai", "assistant", "mcp", "analysis", "business-intelligence"]
+requires-python = ">=3.8"
+dependencies = [
+    "frappe",
+    "pandas>=1.3.0",
+    "numpy>=1.20.0",
+    "matplotlib>=3.4.0",
+    "seaborn>=0.11.0",
+    "requests>=2.25.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "pytest-cov>=2.12",
+    "black>=21.0",
+    "flake8>=3.9",
+    "mypy>=0.910",
+]
+analysis = [
+    "scipy>=1.7.0",
+    "scikit-learn>=1.0.0",
+    "plotly>=5.0.0",
+    "bokeh>=2.4.0",
+    "altair>=4.1.0",
+    "sympy>=1.8.0",
+    "networkx>=2.6.0",
+    "openpyxl>=3.0.0",
+    "xlsxwriter>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/paulclinton/frappe-assistant-core"
+Documentation = "https://github.com/paulclinton/frappe-assistant-core/wiki"
+Repository = "https://github.com/paulclinton/frappe-assistant-core.git"
+"Bug Tracker" = "https://github.com/paulclinton/frappe-assistant-core/issues"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["frappe_assistant_core*"]
+
+[tool.setuptools.package-data]
+frappe_assistant_core = [
+    "templates/*.html",
+    "public/**/*",
+    "*.json",
+    "**/*.json",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=frappe_assistant_core --cov-report=html --cov-report=term-missing"
