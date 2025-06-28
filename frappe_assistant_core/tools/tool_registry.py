@@ -167,11 +167,11 @@ class AutoToolRegistry:
             
             user_roles = frappe.get_roles(user)
             
-            frappe.log_error(f"🔧 Checking permission for tool '{tool_name}' for user roles: {user_roles}", "Tool Registry Debug")
+            api_logger.debug(f"Checking permission for tool '{tool_name}' for user: {user}")
             
             # For System Managers and Administrators, allow ALL tools immediately
             if "System Manager" in user_roles or "Administrator" in user_roles or user == "Administrator":
-                frappe.log_error(f"✅ Admin/System Manager has access to {tool_name}", "Tool Registry Debug")
+                api_logger.debug(f"Admin/System Manager has access to {tool_name}")
                 return True
             
             # Basic permission checks based on tool type for non-System Managers
@@ -203,8 +203,7 @@ class AutoToolRegistry:
                 return True
                 
         except Exception as e:
-            frappe.log_error(f"Error checking tool permission: {e}")
-            api_logger.error(f"Permission check error for {tool_name}: {e}")
+            api_logger.error(f"Permission check error for {tool_name}: {str(e)[:100]}...")
             return True  # Default to allowing access
     
     @classmethod
