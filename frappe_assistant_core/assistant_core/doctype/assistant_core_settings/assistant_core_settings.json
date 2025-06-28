@@ -27,7 +27,11 @@
   "logging_section",
   "log_level",
   "max_log_entries",
-  "cleanup_logs_after_days"
+  "cleanup_logs_after_days",
+  "streaming_section",
+  "enforce_artifact_streaming",
+  "response_limit_prevention",
+  "streaming_behavior_instructions"
  ],
  "fields": [
   {
@@ -113,6 +117,33 @@
    "fieldname": "cleanup_logs_after_days",
    "fieldtype": "Int",
    "label": "Cleanup Logs After (Days)"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "streaming_section",
+   "fieldtype": "Section Break",
+   "label": "Artifact Streaming Configuration"
+  },
+  {
+   "default": "1",
+   "fieldname": "enforce_artifact_streaming",
+   "fieldtype": "Check",
+   "label": "Enforce Artifact Streaming Protocol",
+   "description": "Require all LLMs to use artifact streaming for analysis operations"
+  },
+  {
+   "default": "1",
+   "fieldname": "response_limit_prevention",
+   "fieldtype": "Check",
+   "label": "Enable Response Limit Prevention",
+   "description": "Automatically promote artifact streaming to prevent LLM response limits"
+  },
+  {
+   "fieldname": "streaming_behavior_instructions",
+   "fieldtype": "Small Text",
+   "label": "Custom Streaming Instructions",
+   "description": "Additional behavioral instructions for LLMs using the MCP server",
+   "default": "Always create analysis workspace artifacts before performing data analysis.\nStream all detailed work to artifacts to prevent response limits.\nKeep responses minimal with artifact references.\nBuild unlimited analysis depth via progressive artifact updates."
   }
  ],
  "has_web_view": 0,

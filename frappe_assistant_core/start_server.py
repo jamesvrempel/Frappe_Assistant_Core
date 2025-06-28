@@ -8,6 +8,8 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import json
 
+from frappe_assistant_core.utils.logger import api_logger
+
 # Constants
 DEFAULT_PORT = 8000  # Frappe's default port fallback
 

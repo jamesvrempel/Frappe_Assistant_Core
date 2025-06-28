@@ -113,11 +113,13 @@ def get_server_instance() -> assistantServer:
         _server_instance = assistantServer()
     return _server_instance
 
+@frappe.whitelist(allow_guest=False)
 def start_server():
     """Start the assistant server"""
     server = get_server_instance()
     return server.start()
 
+@frappe.whitelist(allow_guest=False)
 def stop_server():
     """Stop the assistant server"""
     server = get_server_instance()

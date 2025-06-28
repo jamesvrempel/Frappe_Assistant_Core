@@ -12,7 +12,7 @@ def get_assistant_status():
 def get_tool_count():
     """Template helper to get count of enabled tools"""
     try:
-        return frappe.db.count("assistant Tool Registry", {"enabled": 1})
+        return frappe.db.count("Assistant Tool Registry", {"enabled": 1})
     except Exception:
         return 0
 

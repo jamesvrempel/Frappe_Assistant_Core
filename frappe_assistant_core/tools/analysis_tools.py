@@ -11,6 +11,8 @@ import traceback
 from typing import Dict, Any, List
 from contextlib import redirect_stdout, redirect_stderr
 
+from frappe_assistant_core.utils.logger import api_logger
+
 # Custom security exception
 class SecurityError(Exception):
     pass
@@ -37,6 +39,26 @@ try:
 except ImportError:
     HAS_VISUALIZATION = False
 
+# Streaming tool prefix for all analysis tools
+STREAMING_TOOL_PREFIX = """
+🚨 MANDATORY ARTIFACT STREAMING - REQUIRED FOR ALL ANALYSIS:
+
+⚠️ CRITICAL: This tool REQUIRES creating workspace artifacts BEFORE execution to prevent response limits.
+
+📋 REQUIRED WORKFLOW:
+1. CREATE workspace artifact FIRST (mandatory)
+2. Add sections: Executive Summary, Data Analysis, Findings, Recommendations
+3. Stream ALL analysis results to artifact sections
+4. Keep response minimal (only confirmation/summary)
+5. Build unlimited analysis depth via artifact streaming
+
+❌ WITHOUT ARTIFACTS: Tool will hit response limits and fail
+✅ WITH ARTIFACTS: Unlimited analysis depth and professional deliverables
+
+⚠️ DO NOT attempt analysis without creating artifacts first - conversation will hit limits.
+
+"""
+
 class AnalysisTools:
     """MCP tools for data analysis and code execution"""
     
@@ -46,13 +68,94 @@ class AnalysisTools:
         tools = [
             {
                 "name": "execute_python_code",
-                "description": "Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework and analytics libraries. Perfect for complex computations, data transformations, and custom analysis.",
+                "description": f"""
+{STREAMING_TOOL_PREFIX}
+
+Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework and extensive library ecosystem.
+
+🔐 **SECURITY:** Requires System Manager role. Executes in secure sandbox environment.
+
+⚠️ **IMPORTANT:** Do NOT use `import` statements. All libraries (frappe, pd, np, plt, sns) are pre-loaded and ready to use.
+
+📚 **AVAILABLE LIBRARIES & MODULES:**
+
+**Core Data Science (Pre-loaded):**
+• pandas (as 'pd') - DataFrames, data manipulation, analysis
+• numpy (as 'np') - Arrays, mathematical operations, linear algebra  
+• matplotlib (as 'plt') - Plotting and visualization
+• seaborn (as 'sns') - Statistical data visualization
+
+**Standard Library (Pre-loaded):**
+• datetime, time, calendar - Date/time operations
+• math, statistics, decimal, fractions - Mathematical functions
+• random - Random number generation
+• json, csv - Data serialization
+• re - Regular expressions
+• collections, itertools, functools, operator - Advanced data structures
+• uuid, hashlib, base64 - Utilities
+• copy - Object copying
+• string, textwrap - String operations
+
+**Additional Libraries (Available via imports):**
+• pydantic, typing, dataclasses - Data validation & type hints
+• scipy, sklearn - Scientific computing & machine learning
+• sympy - Symbolic mathematics
+• networkx - Graph analysis
+• requests, urllib, http - Web requests
+• openpyxl, xlsxwriter - Excel file handling
+• plotly, bokeh, altair - Interactive visualizations
+
+**Built-in Functions Available:**
+• All standard: abs, sum, len, max, min, sorted, etc.
+• Type functions: int, float, str, bool, list, dict, set, tuple
+• Introspection: locals(), globals(), vars(), dir(), type(), isinstance()
+• Conversion: chr, ord, bin, hex, oct, format
+• Functional: map, filter, enumerate, zip, reversed
+• Object: hasattr, getattr, setattr, callable
+
+**Frappe API Access:**
+• frappe.get_all(doctype, **kwargs) - Query documents
+• frappe.get_doc(doctype, name) - Get single document  
+• frappe.get_value(doctype, filters, fieldname) - Get field value
+• frappe.session.user - Current user info
+
+**Example Usage:**
+```python
+# System information (frappe is pre-loaded, no import needed)
+print("=== System Information ===")
+print(f"Current user: {{frappe.session.user}}")
+print(f"Site URL: {{frappe.utils.get_site_url()}}")
+print(f"System timezone: {{frappe.utils.get_system_timezone()}}")
+
+# Data analysis with pandas (pd is pre-loaded)
+data = frappe.get_all("Sales Invoice", fields=["grand_total", "posting_date"])
+df = pd.DataFrame(data)
+monthly_sales = df.groupby(pd.to_datetime(df['posting_date']).dt.month)['grand_total'].sum()
+print(f"Monthly sales data: {{monthly_sales}}")
+
+# Visualization with matplotlib (plt is pre-loaded)
+plt.figure(figsize=(10, 6))
+monthly_sales.plot(kind='bar')
+plt.title('Monthly Sales Analysis')
+plt.show()
+
+# Advanced analysis with numpy (np is pre-loaded)
+arr = np.array([1, 2, 3, 4, 5])
+result = np.mean(arr)
+print(f"Mean calculated: {{result}}")
+
+# Introspection
+print("Available variables:", list(locals().keys()))
+```
+
+💡 ARTIFACT TIP: For extensive analysis workflows, stream results to artifacts for unlimited depth.
+""",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "code": {
                             "type": "string", 
-                            "description": "Python code to execute. Available variables: 'frappe' (Frappe API), 'data' (DataFrame if data_query provided). Examples: 'frappe.get_all(\"Customer\")', 'data.describe()', 'sum(data[\"grand_total\"])'"
+                            "description": "Python code to execute. Pre-loaded: pandas (pd), numpy (np), matplotlib (plt), seaborn (sns), datetime, math, json, etc. Available: frappe API, locals(), globals(), dir(). Use 'data' variable if data_query provided. Examples: 'df = pd.DataFrame(frappe.get_all(\"Customer\"))', 'print(locals().keys())', 'plt.plot([1,2,3])'"
                         },
                         "data_query": {
                             "type": "object",
@@ -83,7 +186,7 @@ class AnalysisTools:
                             "type": "array",
                             "items": {"type": "string"},
                             "default": [],
-                            "description": "Additional Python imports. Examples: ['numpy as np', 'matplotlib.pyplot as plt', 'seaborn as sns']"
+                            "description": "Additional Python imports from safe list. Examples: ['scipy', 'sklearn', 'pydantic', 'requests']. Safe modules: datetime, math, statistics, pandas, numpy, matplotlib, seaborn, scipy, sklearn, pydantic, typing, requests, uuid, hashlib, base64, openpyxl, sympy, networkx, plotly, bokeh, altair"
                         }
                     },
                     "required": ["code"]
@@ -91,7 +194,13 @@ class AnalysisTools:
             },
             {
                 "name": "analyze_frappe_data",
-                "description": "Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType. Perfect for understanding sales patterns, customer behavior, and operational metrics.",
+                "description": f"""
+{STREAMING_TOOL_PREFIX}
+
+Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType. Perfect for understanding sales patterns, customer behavior, and operational metrics.
+
+💡 ARTIFACT TIP: Create workspace artifacts for comprehensive analysis without response limits.
+""",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -130,7 +239,13 @@ class AnalysisTools:
             },
             {
                 "name": "query_and_analyze",
-                "description": "Execute custom SQL queries on Frappe database and perform advanced data analysis. Perfect for complex business intelligence, custom reporting, and advanced analytics that go beyond standard reports.",
+                "description": f"""
+{STREAMING_TOOL_PREFIX}
+
+Execute custom SQL queries on Frappe database and perform advanced data analysis. Perfect for complex business intelligence, custom reporting, and advanced analytics that go beyond standard reports.
+
+💡 ARTIFACT TIP: For complex queries and analysis, use artifacts to build comprehensive reports.
+""",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -152,7 +267,13 @@ class AnalysisTools:
         if HAS_PANDAS and HAS_VISUALIZATION:
             tools.append({
                 "name": "create_visualization",
-                "description": "Create interactive charts and visualizations from Frappe business data. Perfect for sales analysis, financial dashboards, inventory trends, and data-driven insights. Charts are displayed inline in the conversation and can be saved as files.",
+                "description": f"""
+🔄 VISUALIZATION STREAMING TOOL:
+
+Create interactive charts and visualizations from Frappe business data. Charts are displayed inline and saved as files.
+
+💡 ARTIFACT TIP: Document visualization workflows in artifacts for comprehensive reporting.
+""",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
@@ -213,18 +334,87 @@ class AnalysisTools:
         return tools
     
     @staticmethod
-    def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> str:
         """Execute an analysis tool with given arguments"""
-        if tool_name == "execute_python_code":
-            return AnalysisTools.execute_python_code(**arguments)
-        elif tool_name == "analyze_frappe_data":
-            return AnalysisTools.analyze_frappe_data(**arguments)
-        elif tool_name == "query_and_analyze":
-            return AnalysisTools.query_and_analyze(**arguments)
-        elif tool_name == "create_visualization":
-            return AnalysisTools.create_visualization(**arguments)
+        try:
+            # Check if this is a streaming-mandatory tool
+            streaming_tools = ["analyze_frappe_data", "execute_python_code", "query_and_analyze", "create_visualization"]
+            
+            if tool_name in streaming_tools:
+                # Prepend streaming requirement notice to results
+                streaming_notice = """
+🚨 ARTIFACT STREAMING NOTICE:
+
+This analysis tool generates extensive data that may exceed response limits.
+For comprehensive analysis and professional deliverables:
+
+1. Create workspace artifacts BEFORE running analysis
+2. Stream results to artifact sections  
+3. Build unlimited depth analysis via artifacts
+
+Results below may be truncated - use artifacts for complete analysis.
+
+═══════════════════════════════════════════════════════
+
+"""
+            else:
+                streaming_notice = ""
+            
+            if tool_name == "execute_python_code":
+                result = AnalysisTools.execute_python_code(**arguments)
+            elif tool_name == "analyze_frappe_data":
+                result = AnalysisTools.analyze_frappe_data(**arguments)
+            elif tool_name == "query_and_analyze":
+                result = AnalysisTools.query_and_analyze(**arguments)
+            elif tool_name == "create_visualization":
+                result = AnalysisTools.create_visualization(**arguments)
+            else:
+                raise Exception(f"Unknown analysis tool: {tool_name}")
+            
+            # Convert result to string with safe JSON serialization
+            if isinstance(result, dict):
+                # Clean the result for JSON serialization
+                clean_result = AnalysisTools._clean_for_json(result)
+                try:
+                    json_result = frappe.as_json(clean_result, indent=2)
+                    return streaming_notice + json_result
+                except Exception as json_e:
+                    # Fallback to string conversion if JSON serialization still fails
+                    api_logger.warning(f"JSON serialization failed for {tool_name}: {json_e}")
+                    return streaming_notice + str(clean_result)
+            elif isinstance(result, str):
+                return streaming_notice + result
+            else:
+                return streaming_notice + str(result)
+                
+        except Exception as e:
+            api_logger.error(f"Analysis tool execution error: {e}")
+            return f"Error executing {tool_name}: {str(e)}"
+    
+    @staticmethod
+    def _clean_for_json(obj):
+        """Recursively clean objects for JSON serialization"""
+        import datetime
+        from decimal import Decimal
+        
+        if isinstance(obj, dict):
+            return {k: AnalysisTools._clean_for_json(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [AnalysisTools._clean_for_json(item) for item in obj]
+        elif isinstance(obj, (datetime.datetime, datetime.date)):
+            return obj.isoformat()
+        elif isinstance(obj, Decimal):
+            return float(obj)
+        elif hasattr(obj, 'to_dict'):  # pandas objects
+            try:
+                return AnalysisTools._clean_for_json(obj.to_dict())
+            except:
+                return str(obj)
+        elif hasattr(obj, '__dict__') and not isinstance(obj, (str, int, float, bool, type(None))):
+            # Handle complex objects by converting to string
+            return str(obj)
         else:
-            raise Exception(f"Unknown analysis tool: {tool_name}")
+            return obj
     
     @staticmethod
     def execute_python_code(code: str, data_query: Dict = None, imports: List[str] = None) -> Dict[str, Any]:
@@ -242,7 +432,7 @@ class AnalysisTools:
                     "user_roles": user_roles
                 }
             
-            # SECURITY: Create restricted execution environment
+            # SECURITY: Create restricted execution environment with enhanced built-ins
             restricted_builtins = {
                 # Safe built-in functions only
                 'abs': abs, 'all': all, 'any': any, 'bool': bool,
@@ -252,6 +442,14 @@ class AnalysisTools:
                 'round': round, 'set': set, 'sorted': sorted, 'str': str,
                 'sum': sum, 'tuple': tuple, 'type': type, 'zip': zip,
                 'print': print,  # Allow print for output
+                # Additional safe built-ins for better functionality
+                'chr': chr, 'ord': ord, 'bin': bin, 'hex': hex, 'oct': oct,
+                'pow': pow, 'divmod': divmod, 'reversed': reversed,
+                'hasattr': hasattr, 'getattr': getattr, 'setattr': setattr,
+                'isinstance': isinstance, 'issubclass': issubclass,
+                'callable': callable, 'format': format,
+                # Introspection functions for debugging and exploration
+                'locals': locals, 'globals': globals, 'vars': vars, 'dir': dir,
                 # Explicitly exclude dangerous functions:
                 # 'exec', 'eval', 'compile', 'open', 'input', '__import__'
             }
@@ -306,6 +504,14 @@ class AnalysisTools:
                         @staticmethod
                         def getdate(date):
                             return frappe.utils.getdate(date)
+                        
+                        @staticmethod
+                        def get_site_url():
+                            return frappe.utils.get_site_url()
+                        
+                        @staticmethod
+                        def get_system_timezone():
+                            return frappe.utils.get_system_timezone()
                     
                     return SafeUtils()
                 
@@ -357,30 +563,92 @@ class AnalysisTools:
             # Add available libraries with restrictions
             if HAS_PANDAS:
                 exec_globals['pd'] = pd
+                exec_globals['pandas'] = pd
             if HAS_NUMPY:
                 exec_globals['np'] = np
+                exec_globals['numpy'] = np
             if HAS_VISUALIZATION:
                 exec_globals['plt'] = plt
                 exec_globals['sns'] = sns
+                exec_globals['matplotlib'] = __import__('matplotlib')
+                exec_globals['seaborn'] = sns
+            
+            # Add commonly used standard library modules
+            try:
+                import datetime, math, re, statistics, collections, itertools, functools
+                import decimal, fractions, random, time, calendar, copy, operator
+                
+                exec_globals.update({
+                    'datetime': datetime, 'math': math, 're': re, 'statistics': statistics,
+                    'collections': collections, 'itertools': itertools, 'functools': functools,
+                    'decimal': decimal, 'fractions': fractions, 'random': random,
+                    'time': time, 'calendar': calendar, 'copy': copy, 'operator': operator
+                })
+            except ImportError as e:
+                # Some modules might not be available, but continue
+                pass
+            
+            # Try to add additional useful libraries if available
+            additional_libs = {
+                'pydantic': 'pydantic',
+                'typing': 'typing', 
+                'dataclasses': 'dataclasses',
+                'uuid': 'uuid',
+                'hashlib': 'hashlib',
+                'base64': 'base64'
+            }
+            
+            for alias, module_name in additional_libs.items():
+                try:
+                    exec_globals[alias] = __import__(module_name)
+                except ImportError:
+                    pass  # Module not available, skip
             
             # SECURITY: Restrict imports to safe libraries only
             safe_imports = {
+                # Standard library modules (safe for data analysis)
                 'datetime', 'math', 're', 'statistics', 'collections',
-                'itertools', 'functools', 'pandas', 'numpy', 'matplotlib',
-                'seaborn', 'json', 'csv'
+                'itertools', 'functools', 'json', 'csv', 'decimal',
+                'fractions', 'random', 'time', 'calendar', 'hashlib',
+                'uuid', 'copy', 'operator', 'string', 'textwrap',
+                
+                # Data science and analysis libraries
+                'pandas', 'numpy', 'matplotlib', 'seaborn',
+                
+                # Data validation and modeling
+                'pydantic', 'typing', 'dataclasses',
+                
+                # Additional useful libraries (if available)
+                'scipy', 'sklearn', 'plotly', 'bokeh', 'altair',
+                'requests', 'urllib', 'http', 'email', 'base64',
+                
+                # Scientific computing
+                'sympy', 'networkx', 'openpyxl', 'xlsxwriter'
             }
             
             if imports:
+                import_results = []
                 for imp in imports:
-                    if imp not in safe_imports:
+                    # Parse import statement to extract base module name
+                    base_module = imp.split()[0].split('.')[0]
+                    
+                    if base_module not in safe_imports:
                         return {
                             "success": False, 
-                            "error": f"Import '{imp}' not allowed. Safe imports: {list(safe_imports)}"
+                            "error": f"Import '{imp}' not allowed. Base module '{base_module}' not in safe list.",
+                            "allowed_modules": sorted(list(safe_imports)),
+                            "suggestion": "Use one of the pre-loaded modules or request a safe module to be added."
                         }
                     try:
                         exec(f"import {imp}", exec_globals)
+                        import_results.append(f"✅ {imp}")
                     except ImportError as e:
-                        return {"success": False, "error": f"Import failed: {imp} - {str(e)}"}
+                        import_results.append(f"❌ {imp}: {str(e)}")
+                        # Don't fail completely, just note the failed import
+                
+                # Add import results to help user understand what's available
+                if import_results:
+                    exec_globals['_import_results'] = import_results
             
             # Fetch data if query provided (with permission checks)
             if data_query:
@@ -410,6 +678,34 @@ class AnalysisTools:
             stderr_capture = io.StringIO()
             
             try:
+                # Pre-execution check and removal of import statements
+                import_warnings = []
+                cleaned_code_lines = []
+                code_lines = code.split('\n')
+                
+                for i, line in enumerate(code_lines, 1):
+                    stripped_line = line.strip()
+                    original_line = line
+                    
+                    # Check for import statements
+                    if (stripped_line.startswith('import ') or 
+                        (stripped_line.startswith('from ') and ' import ' in stripped_line)):
+                        
+                        import_warnings.append(f"Line {i}: {stripped_line}")
+                        
+                        # Replace import line with a comment explaining the removal
+                        cleaned_code_lines.append(f"# REMOVED IMPORT: {stripped_line} (library pre-loaded)")
+                    else:
+                        cleaned_code_lines.append(original_line)
+                
+                if import_warnings:
+                    warning_msg = "⚠️ IMPORTS AUTOMATICALLY REMOVED: Libraries are pre-loaded. Removed import statements:\n" + "\n".join(import_warnings)
+                    warning_msg += "\n\n✅ USING PRE-LOADED: frappe, pd (pandas), np (numpy), plt (matplotlib), sns (seaborn), datetime, math, json, statistics, etc."
+                    print(warning_msg)
+                    
+                    # Use cleaned code without import statements
+                    code = '\n'.join(cleaned_code_lines)
+                
                 # Set pandas options for better compatibility
                 if HAS_PANDAS:
                     # Disable problematic pandas features that might cause __array_struct__ issues
@@ -509,17 +805,29 @@ class AnalysisTools:
                         except Exception as var_error:
                             result_vars[key] = f"<Error extracting {key}: {str(var_error)}>"
                 
+                # Compile available libraries info
+                available_libs = {
+                    "core_data_science": {
+                        "pandas": HAS_PANDAS,
+                        "numpy": HAS_NUMPY,
+                        "matplotlib": HAS_VISUALIZATION
+                    },
+                    "pre_loaded_modules": list(exec_globals.keys()),
+                    "safe_imports": sorted(list(safe_imports))
+                }
+                
+                # Add import results if any
+                if '_import_results' in exec_globals:
+                    available_libs["import_results"] = exec_globals['_import_results']
+                
                 return {
                     "success": True,
                     "output": output,
                     "errors": errors if errors else None,
                     "variables": result_vars,
                     "execution_summary": f"Code executed successfully. {len(result_vars)} variables created.",
-                    "libraries_available": {
-                        "pandas": HAS_PANDAS,
-                        "numpy": HAS_NUMPY,
-                        "matplotlib": HAS_VISUALIZATION
-                    }
+                    "libraries_info": available_libs,
+                    "security_note": "Execution in secure sandbox with System Manager permissions."
                 }
                 
             except Exception as e:
@@ -849,8 +1157,9 @@ class AnalysisTools:
                 return {"success": False, "error": "Multiple statements not allowed"}
             
             # SECURITY: Limit to specific tables only (Frappe DocTypes)
-            if not any(f'`tab{doctype}`' in query for doctype in frappe.get_all('DocType', pluck='name')):
-                return {"success": False, "error": "Query must reference valid Frappe DocTypes using `tab` prefix"}
+            # Check if query contains tab prefix (defer DocType validation to execution time)
+            if not ('`tab' in query or '`Tab' in query):
+                return {"success": False, "error": "Query must reference valid Frappe DocTypes using `tab` prefix (e.g., `tabSales Invoice`)"}
             
             # Execute query with timeout
             result = frappe.db.sql(query, as_dict=True)
@@ -1070,11 +1379,13 @@ df = data  # Use the data DataFrame
         elif chart_type == "box":
             code += f"sns.boxplot(data=df, x='{x_field}')\n"
             
+        # Add ylabel conditionally to avoid nested f-string issues
+        ylabel_line = f"plt.ylabel('{y_field}')\n" if y_field else ""
+        
         code += f"""
 plt.title('{title or "Data Visualization"}')
 plt.xlabel('{x_field}')
-{f"plt.ylabel('{y_field}')" if y_field else ""}
-plt.xticks(rotation=45)
+{ylabel_line}plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
 

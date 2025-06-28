@@ -25,7 +25,7 @@ class ReportTools:
                         "filters": {
                             "type": "object", 
                             "default": {}, 
-                            "description": "Report-specific filters as key-value pairs. Common filters: {'company': 'Your Company'}, {'from_date': '2024-01-01', 'to_date': '2024-12-31'}, {'customer': 'Customer Name'}. Use empty {} for no filters."
+                            "description": "Report-specific filters as key-value pairs. Common filters: {'company': 'Your Company'}, {'from_date': '2024-01-01', 'to_date': '2024-12-31'}, {'customer': 'Customer Name'}. If from_date/to_date are not provided, defaults to last 12 months. If company is not provided, uses default company. Use empty {} for default filters."
                         },
                         "format": {
                             "type": "string", 
@@ -118,6 +118,7 @@ class ReportTools:
                 "columns": result.get("columns", []),
                 "message": result.get("message"),
                 "filters_applied": filters or {},
+                "auto_filters_added": "Automatic date range and company filters applied if missing",
                 "raw_result_keys": list(result.keys()) if result else [],
                 "data_count": len(data) if data else 0,
                 "result_type": type(result).__name__ if result else "None"
@@ -228,15 +229,48 @@ class ReportTools:
         from frappe.desk.query_report import run
         
         try:
-            # Add default filters for common requirements
+            # Add default filters for common requirements and clean None values
             if not filters:
                 filters = {}
+            
+            # Clean any None values from filters that could cause startswith errors
+            cleaned_filters = {}
+            for key, value in filters.items():
+                if value is not None:
+                    cleaned_filters[key] = value
+            filters = cleaned_filters
+            
+            # Add default date filters if missing
+            if not filters.get("from_date") and not filters.get("to_date"):
+                from frappe.utils import getdate, add_months
+                today = getdate()
+                filters["to_date"] = str(today)  # Ensure string format
+                filters["from_date"] = str(add_months(today, -12))  # Default to last 12 months
+            elif not filters.get("to_date") and filters.get("from_date"):
+                from frappe.utils import getdate
+                filters["to_date"] = str(getdate())
+            elif not filters.get("from_date") and filters.get("to_date"):
+                from frappe.utils import getdate, add_months
+                filters["from_date"] = str(add_months(getdate(filters["to_date"]), -12))
             
             # Add company filter if required and not provided
             if "company" not in filters and frappe.db.exists("Company"):
                 default_company = frappe.db.get_single_value("Global Defaults", "default_company")
                 if default_company:
-                    filters["company"] = default_company
+                    filters["company"] = str(default_company)
+            
+            # Final cleanup - ensure all filter values are strings or proper types
+            final_filters = {}
+            for key, value in filters.items():
+                if value is not None:
+                    # Convert dates to strings if they're not already
+                    if hasattr(value, 'strftime'):  # datetime object
+                        final_filters[key] = value.strftime('%Y-%m-%d')
+                    elif isinstance(value, (str, int, float, bool)):
+                        final_filters[key] = value
+                    else:
+                        final_filters[key] = str(value)
+            filters = final_filters
             
             return run(
                 report_name=report_doc.name,
@@ -262,15 +296,54 @@ class ReportTools:
         from frappe.desk.query_report import run
         
         try:
-            # Ensure filters is a proper dict
+            # Ensure filters is a proper dict and clean None values
             if not isinstance(filters, dict):
                 filters = {}
+            
+            # Clean any None values from filters that could cause startswith errors
+            cleaned_filters = {}
+            for key, value in filters.items():
+                if value is not None:
+                    cleaned_filters[key] = value
+            filters = cleaned_filters
+            
+            # Add default date filters if missing
+            if not filters.get("from_date") and not filters.get("to_date"):
+                from frappe.utils import getdate, add_months
+                today = getdate()
+                filters["to_date"] = str(today)  # Ensure string format
+                filters["from_date"] = str(add_months(today, -12))  # Default to last 12 months
+            elif not filters.get("to_date") and filters.get("from_date"):
+                from frappe.utils import getdate
+                filters["to_date"] = str(getdate())
+            elif not filters.get("from_date") and filters.get("to_date"):
+                from frappe.utils import getdate, add_months
+                filters["from_date"] = str(add_months(getdate(filters["to_date"]), -12))
             
             # For Accounts Receivable Summary, ensure company is set
             if report_doc.name == "Accounts Receivable Summary" and not filters.get("company"):
                 default_company = frappe.db.get_single_value("Global Defaults", "default_company")
                 if default_company:
-                    filters["company"] = default_company
+                    filters["company"] = str(default_company)
+            
+            # Add default company for reports that need it
+            if not filters.get("company"):
+                default_company = frappe.db.get_single_value("Global Defaults", "default_company")
+                if default_company:
+                    filters["company"] = str(default_company)
+            
+            # Final cleanup - ensure all filter values are strings or proper types
+            final_filters = {}
+            for key, value in filters.items():
+                if value is not None:
+                    # Convert dates to strings if they're not already
+                    if hasattr(value, 'strftime'):  # datetime object
+                        final_filters[key] = value.strftime('%Y-%m-%d')
+                    elif isinstance(value, (str, int, float, bool)):
+                        final_filters[key] = value
+                    else:
+                        final_filters[key] = str(value)
+            filters = final_filters
             
             return run(
                 report_name=report_doc.name,

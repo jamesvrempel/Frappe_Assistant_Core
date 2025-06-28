@@ -5,11 +5,33 @@ Auto-discovery tool registry that loads tools from code, not database
 import frappe
 from typing import Dict, Any, List, Type
 
+from frappe_assistant_core.utils.logger import api_logger
+
 class AutoToolRegistry:
-    """Auto-discovers and manages tools from code"""
+    """Auto-discovers and manages tools from code with streaming behavior metadata"""
     
     _tool_classes = None
     _tools_cache = None
+    
+    # Define streaming behavior requirements
+    STREAMING_METADATA = {
+        "mandatory_streaming_tools": [
+            "analyze_frappe_data",
+            "execute_python_code", 
+            "query_and_analyze",
+            "create_visualization",
+            "report_execute"
+        ],
+        "behavioral_protocol": {
+            "artifact_streaming": "required",
+            "response_content": "minimal_only",
+            "analysis_location": "artifacts_exclusively",
+            "limit_prevention": "enabled"
+        },
+        "protocol_name": "Frappe Artifact Streaming Protocol",
+        "version": "1.0",
+        "enforcement": "server_level"
+    }
     
     @classmethod
     def get_tool_classes(cls) -> List[Type]:
@@ -43,12 +65,16 @@ class AutoToolRegistry:
                 from frappe_assistant_core.tools.document_tools import DocumentTools
                 frappe.log_error("✅ DocumentTools imported", "Tool Registry Debug")
                 
+                from frappe_assistant_core.tools.workflow_tools import WorkflowTools
+                frappe.log_error("✅ WorkflowTools imported", "Tool Registry Debug")
+                
                 cls._tool_classes = [
                     AnalysisTools,
                     ReportTools, 
                     SearchTools,
                     MetadataTools,
-                    DocumentTools
+                    DocumentTools,
+                    WorkflowTools
                 ]
                 
                 frappe.log_error(f"✅ Tool classes array created with {len(cls._tool_classes)} classes", "Tool Registry Debug")
@@ -66,7 +92,7 @@ class AutoToolRegistry:
             cls._tools_cache = []
             
             tool_classes = cls.get_tool_classes()
-            frappe.log_error(f"🔧 get_all_tools: Found {len(tool_classes)} tool classes", "Tool Registry Debug")
+            api_logger.debug(f"get_all_tools: Found {len(tool_classes)} tool classes")
             
             for tool_class in tool_classes:
                 try:
@@ -77,7 +103,7 @@ class AutoToolRegistry:
                     frappe.log_error(f"❌ Error loading tools from {tool_class.__name__}: {e}", "Tool Registry Error")
                     continue
             
-            frappe.log_error(f"🔧 get_all_tools: Total cached tools: {len(cls._tools_cache)}", "Tool Registry Debug")
+            api_logger.debug(f"get_all_tools: Total cached tools: {len(cls._tools_cache)}")
         
         return cls._tools_cache
     
@@ -88,16 +114,16 @@ class AutoToolRegistry:
         all_tools = cls.get_all_tools()
         accessible_tools = []
         
-        frappe.log_error(f"🔧 get_tools_for_user: Found {len(all_tools)} total tools", "Tool Registry Debug")
-        frappe.log_error(f"🔧 Tool names: {[t.get('name', 'unnamed') for t in all_tools]}", "Tool Registry Debug")
+        api_logger.debug(f"get_tools_for_user: Found {len(all_tools)} total tools")
+        api_logger.debug(f"Tool names: {[t.get('name', 'unnamed') for t in all_tools]}")
         
         for tool in all_tools:
             if cls._check_tool_permission(tool, user):
                 accessible_tools.append(tool)
             else:
-                frappe.log_error(f"❌ Tool {tool.get('name', 'unnamed')} filtered out by permissions", "Tool Registry Debug")
+                api_logger.debug(f"Tool {tool.get('name', 'unnamed')} filtered out by permissions")
         
-        frappe.log_error(f"🔧 get_tools_for_user: Returning {len(accessible_tools)} accessible tools", "Tool Registry Debug")
+        api_logger.debug(f"get_tools_for_user: Returning {len(accessible_tools)} accessible tools")
         return accessible_tools
     
     @classmethod
@@ -141,44 +167,43 @@ class AutoToolRegistry:
             
             user_roles = frappe.get_roles(user)
             
-            frappe.log_error(f"🔧 Checking permission for tool '{tool_name}' for user roles: {user_roles}", "Tool Registry Debug")
+            api_logger.debug(f"Checking permission for tool '{tool_name}' for user: {user}")
             
             # For System Managers and Administrators, allow ALL tools immediately
             if "System Manager" in user_roles or "Administrator" in user_roles or user == "Administrator":
-                frappe.log_error(f"✅ Admin/System Manager has access to {tool_name}", "Tool Registry Debug")
+                api_logger.debug(f"Admin/System Manager has access to {tool_name}")
                 return True
             
             # Basic permission checks based on tool type for non-System Managers
             if tool_name.startswith("execute_") or tool_name.startswith("analyze_") or tool_name.startswith("query_"):
                 # Analysis tools - require System Manager or System Settings access
                 has_access = frappe.has_permission("System Settings", "read", user=user)
-                print(f"🔧 Analysis tool {tool_name}: access = {has_access}")
+                api_logger.debug(f"Analysis tool {tool_name}: access = {has_access}")
                 return has_access
             
             elif tool_name.startswith("report_"):
                 # Report tools - check if user can access reports
                 has_access = frappe.has_permission("Report", "read", user=user)
-                print(f"🔧 Report tool {tool_name}: access = {has_access}")
+                api_logger.debug(f"Report tool {tool_name}: access = {has_access}")
                 return has_access
             
             elif tool_name.startswith("search_") or tool_name.startswith("metadata_") or tool_name.startswith("get_"):
                 # Search, metadata, and basic tools - available to most users
-                print(f"✅ Basic tool {tool_name}: access granted")
+                api_logger.debug(f"Basic tool {tool_name}: access granted")
                 return True
             
             elif tool_name.startswith("document_"):
                 # Document tools - basic document access (per-doctype checks during execution)
-                print(f"✅ Document tool {tool_name}: access granted")
+                api_logger.debug(f"Document tool {tool_name}: access granted")
                 return True
             
             else:
                 # Unknown tools - allow for now
-                print(f"✅ Unknown tool {tool_name}: access granted")
+                api_logger.debug(f"Unknown tool {tool_name}: access granted")
                 return True
                 
         except Exception as e:
-            frappe.log_error(f"Error checking tool permission: {e}")
-            print(f"❌ Permission check error for {tool_name}: {e}")
+            api_logger.error(f"Permission check error for {tool_name}: {str(e)[:100]}...")
             return True  # Default to allowing access
     
     @classmethod
@@ -188,14 +213,67 @@ class AutoToolRegistry:
         cls._tool_classes = None
     
     @classmethod
+    def get_enhanced_tool_definition(cls, tool_name: str) -> Dict[str, Any]:
+        """Get tool definition with streaming behavior instructions"""
+        
+        tool_def = cls.find_tool_by_name(tool_name)
+        if not tool_def:
+            return None
+        
+        # Enhance with streaming metadata if it's a mandatory streaming tool
+        if tool_name in cls.STREAMING_METADATA["mandatory_streaming_tools"]:
+            tool_def = tool_def.copy()  # Don't modify original
+            tool_def["streaming_requirements"] = {
+                "artifact_creation": "mandatory_before_use",
+                "result_streaming": "all_outputs_to_artifacts", 
+                "response_behavior": "minimal_summary_only",
+                "analysis_depth": "unlimited_via_artifacts"
+            }
+            
+            tool_def["usage_instructions"] = """
+            MANDATORY STREAMING PROTOCOL:
+            1. Create workspace artifact BEFORE using this tool
+            2. Stream ALL results to artifact sections
+            3. Keep response minimal - detailed work in artifacts
+            4. Build unlimited analysis depth via artifact streaming
+            """
+            
+        return tool_def
+    
+    @classmethod
+    def get_system_streaming_requirements(cls) -> Dict[str, Any]:
+        """Get system-wide streaming protocol for LLM guidance"""
+        return {
+            "protocol_name": cls.STREAMING_METADATA["protocol_name"],
+            "version": cls.STREAMING_METADATA["version"],
+            "requirement_level": "mandatory",
+            "applies_to": "all_analysis_operations", 
+            "benefits": [
+                "unlimited_analysis_depth",
+                "professional_deliverables",
+                "no_response_limits",
+                "stakeholder_ready_outputs"
+            ],
+            "enforcement": cls.STREAMING_METADATA["enforcement"],
+            "mandatory_tools": cls.STREAMING_METADATA["mandatory_streaming_tools"],
+            "behavioral_requirements": cls.STREAMING_METADATA["behavioral_protocol"]
+        }
+    
+    @classmethod
     def get_stats(cls) -> Dict[str, Any]:
         """Get statistics about available tools"""
         tools = cls.get_all_tools()
         
         # Group by category
         categories = {}
+        streaming_tools_count = 0
+        
         for tool in tools:
             tool_name = tool["name"]
+            
+            # Check if it's a streaming tool
+            if tool_name in cls.STREAMING_METADATA["mandatory_streaming_tools"]:
+                streaming_tools_count += 1
             
             if tool_name.startswith("execute_") or tool_name.startswith("analyze_") or tool_name.startswith("query_") or tool_name.startswith("create_visualization"):
                 category = "Analysis"
@@ -217,5 +295,7 @@ class AutoToolRegistry:
         return {
             "total_tools": len(tools),
             "categories": categories,
-            "tool_classes": len(cls.get_tool_classes())
+            "tool_classes": len(cls.get_tool_classes()),
+            "streaming_tools": streaming_tools_count,
+            "streaming_protocol": cls.STREAMING_METADATA["protocol_name"]
         }
