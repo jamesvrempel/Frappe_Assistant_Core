@@ -211,3 +211,160 @@ def log_assistant_audit(action: str, params: Dict[str, Any], response: Dict[str,
         
     except Exception as e:
         api_logger.error(f"Error in audit logging: {e}")
+
+
+@frappe.whitelist(allow_guest=False, methods=["GET", "POST"])
+def get_usage_statistics() -> Dict[str, Any]:
+    """Get usage statistics for the assistant"""
+    try:
+        # SECURITY: Validate user context
+        if not frappe.session.user or frappe.session.user == "Guest":
+            api_logger.warning("Usage statistics requested without valid session")
+            frappe.throw("Authentication required")
+        
+        # SECURITY: Check if user has assistant access
+        from frappe_assistant_core.utils.permissions import check_assistant_permission
+        user_roles = frappe.get_roles(frappe.session.user)
+        api_logger.debug(f"User {frappe.session.user} has roles: {user_roles}")
+        
+        if not check_assistant_permission(frappe.session.user):
+            api_logger.warning(f"Access denied for user: {frappe.session.user} with roles: {user_roles}")
+            frappe.throw("Access denied - insufficient permissions")
+        
+        api_logger.info(f"Usage statistics requested by user: {frappe.session.user}")
+        api_logger.info(f"Current site: {frappe.local.site}")
+        
+        # Get actual usage statistics
+        today = frappe.utils.today()
+        week_start = frappe.utils.add_days(today, -7)
+        
+        # Connection statistics with error handling
+        try:
+            total_connections = frappe.db.count("Assistant Connection Log") or 0
+            today_connections = frappe.db.count("Assistant Connection Log", {"creation": (">=", today)}) or 0
+            week_connections = frappe.db.count("Assistant Connection Log", {"creation": (">=", week_start)}) or 0
+        except Exception as e:
+            api_logger.warning(f"Connection stats error: {e}")
+            total_connections = today_connections = week_connections = 0
+        
+        # Audit log statistics with error handling
+        try:
+            total_audit = frappe.db.count("Assistant Audit Log") or 0
+            today_audit = frappe.db.count("Assistant Audit Log", {"creation": (">=", today)}) or 0
+            week_audit = frappe.db.count("Assistant Audit Log", {"creation": (">=", week_start)}) or 0
+        except Exception as e:
+            api_logger.warning(f"Audit stats error: {e}")
+            total_audit = today_audit = week_audit = 0
+        
+        # Tool statistics with error handling
+        try:
+            # Skip table existence check and just query directly
+            total_tools = frappe.db.count("Assistant Tool Registry") or 0
+            enabled_tools = frappe.db.count("Assistant Tool Registry", {"enabled": 1}) or 0
+            api_logger.debug(f"Tool stats: total={total_tools}, enabled={enabled_tools}")
+        except Exception as e:
+            api_logger.warning(f"Tool stats error: {e}")
+            total_tools = enabled_tools = 0
+        
+        # Recent activity with error handling
+        try:
+            recent_activity = frappe.db.get_list(
+                "Assistant Audit Log",
+                fields=["action", "tool_name", "user", "status", "timestamp"],
+                order_by="timestamp desc",
+                limit=10
+            ) or []
+        except Exception as e:
+            api_logger.warning(f"Recent activity error: {e}")
+            recent_activity = []
+        
+        # Return statistics in the format expected by frontend
+        result = {
+            "success": True,
+            "data": {
+                "connections": {
+                    "total": total_connections,
+                    "today": today_connections,
+                    "this_week": week_connections
+                },
+                "audit_logs": {
+                    "total": total_audit,
+                    "today": today_audit,
+                    "this_week": week_audit
+                },
+                "tools": {
+                    "total": total_tools,
+                    "enabled": enabled_tools
+                },
+                "recent_activity": recent_activity
+            }
+        }
+        
+        api_logger.debug(f"Usage statistics result: {result}")
+        return result
+        
+    except Exception as e:
+        api_logger.error(f"Error getting usage statistics: {e}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+
+@frappe.whitelist(allow_guest=False, methods=["GET", "POST"])
+def ping() -> Dict[str, Any]:
+    """Ping endpoint for testing connectivity"""
+    try:
+        # SECURITY: Validate user context
+        if not frappe.session.user or frappe.session.user == "Guest":
+            frappe.throw("Authentication required")
+        
+        # SECURITY: Check if user has assistant access
+        from frappe_assistant_core.utils.permissions import check_assistant_permission
+        if not check_assistant_permission(frappe.session.user):
+            frappe.throw("Access denied")
+        
+        return {
+            "success": True,
+            "message": "pong",
+            "timestamp": frappe.utils.now(),
+            "user": frappe.session.user
+        }
+        
+    except Exception as e:
+        api_logger.error(f"Error in ping: {e}")
+        return {
+            "success": False,
+            "message": f"Ping failed: {str(e)}"
+        }
+
+
+@frappe.whitelist(allow_guest=False, methods=["GET", "POST"])
+def force_test_logging() -> Dict[str, Any]:
+    """Force test logging for debugging purposes"""
+    try:
+        # SECURITY: Validate user context
+        if not frappe.session.user or frappe.session.user == "Guest":
+            frappe.throw("Authentication required")
+        
+        # SECURITY: Check if user has assistant access
+        from frappe_assistant_core.utils.permissions import check_assistant_permission
+        if not check_assistant_permission(frappe.session.user):
+            frappe.throw("Access denied")
+        
+        # Force a test log entry
+        api_logger.info(f"Force test logging triggered by user: {frappe.session.user}")
+        
+        return {
+            "success": True,
+            "message": "Test logging completed",
+            "timestamp": frappe.utils.now(),
+            "user": frappe.session.user
+        }
+        
+    except Exception as e:
+        api_logger.error(f"Error in force test logging: {e}")
+        return {
+            "success": False,
+            "message": f"Force test logging failed: {str(e)}"
+        }
