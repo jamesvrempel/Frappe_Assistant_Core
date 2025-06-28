@@ -92,7 +92,7 @@ class AutoToolRegistry:
             cls._tools_cache = []
             
             tool_classes = cls.get_tool_classes()
-            frappe.log_error(f"🔧 get_all_tools: Found {len(tool_classes)} tool classes", "Tool Registry Debug")
+            api_logger.debug(f"get_all_tools: Found {len(tool_classes)} tool classes")
             
             for tool_class in tool_classes:
                 try:
@@ -103,7 +103,7 @@ class AutoToolRegistry:
                     frappe.log_error(f"❌ Error loading tools from {tool_class.__name__}: {e}", "Tool Registry Error")
                     continue
             
-            frappe.log_error(f"🔧 get_all_tools: Total cached tools: {len(cls._tools_cache)}", "Tool Registry Debug")
+            api_logger.debug(f"get_all_tools: Total cached tools: {len(cls._tools_cache)}")
         
         return cls._tools_cache
     
@@ -114,16 +114,16 @@ class AutoToolRegistry:
         all_tools = cls.get_all_tools()
         accessible_tools = []
         
-        frappe.log_error(f"🔧 get_tools_for_user: Found {len(all_tools)} total tools", "Tool Registry Debug")
-        frappe.log_error(f"🔧 Tool names: {[t.get('name', 'unnamed') for t in all_tools]}", "Tool Registry Debug")
+        api_logger.debug(f"get_tools_for_user: Found {len(all_tools)} total tools")
+        api_logger.debug(f"Tool names: {[t.get('name', 'unnamed') for t in all_tools]}")
         
         for tool in all_tools:
             if cls._check_tool_permission(tool, user):
                 accessible_tools.append(tool)
             else:
-                frappe.log_error(f"❌ Tool {tool.get('name', 'unnamed')} filtered out by permissions", "Tool Registry Debug")
+                api_logger.debug(f"Tool {tool.get('name', 'unnamed')} filtered out by permissions")
         
-        frappe.log_error(f"🔧 get_tools_for_user: Returning {len(accessible_tools)} accessible tools", "Tool Registry Debug")
+        api_logger.debug(f"get_tools_for_user: Returning {len(accessible_tools)} accessible tools")
         return accessible_tools
     
     @classmethod
