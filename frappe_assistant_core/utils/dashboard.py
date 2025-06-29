@@ -49,49 +49,30 @@ def get_frappe_port():
 
 @frappe.whitelist()
 def get_assistant_dashboard_data():
-    """Get comprehensive assistant dashboard data"""
+    """Get comprehensive assistant dashboard data with enhanced caching"""
+    from frappe_assistant_core.utils.cache import (
+        get_cached_server_settings,
+        get_cached_dashboard_stats,
+        get_cached_most_used_tools,
+        get_cached_category_performance
+    )
+    
     try:
-        # Server status
-        settings = frappe.get_single("assistant Server Settings")
+        # Get cached server settings
+        settings = get_cached_server_settings()
         
-        # Connection statistics
-        active_connections = frappe.db.count("assistant Connection Log", 
-                                             filters={"status": "Connected"})
+        # Get cached dashboard statistics
+        dashboard_stats = get_cached_dashboard_stats()
         
-        total_connections_today = frappe.db.count("assistant Connection Log", 
-                                                 filters={"creation": [">=", today()]})
+        # Get cached most used tools
+        most_used_tools = get_cached_most_used_tools()
         
-        # Tool statistics
-        enabled_tools = frappe.db.count("assistant Tool Registry", 
-                                       filters={"enabled": 1})
+        # Get cached category performance
+        category_performance = get_cached_category_performance()
         
-        total_tools = frappe.db.count("assistant Tool Registry")
-        
-        # Audit statistics
-        total_actions_today = frappe.db.count("assistant Audit Log", 
-                                             filters={"creation": [">=", today()]})
-        
-        successful_actions_today = frappe.db.count("assistant Audit Log", 
-                                                  filters={
-                                                      "creation": [">=", today()],
-                                                      "status": "Success"
-                                                  })
-        
-        success_rate = (successful_actions_today / total_actions_today * 100) if total_actions_today > 0 else 0
-        
-        # Most used tools today
-        most_used_tools = frappe.db.sql("""
-            SELECT tool_name, COUNT(*) as count
-            FROM `tabassistant Audit Log`
-            WHERE DATE(creation) = %s AND tool_name IS NOT NULL
-            GROUP BY tool_name
-            ORDER BY count DESC
-            LIMIT 5
-        """, (today(),), as_dict=True)
-        
-        # Recent errors
+        # Get recent errors (not cached - real-time data)
         recent_errors = frappe.get_all(
-            "assistant Audit Log",
+            "Assistant Audit Log",
             filters={
                 "status": ["in", ["Error", "Timeout", "Permission Denied"]],
                 "creation": [">=", today()]
@@ -101,35 +82,21 @@ def get_assistant_dashboard_data():
             limit=5
         )
         
-        # Average execution times by tool category
-        category_performance = frappe.db.sql("""
-            SELECT tr.category, AVG(al.execution_time) as avg_time, COUNT(*) as count
-            FROM `tabassistant Audit Log` al
-            JOIN `tabassistant Tool Registry` tr ON al.tool_name = tr.name
-            WHERE DATE(al.creation) = %s AND al.execution_time IS NOT NULL
-            GROUP BY tr.category
-            ORDER BY avg_time DESC
-        """, (today(),), as_dict=True)
-        
         return {
             "server_info": {
-                "enabled": settings.server_enabled,
+                "enabled": settings.get("server_enabled"),
                 "port": get_frappe_port(),
-                "max_connections": settings.max_connections,
-                "rate_limit": settings.rate_limit
+                "max_connections": settings.get("max_connections"),
+                "rate_limit": settings.get("rate_limit"),
+                "websocket_enabled": settings.get("websocket_enabled")
             },
-            "connections": {
-                "active": active_connections,
-                "today_total": total_connections_today
-            },
+            "connections": dashboard_stats.get("connections", {}),
             "tools": {
-                "enabled": enabled_tools,
-                "total": total_tools,
+                **dashboard_stats.get("tools", {}),
                 "most_used": most_used_tools
             },
             "performance": {
-                "actions_today": total_actions_today,
-                "success_rate": round(success_rate, 2),
+                **dashboard_stats.get("performance", {}),
                 "category_performance": category_performance
             },
             "issues": {
@@ -138,7 +105,7 @@ def get_assistant_dashboard_data():
         }
         
     except Exception as e:
-        frappe.log_error(f"Dashboard data error: {str(e)}", "assistant Dashboard")
+        frappe.log_error(f"Dashboard data error: {str(e)}", "Assistant Dashboard")
         return {"error": str(e)}
 
 @frappe.whitelist()

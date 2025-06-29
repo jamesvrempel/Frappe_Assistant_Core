@@ -43,8 +43,8 @@ class AutoToolRegistry:
                 # Import all tool classes
                 frappe.log_error("🔧 Starting tool class imports", "Tool Registry Debug")
                 
-                from frappe_assistant_core.tools.analysis_tools import AnalysisTools
-                frappe.log_error("✅ AnalysisTools imported", "Tool Registry Debug")
+                from frappe_assistant_core.tools.enhanced_analysis_tools import EnhancedAnalysisTools as AnalysisTools
+                frappe.log_error("✅ Enhanced AnalysisTools imported with progress streaming", "Tool Registry Debug")
                 
                 # Test get_tools() immediately
                 try:

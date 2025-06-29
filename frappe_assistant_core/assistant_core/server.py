@@ -88,19 +88,37 @@ class assistantServer:
             return {"success": False, "message": f"Failed to disable server: {str(e)}"}
     
     def get_status(self):
-        """Get server status"""
-        settings = frappe.get_single("Assistant Core Settings")
+        """Get server status including WebSocket status"""
+        from frappe_assistant_core.utils.cache import get_cached_server_settings
+        
+        settings = get_cached_server_settings()
         
         # Server is running if it's enabled (since API endpoints are always available)
-        is_running = bool(settings.server_enabled)
+        is_running = bool(settings.get("server_enabled"))
+        
+        # Check WebSocket status
+        websocket_status = {"enabled": False, "running": False}
+        if settings.get("websocket_enabled"):
+            try:
+                from frappe_assistant_core.assistant_core.websocket_server import get_websocket_server
+                ws_server = get_websocket_server()
+                websocket_status = {
+                    "enabled": True,
+                    "running": ws_server.running,
+                    "connections": len(ws_server.connections),
+                    "endpoint": "ws://localhost:8001/mcp?api_key=YOUR_KEY&api_secret=YOUR_SECRET"
+                }
+            except Exception:
+                websocket_status = {"enabled": True, "running": False, "error": "Failed to get WebSocket status"}
         
         return {
             "running": is_running,
-            "enabled": settings.server_enabled,
+            "enabled": settings.get("server_enabled"),
             "api_endpoint": f"/api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request",
             "ping_endpoint": f"/api/method/frappe_assistant_core.api.assistant_api.ping",
             "protocol": "mcp",
-            "frappe_port": f"{get_frappe_port()} (detected)"
+            "frappe_port": f"{get_frappe_port()} (detected)",
+            "websocket": websocket_status
         }
 
 # Global server instance

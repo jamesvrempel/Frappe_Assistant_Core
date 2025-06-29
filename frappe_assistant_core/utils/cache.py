@@ -1,0 +1,362 @@
+"""
+Enhanced caching system for Frappe Assistant Core
+Leverages Frappe's built-in Redis caching with smart invalidation
+"""
+
+import frappe
+from frappe.utils import cint, flt
+from frappe.utils.caching import redis_cache, site_cache
+from functools import wraps
+from typing import Dict, Any, List
+import time
+import json
+
+# Cache TTL constants (in seconds)
+CACHE_TTL = {
+    "dashboard_stats": 300,        # 5 minutes - frequently accessed
+    "server_settings": 1800,       # 30 minutes - rarely changed
+    "tool_registry": 3600,         # 1 hour - stable after startup
+    "user_permissions": 900,       # 15 minutes - user-specific
+    "metadata": 3600,              # 1 hour - DocType metadata
+    "system_health": 600,          # 10 minutes - health checks
+    "analytics": 600,              # 10 minutes - performance analytics
+}
+
+# Cache key prefixes
+CACHE_KEYS = {
+    "dashboard": "assistant_dashboard",
+    "settings": "assistant_settings",
+    "tools": "assistant_tools",
+    "permissions": "assistant_perms",
+    "health": "assistant_health",
+    "metadata": "assistant_meta",
+}
+
+def get_cache_key(prefix: str, *args) -> str:
+    """Generate consistent cache keys"""
+    if args:
+        suffix = "_".join(str(arg) for arg in args)
+        return f"{prefix}_{suffix}"
+    return prefix
+
+def cache_with_user_context(ttl=300, shared=False):
+    """Custom cache decorator that includes user context"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Generate user-specific cache key if not shared
+            user = frappe.session.user if not shared else "shared"
+            cache_key = get_cache_key(func.__name__, user, *args)
+            
+            # Try to get from cache
+            cached_result = frappe.cache.get_value(cache_key)
+            if cached_result is not None:
+                return cached_result
+            
+            # Execute function and cache result
+            result = func(*args, **kwargs)
+            frappe.cache.set_value(cache_key, result, expires_in_sec=ttl)
+            return result
+        return wrapper
+    return decorator
+
+def cache_with_invalidation(ttl=300, invalidation_keys=None):
+    """Cache decorator with dependency-based invalidation"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            cache_key = get_cache_key(func.__name__, *args)
+            
+            # Check if any invalidation keys have changed
+            if invalidation_keys:
+                for inv_key in invalidation_keys:
+                    last_modified = frappe.cache.get_value(f"{inv_key}_modified")
+                    if last_modified:
+                        # If data was modified, clear cache
+                        frappe.cache.delete_key(cache_key)
+                        break
+            
+            cached_result = frappe.cache.get_value(cache_key)
+            if cached_result is not None:
+                return cached_result
+            
+            result = func(*args, **kwargs)
+            frappe.cache.set_value(cache_key, result, expires_in_sec=ttl)
+            return result
+        return wrapper
+    return decorator
+
+@redis_cache(ttl=CACHE_TTL["server_settings"])
+def get_cached_server_settings():
+    """Cached version of server settings"""
+    settings = frappe.get_single("Assistant Core Settings")
+    return {
+        "server_enabled": settings.server_enabled,
+        "max_connections": settings.max_connections,
+        "authentication_required": settings.authentication_required,
+        "rate_limit": settings.rate_limit,
+        "allowed_origins": settings.allowed_origins,
+        "websocket_enabled": settings.websocket_enabled,
+        "cleanup_logs_after_days": settings.cleanup_logs_after_days
+    }
+
+@redis_cache(ttl=CACHE_TTL["dashboard_stats"], user=True)
+def get_cached_dashboard_stats():
+    """Cached dashboard statistics - user-specific for permission context"""
+    from frappe.utils import today
+    
+    # Batch all database queries for efficiency
+    stats_data = {}
+    
+    # Connection statistics in one query
+    connection_stats = frappe.db.sql("""
+        SELECT 
+            COUNT(CASE WHEN status = 'Connected' THEN 1 END) as active_connections,
+            COUNT(CASE WHEN DATE(creation) = %s THEN 1 END) as today_connections
+        FROM `tabAssistant Connection Log`
+    """, (today(),), as_dict=True)
+    
+    if connection_stats:
+        stats_data["connections"] = {
+            "active": connection_stats[0]["active_connections"] or 0,
+            "today_total": connection_stats[0]["today_connections"] or 0
+        }
+    
+    # Tool statistics in one query  
+    tool_stats = frappe.db.sql("""
+        SELECT 
+            COUNT(*) as total_tools,
+            COUNT(CASE WHEN enabled = 1 THEN 1 END) as enabled_tools
+        FROM `tabAssistant Tool Registry`
+    """, as_dict=True)
+    
+    if tool_stats:
+        stats_data["tools"] = {
+            "total": tool_stats[0]["total_tools"] or 0,
+            "enabled": tool_stats[0]["enabled_tools"] or 0
+        }
+    
+    # Action statistics for today
+    action_stats = frappe.db.sql("""
+        SELECT 
+            COUNT(*) as total_actions,
+            COUNT(CASE WHEN status = 'Success' THEN 1 END) as successful_actions
+        FROM `tabAssistant Audit Log`
+        WHERE DATE(creation) = %s
+    """, (today(),), as_dict=True)
+    
+    total_actions = action_stats[0]["total_actions"] if action_stats else 0
+    successful_actions = action_stats[0]["successful_actions"] if action_stats else 0
+    success_rate = (successful_actions / total_actions * 100) if total_actions > 0 else 0
+    
+    stats_data["performance"] = {
+        "actions_today": total_actions,
+        "success_rate": round(success_rate, 2)
+    }
+    
+    return stats_data
+
+@redis_cache(ttl=CACHE_TTL["dashboard_stats"])
+def get_cached_most_used_tools():
+    """Cache most used tools separately - can have different TTL"""
+    from frappe.utils import today
+    
+    most_used_tools = frappe.db.sql("""
+        SELECT tool_name, COUNT(*) as count
+        FROM `tabAssistant Audit Log`
+        WHERE DATE(creation) = %s AND tool_name IS NOT NULL
+        GROUP BY tool_name
+        ORDER BY count DESC
+        LIMIT 5
+    """, (today(),), as_dict=True)
+    
+    return most_used_tools
+
+@redis_cache(ttl=CACHE_TTL["analytics"])
+def get_cached_category_performance():
+    """Cache category performance analytics"""
+    from frappe.utils import today
+    
+    category_performance = frappe.db.sql("""
+        SELECT tr.category, AVG(al.execution_time) as avg_time, COUNT(*) as count
+        FROM `tabAssistant Audit Log` al
+        JOIN `tabAssistant Tool Registry` tr ON al.tool_name = tr.name
+        WHERE DATE(al.creation) = %s AND al.execution_time IS NOT NULL
+        GROUP BY tr.category
+        ORDER BY avg_time DESC
+    """, (today(),), as_dict=True)
+    
+    return category_performance
+
+@site_cache(ttl=CACHE_TTL["tool_registry"])
+def get_cached_tool_registry_stats():
+    """Cache tool registry statistics - process-local cache"""
+    from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
+    
+    try:
+        stats = AutoToolRegistry.get_stats()
+        return stats
+    except Exception as e:
+        frappe.log_error(f"Tool registry stats error: {str(e)}")
+        return {"error": str(e)}
+
+@redis_cache(ttl=CACHE_TTL["user_permissions"], user=True)
+def get_cached_user_tool_permissions(user=None):
+    """Cache user's tool permissions"""
+    from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
+    
+    user = user or frappe.session.user
+    accessible_tools = AutoToolRegistry.get_tools_for_user(user)
+    
+    return {
+        "user": user,
+        "accessible_tools_count": len(accessible_tools),
+        "tool_names": [tool.get("name") for tool in accessible_tools]
+    }
+
+@redis_cache(ttl=CACHE_TTL["system_health"])
+def get_cached_system_health():
+    """Cache system health check results"""
+    from frappe.utils import today
+    
+    health_status = {
+        "overall_status": "healthy",
+        "timestamp": frappe.utils.now(),
+        "checks_passed": 0,
+        "warnings": 0,
+        "errors": 0
+    }
+    
+    try:
+        # Quick health checks
+        required_doctypes = [
+            "Assistant Core Settings",
+            "Assistant Tool Registry", 
+            "Assistant Connection Log",
+            "Assistant Audit Log"
+        ]
+        
+        missing_doctypes = []
+        for doctype in required_doctypes:
+            if not frappe.db.table_exists(f"tab{doctype}"):
+                missing_doctypes.append(doctype)
+        
+        if missing_doctypes:
+            health_status["errors"] = len(missing_doctypes)
+            health_status["overall_status"] = "critical"
+        else:
+            health_status["checks_passed"] += len(required_doctypes)
+        
+        # Check recent error rates
+        recent_errors = frappe.db.count("Assistant Connection Log", 
+                                       filters={
+                                           "status": "Error",
+                                           "creation": [">=", today()]
+                                       })
+        
+        if recent_errors > 10:
+            health_status["warnings"] += 1
+            if health_status["overall_status"] == "healthy":
+                health_status["overall_status"] = "warning"
+        
+        return health_status
+        
+    except Exception as e:
+        return {
+            "overall_status": "critical",
+            "error": str(e),
+            "timestamp": frappe.utils.now()
+        }
+
+# Cache invalidation functions
+def invalidate_settings_cache():
+    """Invalidate settings-related caches"""
+    cache_keys = [
+        get_cache_key(CACHE_KEYS["settings"]),
+        "get_cached_server_settings"
+    ]
+    
+    for key in cache_keys:
+        frappe.cache.delete_key(key)
+    
+    # Mark settings as modified for dependent caches
+    frappe.cache.set_value("settings_modified", frappe.utils.now(), expires_in_sec=3600)
+
+def invalidate_dashboard_cache():
+    """Invalidate dashboard-related caches"""
+    # Clear all user-specific dashboard caches
+    frappe.cache.delete_keys("get_cached_dashboard_stats_*")
+    frappe.cache.delete_keys("assistant_dashboard_*")
+    frappe.cache.delete_key("get_cached_most_used_tools")
+    frappe.cache.delete_key("get_cached_category_performance")
+
+def invalidate_tool_registry_cache():
+    """Invalidate tool registry caches"""
+    from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
+    
+    # Clear registry caches
+    AutoToolRegistry.clear_cache()
+    frappe.cache.delete_key("get_cached_tool_registry_stats")
+    frappe.cache.delete_keys("get_cached_user_tool_permissions_*")
+
+def invalidate_user_permission_cache(user=None):
+    """Invalidate user-specific permission caches"""
+    if user:
+        user_cache_pattern = f"*{user}*"
+        frappe.cache.delete_keys(f"get_cached_user_tool_permissions_{user_cache_pattern}")
+    else:
+        # Clear all user permission caches
+        frappe.cache.delete_keys("get_cached_user_tool_permissions_*")
+
+def clear_all_assistant_cache():
+    """Clear all assistant-related caches"""
+    cache_patterns = [
+        "assistant_*",
+        "get_cached_*"
+    ]
+    
+    for pattern in cache_patterns:
+        frappe.cache.delete_keys(pattern)
+    
+    # Clear tool registry cache
+    invalidate_tool_registry_cache()
+
+def get_cache_statistics():
+    """Get caching system statistics"""
+    try:
+        # This would need Redis info if available
+        cache_info = {
+            "cache_backend": "Redis" if frappe.cache.redis else "Memory",
+            "cache_keys_active": "Unknown",  # Redis would need KEYS command
+            "last_cleared": frappe.cache.get_value("last_cache_clear") or "Never"
+        }
+        
+        return cache_info
+    except Exception as e:
+        return {"error": str(e)}
+
+# Utility functions for cache warming
+def warm_cache():
+    """Pre-warm frequently used caches"""
+    try:
+        # Pre-load settings
+        get_cached_server_settings()
+        
+        # Pre-load tool registry
+        get_cached_tool_registry_stats()
+        
+        # Pre-load system health
+        get_cached_system_health()
+        
+        frappe.logger().info("Assistant cache warmed successfully")
+        return True
+        
+    except Exception as e:
+        frappe.log_error(f"Cache warming failed: {str(e)}")
+        return False
+
+# Cache performance monitoring
+def log_cache_performance(func_name, execution_time, cache_hit=False):
+    """Log cache performance metrics"""
+    if frappe.conf.get("assistant_cache_monitoring"):
+        frappe.logger().info(f"Cache {'HIT' if cache_hit else 'MISS'}: {func_name} - {execution_time:.3f}s")
