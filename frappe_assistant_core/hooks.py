@@ -115,6 +115,20 @@ doc_events = {
         "on_update": "frappe_assistant_core.utils.audit_trail.log_document_change",
         "on_submit": "frappe_assistant_core.utils.audit_trail.log_document_submit",
         "on_cancel": "frappe_assistant_core.utils.audit_trail.log_document_cancel"
+    },
+    "Assistant Core Settings": {
+        "on_update": "frappe_assistant_core.utils.cache.invalidate_settings_cache"
+    },
+    "Assistant Tool Registry": {
+        "on_update": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache",
+        "after_insert": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache",
+        "on_trash": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache"
+    },
+    "Assistant Connection Log": {
+        "after_insert": "frappe_assistant_core.utils.cache.invalidate_dashboard_cache"
+    },
+    "Assistant Audit Log": {
+        "after_insert": "frappe_assistant_core.utils.cache.invalidate_dashboard_cache"
     }
 }
 
@@ -125,6 +139,9 @@ scheduler_events = {
     "cron": {
         "0 0 * * *": [
             "frappe_assistant_core.assistant_core.server.cleanup_old_logs"
+        ],
+        "*/30 * * * *": [
+            "frappe_assistant_core.utils.cache.warm_cache"
         ]
     },
     "hourly": [
@@ -211,9 +228,10 @@ standard_roles = [
 # Boot
 # -----
 
-boot_session = "frappe_assistant_core.boot.boot_session"
+# boot_session = "frappe_assistant_core.boot.boot_session"
 
 # Startup
 # -------
 
+app_startup = "frappe_assistant_core.startup.startup"
 after_migrate = "frappe_assistant_core.startup.startup"
