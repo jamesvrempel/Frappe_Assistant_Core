@@ -228,9 +228,10 @@ standard_roles = [
 # Boot
 # -----
 
-boot_session = "frappe_assistant_core.boot.boot_session"
+# boot_session = "frappe_assistant_core.boot.boot_session"
 
 # Startup
 # -------
 
+app_startup = "frappe_assistant_core.startup.startup"
 after_migrate = "frappe_assistant_core.startup.startup"

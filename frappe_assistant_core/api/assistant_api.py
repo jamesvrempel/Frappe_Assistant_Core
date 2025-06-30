@@ -16,13 +16,14 @@ from frappe_assistant_core.api.handlers import (
 )
 
 
-@frappe.whitelist(allow_guest=False, methods=["POST"])
+@frappe.whitelist(allow_guest=True,methods=["POST"])
 def handle_assistant_request() -> Dict[str, Any]:
     """Handle assistant protocol requests"""
     
-    # SECURITY: Validate user context immediately
-    if not frappe.session.user or frappe.session.user == "Guest":
-        api_logger.warning("Authentication attempt without valid session")
+    # SECURITY: Handle both session-based and token-based authentication
+    authenticated_user = _authenticate_request()
+    if not authenticated_user:
+        api_logger.warning("Authentication failed - no valid session or token")
         return {
             "jsonrpc": "2.0",
             "error": {
@@ -33,8 +34,8 @@ def handle_assistant_request() -> Dict[str, Any]:
     
     # SECURITY: Check if user has assistant access
     from frappe_assistant_core.utils.permissions import check_assistant_permission
-    if not check_assistant_permission(frappe.session.user):
-        api_logger.warning(f"Access denied for user: {frappe.session.user}")
+    if not check_assistant_permission(authenticated_user):
+        api_logger.warning(f"Access denied for user: {authenticated_user}")
         return {
             "jsonrpc": "2.0", 
             "error": {
@@ -43,7 +44,7 @@ def handle_assistant_request() -> Dict[str, Any]:
             }
         }
     
-    api_logger.info(LogMessages.API_AUTHENTICATED.format(frappe.session.user))
+    api_logger.info(LogMessages.API_AUTHENTICATED.format(authenticated_user))
     
     try:
         # Log connection
@@ -213,25 +214,26 @@ def log_assistant_audit(action: str, params: Dict[str, Any], response: Dict[str,
         api_logger.error(f"Error in audit logging: {e}")
 
 
-@frappe.whitelist(allow_guest=False, methods=["GET", "POST"])
+@frappe.whitelist(methods=["GET", "POST"])
 def get_usage_statistics() -> Dict[str, Any]:
     """Get usage statistics for the assistant"""
     try:
-        # SECURITY: Validate user context
-        if not frappe.session.user or frappe.session.user == "Guest":
-            api_logger.warning("Usage statistics requested without valid session")
+        # SECURITY: Handle both session-based and token-based authentication
+        authenticated_user = _authenticate_request()
+        if not authenticated_user:
+            api_logger.warning("Usage statistics requested without valid authentication")
             frappe.throw("Authentication required")
         
         # SECURITY: Check if user has assistant access
         from frappe_assistant_core.utils.permissions import check_assistant_permission
-        user_roles = frappe.get_roles(frappe.session.user)
-        api_logger.debug(f"User {frappe.session.user} has roles: {user_roles}")
+        user_roles = frappe.get_roles(authenticated_user)
+        api_logger.debug(f"User {authenticated_user} has roles: {user_roles}")
         
-        if not check_assistant_permission(frappe.session.user):
-            api_logger.warning(f"Access denied for user: {frappe.session.user} with roles: {user_roles}")
+        if not check_assistant_permission(authenticated_user):
+            api_logger.warning(f"Access denied for user: {authenticated_user} with roles: {user_roles}")
             frappe.throw("Access denied - insufficient permissions")
         
-        api_logger.info(f"Usage statistics requested by user: {frappe.session.user}")
+        api_logger.info(f"Usage statistics requested by user: {authenticated_user}")
         api_logger.info(f"Current site: {frappe.local.site}")
         
         # Get actual usage statistics
@@ -311,24 +313,25 @@ def get_usage_statistics() -> Dict[str, Any]:
         }
 
 
-@frappe.whitelist(allow_guest=False, methods=["GET", "POST"])
+@frappe.whitelist(methods=["GET", "POST"])
 def ping() -> Dict[str, Any]:
     """Ping endpoint for testing connectivity"""
     try:
-        # SECURITY: Validate user context
-        if not frappe.session.user or frappe.session.user == "Guest":
+        # SECURITY: Handle both session-based and token-based authentication
+        authenticated_user = _authenticate_request()
+        if not authenticated_user:
             frappe.throw("Authentication required")
         
         # SECURITY: Check if user has assistant access
         from frappe_assistant_core.utils.permissions import check_assistant_permission
-        if not check_assistant_permission(frappe.session.user):
+        if not check_assistant_permission(authenticated_user):
             frappe.throw("Access denied")
         
         return {
             "success": True,
             "message": "pong",
             "timestamp": frappe.utils.now(),
-            "user": frappe.session.user
+            "user": authenticated_user
         }
         
     except Exception as e:
@@ -339,27 +342,28 @@ def ping() -> Dict[str, Any]:
         }
 
 
-@frappe.whitelist(allow_guest=False, methods=["GET", "POST"])
+@frappe.whitelist(methods=["GET", "POST"])
 def force_test_logging() -> Dict[str, Any]:
     """Force test logging for debugging purposes"""
     try:
-        # SECURITY: Validate user context
-        if not frappe.session.user or frappe.session.user == "Guest":
+        # SECURITY: Handle both session-based and token-based authentication
+        authenticated_user = _authenticate_request()
+        if not authenticated_user:
             frappe.throw("Authentication required")
         
         # SECURITY: Check if user has assistant access
         from frappe_assistant_core.utils.permissions import check_assistant_permission
-        if not check_assistant_permission(frappe.session.user):
+        if not check_assistant_permission(authenticated_user):
             frappe.throw("Access denied")
         
         # Force a test log entry
-        api_logger.info(f"Force test logging triggered by user: {frappe.session.user}")
+        api_logger.info(f"Force test logging triggered by user: {authenticated_user}")
         
         return {
             "success": True,
             "message": "Test logging completed",
             "timestamp": frappe.utils.now(),
-            "user": frappe.session.user
+            "user": authenticated_user
         }
         
     except Exception as e:
@@ -368,3 +372,59 @@ def force_test_logging() -> Dict[str, Any]:
             "success": False,
             "message": f"Force test logging failed: {str(e)}"
         }
+
+
+def _authenticate_request() -> Optional[str]:
+    """
+    Handle both session-based and token-based authentication
+    Returns the authenticated user or None if authentication fails
+    """
+    
+    # First try session-based authentication
+    if frappe.session.user and frappe.session.user != "Guest":
+        api_logger.debug(f"Session authentication successful: {frappe.session.user}")
+        return frappe.session.user
+    
+    # Then try token-based authentication
+    auth_header = frappe.get_request_header("Authorization")
+    api_logger.debug(f"Authorization header: {auth_header}")
+    
+    if auth_header and auth_header.startswith("token "):
+        try:
+            # Extract token from "token api_key:api_secret" format
+            token_part = auth_header[6:]  # Remove "token " prefix
+            if ":" in token_part:
+                api_key, api_secret = token_part.split(":", 1)
+                api_logger.debug(f"Extracted API key: {api_key}")
+                
+                # Custom validation using database lookup and password verification
+                user_data = frappe.db.get_value("User", 
+                    {"api_key": api_key, "enabled": 1}, 
+                    ["name", "api_secret"]
+                )
+                
+                api_logger.debug(f"User data found: {bool(user_data)}")
+                
+                if user_data:
+                    user, stored_secret = user_data
+                    # Compare the provided secret with stored secret
+                    from frappe.utils.password import get_decrypted_password
+                    decrypted_secret = get_decrypted_password("User", user, "api_secret")
+                    
+                    if api_secret == decrypted_secret:
+                        # Set user context for this request
+                        frappe.set_user(user)
+                        api_logger.debug(f"Token authentication successful: {user}")
+                        return user
+                    else:
+                        api_logger.debug("API secret mismatch")
+                else:
+                    api_logger.debug("No user found with provided API key")
+                
+        except Exception as e:
+            api_logger.error(f"Token authentication failed: {e}")
+    else:
+        api_logger.debug("No valid authorization header found")
+    
+    api_logger.debug("Authentication failed")
+    return None

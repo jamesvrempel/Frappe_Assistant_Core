@@ -1,3 +1,4 @@
+import frappe
 from frappe import _
 
 def get_user_roles(user):
@@ -28,3 +29,28 @@ def check_authentication(api_key, api_secret):
 def is_authenticated(user):
     """Check if the user is authenticated."""
     return user != "Guest" and frappe.session.user != "Guest"
+
+def validate_api_credentials(api_key, api_secret):
+    """
+    Validate API credentials and return the authenticated user
+    Returns user name if valid, None if invalid
+    """
+    try:
+        # Custom validation using database lookup and password verification
+        user_data = frappe.db.get_value("User", 
+            {"api_key": api_key, "enabled": 1}, 
+            ["name", "api_secret"]
+        )
+        
+        if user_data:
+            user, stored_secret = user_data
+            # Compare the provided secret with stored secret
+            from frappe.utils.password import get_decrypted_password
+            decrypted_secret = get_decrypted_password("User", user, "api_secret")
+            
+            if api_secret == decrypted_secret:
+                return user
+                
+        return None
+    except Exception:
+        return None
