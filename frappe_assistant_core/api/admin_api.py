@@ -28,9 +28,23 @@ def update_server_settings(server_enabled, max_connections, authentication_requi
 
 @frappe.whitelist()
 def get_tool_registry():
-    """Fetch assistant Tool Registry."""
-    tools = frappe.get_all("assistant Tool Registry", filters={"enabled": 1}, fields=["tool_name", "tool_description"])
-    return {"tools": tools}
+    """Fetch assistant Tool Registry with plugin filtering."""
+    # Use the core tool registry which handles plugin filtering properly
+    from frappe_assistant_core.core.tool_registry import get_tool_registry
+    
+    registry = get_tool_registry()
+    tools = registry.get_available_tools()
+    
+    # Convert to the expected format for backward compatibility
+    formatted_tools = [
+        {
+            "tool_name": tool.get("name"),
+            "tool_description": tool.get("description")
+        }
+        for tool in tools
+    ]
+    
+    return {"tools": formatted_tools}
 
 @frappe.whitelist()
 def toggle_tool(tool_name, enabled):

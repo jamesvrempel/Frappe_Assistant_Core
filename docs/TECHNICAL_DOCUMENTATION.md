@@ -54,66 +54,97 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 
 ## Architecture
 
-### System Components
+### Plugin-Based Architecture
 
-#### 1. **Modular API Layer** 🔄 *Recently Refactored*
+#### 1. **Core System Components**
 ```
-frappe_assistant_core/api/
-├── assistant_api.py              # Main API handler (200 lines, was 1580)
-└── handlers/                     # Modular request handlers
-    ├── __init__.py              # Handler exports
-    ├── initialize.py            # MCP initialization 
-    ├── tools.py                 # Tools list/call handlers
-    ├── prompts.py               # Prompts handlers
-    └── notification_handler.py  # Cancellation handling
-```
-
-**Key Improvements:**
-- **90% Code Reduction**: Main API file reduced from 1580 to 200 lines
-- **Separation of Concerns**: Each handler focuses on specific functionality
-- **Error Handling**: Centralized error management with constants
-- **Logging**: Professional logging replacing all print statements
-
-#### 2. **Constants & Configuration** 🆕 *New Architecture*
-```
-frappe_assistant_core/constants/
-├── __init__.py
-└── definitions.py               # Centralized constants
+frappe_assistant_core/
+├── core/                        # Core system components
+│   ├── tool_registry.py         # Auto-discovery tool registry
+│   └── base_tool.py             # Base tool implementation class
+├── utils/                       # Utility modules
+│   ├── plugin_manager.py        # Plugin discovery and loading
+│   └── logger.py                # Professional logging system
+└── assistant_core/              # Frappe DocType implementations
+    └── doctype/
+        ├── assistant_core_settings/        # Main settings
+        ├── assistant_plugin_repository/    # Plugin management
+        └── assistant_tool_registry/        # Tool registration
 ```
 
-**Contains:**
-- `ErrorCodes`: JSON-RPC error codes
-- `ErrorMessages`: User-friendly error messages  
-- `LogMessages`: Structured log message templates
-- `ToolCategories`: Tool classification constants
-- `StreamingMessages`: Artifact streaming templates
-- `AnalysisThresholds`: Configurable limits
-
-#### 3. **Centralized Logging** 🆕 *Professional Logging*
+#### 2. **Plugin System** 🆕 *Plugin Architecture*
 ```
-frappe_assistant_core/utils/
-├── logger.py                    # Centralized logging system
-└── [other utilities]
+frappe_assistant_core/plugins/
+├── core/                        # Core tools plugin (always enabled)
+│   ├── plugin.py                # Plugin definition and metadata
+│   └── tools/                   # Tool implementations
+│       ├── document_create.py   # Document creation
+│       ├── document_get.py      # Document retrieval  
+│       ├── document_update.py   # Document updates
+│       ├── document_delete.py   # Document deletion
+│       ├── document_list.py     # Document listing
+│       ├── search_global.py     # Global search
+│       ├── search_doctype.py    # DocType-specific search
+│       ├── search_link.py       # Link field search
+│       ├── metadata_*.py        # Metadata tools
+│       ├── report_*.py          # Report tools
+│       └── workflow_*.py        # Workflow tools
+├── data_science/                # Data science plugin (optional)
+│   ├── plugin.py                # Plugin definition
+│   └── tools/
+│       ├── execute_python_code.py      # Python code execution
+│       ├── analyze_frappe_data.py      # Data analysis
+│       ├── query_and_analyze.py        # SQL analysis
+│       └── create_visualization.py     # Chart generation
+├── websocket/                   # WebSocket plugin (optional)
+└── batch_processing/            # Batch processing plugin (optional)
 ```
 
-**Features:**
-- `AssistantLogger` class with proper log levels
-- Structured logging with timestamps
-- Debug, info, warning, error, critical levels
-- Replaces all print statements throughout codebase
+#### 3. **Plugin Architecture Benefits**
+- **🔌 Modular Design**: Tools organized in logical, discoverable plugins
+- **🚀 Auto-Discovery**: Automatic plugin and tool discovery on startup
+- **⚙️ Runtime Management**: Enable/disable plugins through web interface
+- **🎯 Focused Functionality**: Each plugin handles specific domain
+- **🔧 Extensibility**: Easy to add new plugins without core changes
+- **📦 Dependency Management**: Plugin-specific dependencies and validation
 
-#### 4. **Enhanced Tool System**
+### Tool Discovery and Registry System
+
+#### 1. **Tool Registry** 🔄 *Plugin-Based Discovery*
+```python
+# Core registry handles plugin-based tool discovery
+from frappe_assistant_core.core.tool_registry import ToolRegistry
+
+registry = ToolRegistry()
+# Automatically discovers tools from all enabled plugins
+available_tools = registry.get_available_tools()
 ```
-frappe_assistant_core/tools/
-├── __init__.py
-├── tool_registry.py             # Auto-discovery registry
-├── registry.py                  # Compatibility wrapper
-├── executor.py                  # Tool execution engine
-├── analysis_tools.py            # Python execution & analysis
-├── document_tools.py            # CRUD operations
-├── report_tools.py              # Report execution
-├── search_tools.py              # Search functionality
-└── metadata_tools.py            # System metadata
+
+#### 2. **Plugin Manager** 🆕 *Plugin Lifecycle*  
+```python
+from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+
+plugin_manager = get_plugin_manager()
+# Discovers all available plugins
+discovered_plugins = plugin_manager.get_discovered_plugins()
+# Loads enabled plugins based on settings
+plugin_manager.load_enabled_plugins(['core', 'data_science'])
+```
+
+#### 3. **Base Tool Class** 🔧 *Standardized Interface*
+```python
+from frappe_assistant_core.core.base_tool import BaseTool
+
+class MyTool(BaseTool):
+    def __init__(self):
+        super().__init__()
+        self.name = "my_tool"
+        self.description = "Tool description"
+        self.input_schema = {...}  # JSON schema
+    
+    def execute(self, arguments):
+        # Tool implementation
+        return {"success": True, "result": "..."}
 ```
 
 ### Modern Python Packaging 🆕

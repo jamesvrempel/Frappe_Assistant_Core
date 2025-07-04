@@ -1,0 +1,182 @@
+{
+  "dxt_version": "0.1",
+  "name": "claude-for-frappe",
+  "display_name": "Claude for Frappe ERP",
+  "version": "1.0.1",
+  "description": "AI-powered bridge connecting Claude Desktop to Frappe ERP via Frappe Assistant Core",
+  "long_description": "This extension creates an intelligent bridge between Claude Desktop and your Frappe ERP system through the Frappe Assistant Core app. Enable AI-powered data analysis, automated report generation, and natural language interactions with your business data.",
+  "author": {
+    "name": "Paul Clinton",
+    "email": "jypaulclinton@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clinu/Frappe_Assistant_Core"
+  },
+  "homepage": "https://github.com/clinu/Frappe_Assistant_Core",
+  "support": "https://github.com/clinu/Frappe_Assistant_Core/issues",
+  "icon": "icon.png",
+  "screenshots": [
+    "assets/screenshots/dashboard.png",
+    "assets/screenshots/analysis.png",
+    "assets/screenshots/reports.png"
+  ],
+  "keywords": [
+    "frappe",
+    "erp",
+    "business",
+    "data-analysis",
+    "ai",
+    "claude"
+  ],
+  "license": "MIT",
+  "server": {
+    "type": "python",
+    "entry_point": "server/frappe_assistant_stdio_bridge.py",
+    "mcp_config": {
+      "command": "python3",
+      "args": [
+        "${__dirname}/server/frappe_assistant_stdio_bridge.py"
+      ],
+      "platforms": {
+        "win32": {
+          "command": "python"
+        }
+      },
+      "env": {
+        "FRAPPE_SERVER_URL": "${user_config.server_url}",
+        "FRAPPE_API_KEY": "${user_config.api_key}",
+        "FRAPPE_API_SECRET": "${user_config.api_secret}",
+        "MCP_DEBUG": "${user_config.debug_mode}"
+      }
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "Frappe Server URL",
+      "description": "URL of your Frappe instance (e.g., https://your-domain.com)",
+      "required": true,
+      "default": "https://erptest.promantia.in",
+      "pattern": "^https?://",
+      "placeholder": "https://your-frappe-instance.com"
+    },
+    "api_key": {
+      "type": "string",
+      "title": "Frappe API Key",
+      "description": "Your Frappe API key for authentication",
+      "sensitive": true,
+      "required": true,
+      "placeholder": "e.g., 0a796774796e143"
+    },
+    "api_secret": {
+      "type": "string",
+      "title": "Frappe API Secret",
+      "description": "Your Frappe API secret for authentication",
+      "sensitive": true,
+      "required": true,
+      "placeholder": "e.g., 2f137c33a0296ea"
+    },
+    "debug_mode": {
+      "type": "string",
+      "title": "Enable Debug Mode",
+      "description": "Set to '1' to enable detailed logging for troubleshooting",
+      "default": "0",
+      "required": false
+    }
+  },
+  "tools": [
+    {
+      "name": "execute_python_code",
+      "description": "Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework"
+    },
+    {
+      "name": "analyze_frappe_data",
+      "description": "Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType"
+    },
+    {
+      "name": "query_and_analyze",
+      "description": "Execute custom SQL queries on Frappe database and perform advanced data analysis. Perfect for complex business intelligence and custom reporting"
+    },
+    {
+      "name": "create_visualization",
+      "description": "Create interactive charts and visualizations from Frappe business data. Charts are displayed inline and saved as files"
+    },
+    {
+      "name": "report_execute",
+      "description": "Execute a Frappe report to get business data and analytics. Use this for financial reports, sales analysis, inventory reports, etc."
+    },
+    {
+      "name": "report_list",
+      "description": "Discover available Frappe reports for data analysis and business intelligence. Essential for report discovery"
+    },
+    {
+      "name": "report_columns",
+      "description": "Get detailed column information and structure for a specific report. Understand what data fields are available before executing"
+    },
+    {
+      "name": "search_global",
+      "description": "Global search across all accessible documents"
+    },
+    {
+      "name": "search_doctype",
+      "description": "Search within a specific DocType"
+    },
+    {
+      "name": "search_link",
+      "description": "Search for link field options"
+    },
+    {
+      "name": "metadata_doctype",
+      "description": "Get DocType metadata and field information"
+    },
+    {
+      "name": "metadata_list_doctypes",
+      "description": "List all available DocTypes"
+    },
+    {
+      "name": "metadata_permissions",
+      "description": "Get permission information for a DocType"
+    },
+    {
+      "name": "metadata_workflow",
+      "description": "Get workflow information for a DocType"
+    },
+    {
+      "name": "document_create",
+      "description": "Create a new Frappe document (e.g., Customer, Sales Invoice, Item, etc.). Add new records to the system"
+    },
+    {
+      "name": "document_get",
+      "description": "Retrieve detailed information about a specific Frappe document"
+    },
+    {
+      "name": "document_update",
+      "description": "Update/modify an existing Frappe document. Change field values in existing records"
+    },
+    {
+      "name": "document_list",
+      "description": "Search and list Frappe documents with optional filtering. Primary tool for data exploration and discovery"
+    },
+    {
+      "name": "start_workflow",
+      "description": "Start a workflow for a specific document"
+    },
+    {
+      "name": "get_workflow_state",
+      "description": "Get the current state of a workflow for a document"
+    },
+    {
+      "name": "get_workflow_actions",
+      "description": "Get available actions for a document in a workflow"
+    }
+  ],
+  "tools_generated": true,
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "win32",
+      "linux"
+    ]
+  }
+}

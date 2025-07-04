@@ -10,7 +10,7 @@ from frappe_assistant_core.constants.definitions import (
     ErrorCodes, ErrorMessages, LogMessages
 )
 from frappe_assistant_core.utils.logger import api_logger
-from frappe_assistant_core.tools.registry import get_assistant_tools
+from frappe_assistant_core.core.tool_registry import get_tool_registry
 from frappe_assistant_core.api.handlers.tools_streaming import (
     should_stream_to_artifact, format_for_artifact_streaming
 )
@@ -21,7 +21,8 @@ def handle_tools_list(request_id: Optional[Any]) -> Dict[str, Any]:
     try:
         api_logger.debug(LogMessages.TOOLS_LIST_REQUEST)
         
-        tools = get_assistant_tools()
+        registry = get_tool_registry()
+        tools = registry.get_available_tools()
         
         response = {
             "jsonrpc": "2.0",
@@ -77,7 +78,8 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
             return response
         
         # Get tool registry and execute
-        tools_registry = get_assistant_tools()
+        registry = get_tool_registry()
+        tools_registry = registry.get_available_tools()
         tool_found = False
         
         for tool in tools_registry:
@@ -97,9 +99,8 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
                 response["id"] = request_id
             return response
         
-        # Execute the tool
-        from frappe_assistant_core.tools.executor import execute_tool
-        result = execute_tool(tool_name, arguments)
+        # Execute the tool using registry
+        result = registry.execute_tool(tool_name, arguments)
         
         # Ensure result is a string for Claude Desktop compatibility
         if not isinstance(result, str):

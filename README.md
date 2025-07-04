@@ -102,64 +102,96 @@ bench --site [site-name] set-config assistant_enabled 1
 
 ## 🛠️ Architecture Overview
 
-### New Modular Structure (v1.0.0)
+### Plugin-Based Architecture (v1.0.0)
 ```
 frappe_assistant_core/
-├── api/
-│   ├── assistant_api.py          # Main API (200 lines, was 1580)
-│   └── handlers/                 # Modular request handlers
-│       ├── initialize.py         # MCP initialization
-│       ├── tools.py             # Tool management
-│       ├── prompts.py           # Prompts support
-│       └── notification_handler.py
-├── constants/
-│   └── definitions.py            # Centralized constants
+├── core/
+│   ├── tool_registry.py         # Auto-discovery tool registry
+│   └── base_tool.py             # Base tool class
+├── plugins/                     # Plugin system
+│   ├── core/                    # Core tools plugin
+│   │   ├── plugin.py            # Plugin definition
+│   │   └── tools/               # Core tool implementations
+│   │       ├── document_*.py    # Document operations
+│   │       ├── search_*.py      # Search tools
+│   │       ├── metadata_*.py    # Metadata tools
+│   │       ├── report_*.py      # Report tools
+│   │       └── workflow_*.py    # Workflow tools
+│   ├── data_science/            # Data science plugin
+│   │   ├── plugin.py            # Plugin definition
+│   │   └── tools/               # Analysis tool implementations
+│   │       ├── execute_python_code.py
+│   │       ├── analyze_frappe_data.py
+│   │       ├── query_and_analyze.py
+│   │       └── create_visualization.py
+│   ├── websocket/               # WebSocket plugin
+│   └── batch_processing/        # Batch processing plugin
 ├── utils/
+│   ├── plugin_manager.py        # Plugin discovery & loading
 │   └── logger.py                # Professional logging
-├── tools/
-│   ├── tool_registry.py         # Auto-discovery registry
-│   ├── registry.py              # Compatibility wrapper
-│   ├── executor.py              # Tool execution engine
-│   ├── analysis_tools.py        # Python execution
-│   ├── document_tools.py        # CRUD operations
-│   └── [other tool modules]
+├── assistant_core/
+│   └── doctype/                 # Frappe DocTypes
+│       ├── assistant_core_settings/
+│       ├── assistant_plugin_repository/
+│       └── assistant_tool_registry/
 └── pyproject.toml               # Modern packaging
 ```
 
-### Key Improvements
-- **87% Code Reduction**: Main API file streamlined from 1580 to 200 lines
-- **Zero Print Statements**: Professional logging throughout production code
-- **Modular Design**: Clean separation of concerns for easy maintenance
-- **Error Handling**: Centralized error management with proper codes
+### Plugin Architecture Benefits
+- **🔌 Modular Plugins**: Tools organized in discoverable plugins
+- **🚀 Auto-Discovery**: Automatic tool registration from enabled plugins
+- **⚙️ Plugin Management**: Web interface for enabling/disabling plugins
+- **🔧 Extensible**: Easy to add new plugins and tools
+- **🎯 Focused**: Each plugin handles specific functionality
 
 ---
 
-## 🔧 Tools Available
+## 🔧 Tools Available (Plugin-Based)
 
-### 📄 Document Operations
+### 📦 Core Plugin
+**Document Operations**
 - `document_create` - Create new documents
-- `document_read` - Fetch document data
+- `document_get` - Fetch document data  
 - `document_update` - Update existing documents
 - `document_delete` - Delete documents
 - `document_list` - List documents with filters
 
-### 🐍 Analysis & Execution
-- `execute_python_code` - Sandboxed Python execution with 30+ libraries
-- `analyze_frappe_data` - Statistical data analysis
-- `query_and_analyze` - SQL queries with analysis
-- `create_visualization` - Chart generation with inline display
+**Search & Discovery**
+- `search_global` - Search across all accessible documents
+- `search_doctype` - Search within specific DocTypes
+- `search_link` - Search for link field values
 
-### 📊 Reporting
-- `report_execute` - Execute any Frappe report type
-- `report_list` - Get available reports
-- `report_filters` - Get report filter options
+**Metadata & Schema**
+- `metadata_doctype` - Get DocType information
+- `metadata_list_doctypes` - List available DocTypes
+- `metadata_doctype_fields` - Get DocType field definitions
+- `metadata_permissions` - Check DocType permissions
+- `metadata_workflow` - Get workflow information
 
-### 🔍 Search & Metadata
-- `search_documents` - Global document search
-- `search_users` - User directory search
-- `metadata_doctypes` - DocType information
-- `metadata_fields` - Field definitions
-- `metadata_permissions` - Permission information
+**Reports & Analysis**
+- `report_execute` - Execute Frappe reports
+- `report_list` - List available reports
+- `report_details` - Get report configuration
+
+**Workflow Operations**
+- `workflow_action` - Execute workflow actions
+- `workflow_list` - List available workflows
+- `workflow_status` - Get workflow status
+
+### 🧪 Data Science Plugin
+**Python Execution & Analysis**
+- `execute_python_code` - Secure Python execution with data science libraries
+- `analyze_frappe_data` - Statistical analysis of Frappe data
+- `query_and_analyze` - SQL query execution with analysis
+- `create_visualization` - Chart and graph generation
+
+### 🌐 WebSocket Plugin
+**Real-time Communication**
+- WebSocket server integration for real-time features
+
+### ⚡ Batch Processing Plugin  
+**Bulk Operations**
+- Background task processing and bulk operations
 
 ---
 

@@ -1,201 +1,308 @@
-# Tool Development Templates for Frappe Assistant Core
+# Plugin & Tool Development Guide for Frappe Assistant Core
 
 ## Overview
 
-This document provides templates and examples for creating new tools and their corresponding test cases in the Frappe Assistant Core system. These templates ensure consistency and completeness across all tool implementations.
+This document provides templates and examples for creating new plugins and tools in the Frappe Assistant Core plugin-based system. These templates ensure consistency and proper integration with the auto-discovery system.
 
-## Tool Class Template
+## Plugin Development
 
-### Basic Tool Structure
+### Plugin Structure
+
+```
+your_plugin/
+├── plugin.py                   # Plugin definition (required)
+├── __init__.py                 # Python package marker
+└── tools/                      # Tools directory (optional)
+    ├── __init__.py
+    ├── tool_one.py             # Individual tool implementations
+    └── tool_two.py
+```
+
+### Plugin Definition Template
 
 ```python
 """
-[Tool Category] Tools
-[Brief description of what this tool category handles]
+Plugin: [Plugin Name]
+Description: [Brief description of plugin functionality]
 """
 
 import frappe
-import json
-from typing import Dict, Any, List, Optional
-from frappe_assistant_core.utils.permissions import check_user_permission
-from frappe_assistant_core.utils.response_builder import build_response
-from frappe_assistant_core.utils.validation import validate_doctype_access
-from frappe_assistant_core.utils.enhanced_error_handling import handle_tool_error
+from typing import Dict, Any, List
 
-class [ToolName]Tools:
-    """[Tool category] operations for Frappe Assistant Core"""
+class [PluginName]:
+    """
+    Plugin for [specific functionality area]
+    """
     
-    @staticmethod
-    def get_tools() -> List[Dict[str, Any]]:
-        """Get available [tool category] tools with MCP schema"""
-        return [
-            {
-                "name": "tool_operation_1",
-                "description": "Description of what this tool does",
-                "inputSchema": {
+    def __init__(self):
+        self.name = "[plugin_name]"
+        self.display_name = "[Plugin Display Name]"
+        self.description = "[Detailed description of plugin capabilities]"
+        self.version = "1.0.0"
+        self.dependencies = []  # List of required dependencies
+        self.tools = []  # Will be populated by auto-discovery
+    
+    def validate(self) -> Dict[str, Any]:
+        """
+        Validate plugin requirements and dependencies
+        
+        Returns:
+            Dict with 'can_enable' boolean and 'validation_error' string
+        """
+        try:
+            # Check dependencies
+            for dep in self.dependencies:
+                try:
+                    __import__(dep)
+                except ImportError:
+                    return {
+                        'can_enable': False,
+                        'validation_error': f'Missing dependency: {dep}'
+                    }
+            
+            # Additional validation logic here
+            
+            return {'can_enable': True, 'validation_error': ''}
+            
+        except Exception as e:
+            return {
+                'can_enable': False, 
+                'validation_error': f'Validation error: {str(e)}'
+            }
+    
+    def get_plugin_info(self) -> Dict[str, Any]:
+        """Return plugin metadata"""
+        return {
+            'name': self.name,
+            'display_name': self.display_name,
+            'description': self.description,
+            'version': self.version,
+            'dependencies': self.dependencies,
+            'tools': self.tools
+        }
+
+# Plugin instance for auto-discovery
+plugin = [PluginName]()
+```
+
+## Tool Development
+
+### Tool Class Template
+
+```python
+"""
+[Tool Name] for [Plugin Name] Plugin
+[Brief description of what this tool does]
+"""
+
+import frappe
+from frappe import _
+from typing import Dict, Any
+from frappe_assistant_core.core.base_tool import BaseTool
+
+class [ToolName](BaseTool):
+    """
+    Tool for [specific functionality]
+    
+    Provides capabilities for:
+    - [Feature 1]
+    - [Feature 2]
+    - [Feature 3]
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "[tool_name]"
+        self.description = "[Tool description for UI/documentation]"
+        self.requires_permission = None  # Or specific DocType/role
+        
+        self.input_schema = {
+            "type": "object",
+            "properties": {
+                "param1": {
+                    "type": "string",
+                    "description": "Description of parameter 1"
+                },
+                "param2": {
                     "type": "object",
+                    "description": "Optional parameter object",
                     "properties": {
-                        "param1": {
+                        "sub_param": {
                             "type": "string",
-                            "description": "Description of parameter 1"
-                        },
-                        "param2": {
-                            "type": "string", 
-                            "description": "Description of parameter 2",
-                            "optional": True
+                            "description": "Sub-parameter description"
                         }
-                    },
-                    "required": ["param1"]
+                    }
                 }
             },
-            {
-                "name": "tool_operation_2", 
-                "description": "Description of second tool operation",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "doctype": {
-                            "type": "string",
-                            "description": "DocType name"
-                        },
-                        "filters": {
-                            "type": "object",
-                            "description": "Filter criteria",
-                            "optional": True
-                        }
-                    },
-                    "required": ["doctype"]
-                }
-            }
-        ]
-    
-    @staticmethod
-    @handle_tool_error
-    def tool_operation_1(param1: str, param2: Optional[str] = None) -> Dict[str, Any]:
-        """
-        [Description of operation 1]
-        
-        Args:
-            param1 (str): Description of parameter 1
-            param2 (str, optional): Description of parameter 2
-            
-        Returns:
-            Dict[str, Any]: Response with operation results
-        """
-        try:
-            # Permission check
-            if not check_user_permission("Operation1"):
-                return build_response(
-                    success=False,
-                    error="Insufficient permissions for operation 1"
-                )
-            
-            # Input validation
-            if not param1 or not param1.strip():
-                return build_response(
-                    success=False,
-                    error="param1 is required and cannot be empty"
-                )
-            
-            # Main operation logic
-            result = perform_operation_1(param1, param2)
-            
-            return build_response(
-                success=True,
-                data={
-                    "operation_result": result,
-                    "param1_used": param1,
-                    "param2_used": param2
-                }
-            )
-            
-        except frappe.PermissionError:
-            return build_response(
-                success=False,
-                error="Permission denied for operation 1"
-            )
-        except frappe.DoesNotExistError:
-            return build_response(
-                success=False,
-                error=f"Resource not found: {param1}"
-            )
-        except Exception as e:
-            frappe.log_error(f"Error in tool_operation_1: {str(e)}")
-            return build_response(
-                success=False,
-                error=f"Operation failed: {str(e)}"
-            )
-    
-    @staticmethod
-    @handle_tool_error
-    def tool_operation_2(doctype: str, filters: Optional[Dict] = None) -> Dict[str, Any]:
-        """
-        [Description of operation 2]
-        
-        Args:
-            doctype (str): Name of the DocType
-            filters (dict, optional): Filter criteria
-            
-        Returns:
-            Dict[str, Any]: Response with operation results
-        """
-        try:
-            # Validate DocType access
-            if not validate_doctype_access(doctype):
-                return build_response(
-                    success=False,
-                    error=f"Access denied to DocType: {doctype}"
-                )
-            
-            # Permission check
-            if not frappe.has_permission(doctype, "read"):
-                return build_response(
-                    success=False,
-                    error=f"No read permission for {doctype}"
-                )
-            
-            # Main operation logic
-            result = perform_operation_2(doctype, filters)
-            
-            return build_response(
-                success=True,
-                data={
-                    "doctype": doctype,
-                    "results": result,
-                    "filters_applied": filters or {},
-                    "count": len(result) if isinstance(result, list) else 1
-                }
-            )
-            
-        except Exception as e:
-            frappe.log_error(f"Error in tool_operation_2: {str(e)}")
-            return build_response(
-                success=False,
-                error=f"Operation failed: {str(e)}"
-            )
-    
-    @staticmethod
-    def execute_tool(tool_name: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute a specific tool by name
-        
-        Args:
-            tool_name (str): Name of the tool to execute
-            args (dict): Arguments for the tool
-            
-        Returns:
-            Dict[str, Any]: Tool execution result
-        """
-        tool_methods = {
-            "tool_operation_1": [ToolName]Tools.tool_operation_1,
-            "tool_operation_2": [ToolName]Tools.tool_operation_2,
+            "required": ["param1"]
         }
+    
+    def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Execute the tool with given arguments
         
-        if tool_name not in tool_methods:
-            raise ValueError(f"Unknown tool: {tool_name}")
+        Args:
+            arguments: Tool arguments matching input_schema
+            
+        Returns:
+            Tool execution result with success/error status
+        """
+        param1 = arguments.get("param1")
+        param2 = arguments.get("param2", {})
         
-        method = tool_methods[tool_name]
-        return method(**args)
+        # Input validation
+        if not param1:
+            return {
+                "success": False,
+                "error": "param1 is required"
+            }
+        
+        try:
+            # Main tool logic here
+            result = self._perform_operation(param1, param2)
+            
+            return {
+                "success": True,
+                "result": result,
+                "param1": param1
+            }
+            
+        except Exception as e:
+            frappe.log_error(
+                title=_("[Tool Name] Error"),
+                message=f"Error in [tool_name]: {str(e)}"
+            )
+            
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _perform_operation(self, param1: str, param2: Dict) -> Dict[str, Any]:
+        """
+        Internal method to perform the main operation
+        
+        Args:
+            param1: Primary parameter
+            param2: Secondary parameters
+            
+        Returns:
+            Operation result
+        """
+        # Implementation details
+        return {
+            "message": f"Operation completed for {param1}",
+            "details": param2
+        }
+
+# Tool instance for auto-discovery (this line is required)
+[tool_name] = [ToolName]()
+```
+
+## Plugin Registration
+
+### Auto-Discovery
+Plugins are automatically discovered by the plugin manager when:
+
+1. **Plugin Directory**: Located in `frappe_assistant_core/plugins/`
+2. **Plugin File**: Contains `plugin.py` with plugin class
+3. **Plugin Instance**: Module-level instance named `plugin`
+
+### Manual Registration
+If needed, plugins can be manually registered:
+
+```python
+# In frappe_assistant_core/utils/plugin_manager.py
+from frappe_assistant_core.plugins.your_plugin.plugin import plugin
+
+plugin_manager.register_plugin(plugin)
+```
+
+## Testing Templates
+
+### Plugin Test Template
+
+```python
+"""
+Test suite for [Plugin Name] plugin
+"""
+
+import frappe
+import unittest
+from frappe_assistant_core.core.tool_registry import get_tool_registry
+from frappe_assistant_core.tests.base_test import BaseAssistantTest
+
+class Test[PluginName](BaseAssistantTest):
+    """Test [plugin name] plugin functionality"""
+    
+    def setUp(self):
+        """Set up test environment"""
+        super().setUp()
+        self.registry = get_tool_registry()
+    
+    def test_plugin_discovery(self):
+        """Test plugin is discovered correctly"""
+        available_tools = self.registry.get_available_tools()
+        plugin_tools = [t for t in available_tools if t['name'].startswith('[tool_prefix]')]
+        
+        self.assertGreater(len(plugin_tools), 0)
+        self.assertIn('[tool_name]', [t['name'] for t in plugin_tools])
+    
+    def test_[tool_name]_basic(self):
+        """Test basic [tool_name] functionality"""
+        result = self.execute_tool_and_get_result(
+            self.registry, "[tool_name]", {
+                "param1": "test_value"
+            }
+        )
+        
+        self.assertTrue(result.get("success"))
+        self.assertIn("result", result)
+    
+    def test_[tool_name]_validation(self):
+        """Test [tool_name] input validation"""
+        result = self.execute_tool_expect_failure(
+            self.registry, "[tool_name]", {}
+        )
+        
+        self.assertFalse(result.get("success"))
+        self.assertIn("param1 is required", result.get("error", ""))
+
+if __name__ == "__main__":
+    unittest.main()
+```
+
+## Development Workflow
+
+### 1. Create Plugin Structure
+```bash
+mkdir frappe_assistant_core/plugins/my_plugin
+touch frappe_assistant_core/plugins/my_plugin/__init__.py
+touch frappe_assistant_core/plugins/my_plugin/plugin.py
+mkdir frappe_assistant_core/plugins/my_plugin/tools
+touch frappe_assistant_core/plugins/my_plugin/tools/__init__.py
+```
+
+### 2. Implement Plugin Class
+- Use plugin template above
+- Define plugin metadata
+- Implement validation logic
+
+### 3. Create Tools
+- Use tool template above  
+- Inherit from `BaseTool`
+- Implement `execute` method
+- Add module-level instance
+
+### 4. Test Integration
+- Use test templates
+- Test plugin discovery
+- Test tool functionality
+- Test error handling
+
+### 5. Enable Plugin
+- Through web interface: Assistant Core Settings → Refresh Plugins → Enable
+- Or programmatically via plugin manager
 
 # Helper functions (implement as needed)
 def perform_operation_1(param1: str, param2: Optional[str] = None):

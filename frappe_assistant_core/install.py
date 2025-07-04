@@ -29,6 +29,9 @@ def after_install():
     # Register default tools (after DocTypes are available)
     register_default_tools()
     
+    # Register default plugins
+    register_default_plugins()
+    
     api_logger.info("Frappe assistant Server installed successfully!")
     api_logger.info("Please configure assistant Server Settings to enable the server.")
 
@@ -134,12 +137,16 @@ def register_basic_tools():
                 elif category == "Reports":
                     required_permissions = [{"doctype": "Report", "permission": "read"}]
                 
+                # Determine source plugin based on tool name
+                source_plugin = determine_tool_source_plugin(tool["name"])
+                
                 doc = frappe.get_doc({
                     "doctype": "Assistant Tool Registry",
                     "tool_name": tool["name"],
                     "tool_description": tool["description"],
                     "enabled": 1,
                     "category": category,
+                    "source_plugin": source_plugin,
                     "input_schema": json.dumps(tool["inputSchema"]),
                     "required_permissions": json.dumps(required_permissions),
                     "execution_timeout": 30
@@ -150,6 +157,98 @@ def register_basic_tools():
             api_logger.warning(f"Could not create tool {tool['name']}: {e}")
     
     api_logger.info(f"Registered {tools_created} assistant tools via fallback method")
+
+def determine_tool_source_plugin(tool_name: str) -> str:
+    """Determine which plugin a tool belongs to based on known mappings"""
+    # Use direct mapping based on the plugins we know exist
+    plugin_tool_mappings = {
+        'data_science': [
+            'execute_python_code', 
+            'analyze_frappe_data', 
+            'query_and_analyze', 
+            'create_visualization'
+        ]
+        # Note: batch_processing and websocket plugins don't seem to have actual tools registered
+        # in the current system, so we're only mapping data_science tools for now
+    }
+    
+    for plugin_name, tools in plugin_tool_mappings.items():
+        if tool_name in tools:
+            # Verify the plugin actually exists in the repository
+            try:
+                if frappe.db.exists("Assistant Plugin Repository", plugin_name):
+                    api_logger.debug(f"Mapped {tool_name} to plugin {plugin_name}")
+                    return plugin_name
+            except Exception:
+                pass
+    
+    # For all other tools (core tools), don't set a plugin
+    api_logger.debug(f"Tool {tool_name} mapped to core (no plugin)")
+    return None
+
+def register_default_plugins():
+    """Register default plugins in the plugin repository"""
+    try:
+        # Ensure the DocType is properly loaded
+        frappe.reload_doc("Assistant Core", "DocType", "Assistant Plugin Repository")
+        
+        # Check if Assistant Plugin Repository table exists
+        if not frappe.db.table_exists("tabAssistant Plugin Repository"):
+            api_logger.warning("Assistant Plugin Repository table not found, skipping plugin registration")
+            return
+        
+        # Use the plugin repository refresh function to populate with discovered plugins
+        from frappe_assistant_core.assistant_core.doctype.assistant_plugin_repository.assistant_plugin_repository import refresh_plugin_repository
+        refresh_plugin_repository()
+        
+        api_logger.info("Successfully registered default plugins")
+        
+    except Exception as e:
+        api_logger.warning(f"Could not register default plugins: {e}")
+        # Try fallback registration
+        try:
+            api_logger.info("Attempting fallback plugin registration...")
+            register_basic_plugins()
+        except Exception as fallback_error:
+            api_logger.error(f"Fallback plugin registration also failed: {fallback_error}")
+
+def register_basic_plugins():
+    """Fallback basic plugin registration"""
+    try:
+        from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+        
+        plugin_manager = get_plugin_manager()
+        discovered_plugins = plugin_manager.get_discovered_plugins()
+        
+        plugins_created = 0
+        for plugin_info in discovered_plugins:
+            plugin_name = plugin_info.get('name')
+            if not plugin_name:
+                continue
+                
+            # Check if plugin already exists
+            if not frappe.db.exists("Assistant Plugin Repository", plugin_name):
+                doc = frappe.get_doc({
+                    "doctype": "Assistant Plugin Repository",
+                    "plugin_name": plugin_name,
+                    "display_name": plugin_info.get('display_name', plugin_name),
+                    "description": plugin_info.get('description', ''),
+                    "version": plugin_info.get('version', ''),
+                    "module_path": plugin_info.get('module_path', ''),
+                    "enabled": False,  # Default to disabled
+                    "can_enable": plugin_info.get('can_enable', False),
+                    "validation_error": plugin_info.get('validation_error', ''),
+                    "dependencies": json.dumps(plugin_info.get('dependencies', [])),
+                    "supported_tools": json.dumps(plugin_info.get('tools', [])),
+                    "plugin_info": json.dumps(plugin_info)
+                })
+                doc.insert(ignore_permissions=True)
+                plugins_created += 1
+        
+        api_logger.info(f"Registered {plugins_created} plugins via fallback method")
+        
+    except Exception as e:
+        api_logger.error(f"Fallback plugin registration failed: {e}")
 
 def create_default_roles():
     """Create default roles for assistant Server"""

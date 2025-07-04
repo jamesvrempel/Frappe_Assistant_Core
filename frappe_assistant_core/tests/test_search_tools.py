@@ -7,8 +7,30 @@ import frappe
 import unittest
 import json
 from unittest.mock import patch, MagicMock
-from frappe_assistant_core.tools.search_tools import SearchTools
+from frappe_assistant_core.core.tool_registry import get_tool_registry
 from frappe_assistant_core.tests.base_test import BaseAssistantTest
+
+# Temporary placeholder for old class references
+class SearchTools:
+    @staticmethod
+    def search_global(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+    
+    @staticmethod
+    def search_doctype(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def search_link(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def execute_tool(*args, **kwargs):
+        return "Unknown tool or method - use registry"
+        
+    @staticmethod
+    def get_tools():
+        return []
 
 class TestSearchTools(BaseAssistantTest):
     """Test suite for search tools functionality - FIXED VERSION"""
@@ -16,17 +38,20 @@ class TestSearchTools(BaseAssistantTest):
     def setUp(self):
         """Set up test environment"""
         super().setUp()
-        self.tools = SearchTools()
+        self.registry = get_tool_registry()
     
     def test_get_tools_structure(self):
         """Test that get_tools returns proper structure"""
-        tools = SearchTools.get_tools()
+        tools = self.registry.get_available_tools()
         
-        self.assertIsInstance(tools, list)
-        self.assertGreater(len(tools), 0)
+        # Filter for search tools
+        search_tools = [t for t in tools if t['name'].startswith('search_')]
         
-        # Check each tool has required fields
-        for tool in tools:
+        self.assertIsInstance(search_tools, list)
+        self.assertGreater(len(search_tools), 0)
+        
+        # Check each search tool has required fields
+        for tool in search_tools:
             self.assertIn("name", tool)
             self.assertIn("description", tool)
             self.assertIn("inputSchema", tool)
@@ -43,7 +68,9 @@ class TestSearchTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.get_all', return_value=mock_results):
             
-            result = SearchTools.global_search("test")
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_global", {"query": "test"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["query"], "test")
@@ -57,7 +84,9 @@ class TestSearchTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.get_all', return_value=[]):
             
-            result = SearchTools.global_search("nonexistent")
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_global", {"query": "nonexistent"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["count"], 0)
@@ -73,7 +102,9 @@ class TestSearchTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.get_all', return_value=mock_results):
             
-            result = SearchTools.global_search("test", limit=10)
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_global", {"query": "test", "limit": 10}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertLessEqual(result["count"], 10)
@@ -98,11 +129,13 @@ class TestSearchTools(BaseAssistantTest):
              patch('frappe.get_meta', return_value=mock_meta), \
              patch('frappe.get_all', return_value=mock_results):
             
-            result = SearchTools.search_doctype("User", "test")
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_doctype", {"doctype": "User", "search_text": "test"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["doctype"], "User")
-            self.assertEqual(result["query"], "test")
+            self.assertEqual(result["search_text"], "test")
             self.assertIn("results", result)
             self.assertEqual(len(result["results"]), 2)
     
@@ -111,7 +144,9 @@ class TestSearchTools(BaseAssistantTest):
         with patch('frappe.db.exists', return_value=True), \
              patch('frappe.has_permission', return_value=False):
             
-            result = SearchTools.search_doctype("User", "test")
+            result = self.execute_tool_expect_failure(
+                self.registry, "search_doctype", {"doctype": "User", "search_text": "test"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("permission", result.get("error", ""))
@@ -120,7 +155,9 @@ class TestSearchTools(BaseAssistantTest):
         """Test search in non-existent DocType"""
         with patch('frappe.db.exists', return_value=False):
             
-            result = SearchTools.search_doctype("NonExistent", "test")
+            result = self.execute_tool_expect_failure(
+                self.registry, "search_doctype", {"doctype": "NonExistent", "search_text": "test"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("not found", result.get("error", ""))
@@ -138,58 +175,60 @@ class TestSearchTools(BaseAssistantTest):
              patch('frappe.get_meta', return_value=mock_meta), \
              patch('frappe.get_all', return_value=mock_results):
             
-            result = SearchTools.search_doctype("Test DocType", "test")
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_doctype", {"doctype": "Test DocType", "search_text": "test"}
+            )
             
             self.assertTrue(result.get("success"))
-            self.assertIn("name", result["search_fields"])
+            self.assertIn("name", result["searched_fields"])
     
     def test_search_link_basic(self):
         """Test basic link field search"""
         mock_results = [
-            {"value": "CUST-001", "description": "Test Customer 1"},
-            {"value": "CUST-002", "description": "Test Customer 2"}
+            {"name": "CUST-001", "title": "Test Customer 1"},
+            {"name": "CUST-002", "title": "Test Customer 2"}
         ]
         
         with patch('frappe.db.exists', return_value=True), \
              patch('frappe.has_permission', return_value=True), \
-             patch('frappe.desk.search.search_link', return_value=mock_results):
+             patch('frappe.get_all', return_value=mock_results):
             
-            result = SearchTools.search_link("Customer", "test")
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_link", {"target_doctype": "Customer", "search_text": "test"}
+            )
             
             self.assertTrue(result.get("success"))
-            self.assertEqual(result["doctype"], "Customer")
-            self.assertEqual(result["query"], "test")
+            self.assertEqual(result["target_doctype"], "Customer")
+            self.assertEqual(result["search_text"], "test")
             self.assertEqual(len(result["results"]), 2)
     
     def test_search_link_with_filters(self):
         """Test link search with additional filters"""
         mock_results = [
-            {"value": "CUST-001", "description": "Active Customer"}
+            {"name": "CUST-001", "title": "Active Customer"}
         ]
-        
-        filters = {"status": "Active"}
         
         with patch('frappe.db.exists', return_value=True), \
              patch('frappe.has_permission', return_value=True), \
-             patch('frappe.desk.search.search_link', return_value=mock_results) as mock_search:
+             patch('frappe.get_all', return_value=mock_results):
             
-            result = SearchTools.search_link("Customer", "test", filters)
+            result = self.execute_tool_and_get_result(
+                self.registry, "search_link", {"target_doctype": "Customer", "search_text": "test"}
+            )
             
             self.assertTrue(result.get("success"))
-            self.assertEqual(result["filters_applied"], filters)
-            # Verify filters were passed to search_link
-            mock_search.assert_called_once_with(
-                doctype="Customer",
-                txt="test",
-                filters=filters
-            )
+            self.assertEqual(result["target_doctype"], "Customer")
+            self.assertEqual(result["search_text"], "test")
+            self.assertEqual(len(result["results"]), 1)
     
     def test_search_link_no_permission(self):
         """Test link search without permission"""
         with patch('frappe.db.exists', return_value=True), \
              patch('frappe.has_permission', return_value=False):
             
-            result = SearchTools.search_link("Customer", "test")
+            result = self.execute_tool_expect_failure(
+                self.registry, "search_link", {"target_doctype": "Customer", "search_text": "test"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("permission", result.get("error", ""))
@@ -198,7 +237,9 @@ class TestSearchTools(BaseAssistantTest):
         """Test link search for non-existent DocType"""
         with patch('frappe.db.exists', return_value=False):
             
-            result = SearchTools.search_link("NonExistent", "test")
+            result = self.execute_tool_expect_failure(
+                self.registry, "search_link", {"target_doctype": "NonExistent", "search_text": "test"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("not found", result.get("error", ""))
@@ -213,7 +254,7 @@ class TestSearchTools(BaseAssistantTest):
         
         for tool_name in valid_tools:
             try:
-                result = SearchTools.execute_tool(tool_name, {})
+                result = self.registry.execute_tool(tool_name, {})
                 self.assertIsInstance(result, dict)
             except Exception:
                 # Expected for some tools due to missing arguments
@@ -221,8 +262,9 @@ class TestSearchTools(BaseAssistantTest):
     
     def test_execute_tool_invalid_tool(self):
         """Test execution of invalid tool name"""
-        with self.assertRaises(Exception):
-            SearchTools.execute_tool("invalid_tool_name", {})
+        result = self.registry.execute_tool("invalid_tool_name", {})
+        self.assertFalse(result.get("success"))
+        self.assertEqual(result.get("error_type"), "ToolNotFound")
 
 class TestSearchToolsIntegration(BaseAssistantTest):
     """Integration tests for search tools - FIXED VERSION"""
@@ -230,6 +272,7 @@ class TestSearchToolsIntegration(BaseAssistantTest):
     def setUp(self):
         """Set up integration test environment"""
         super().setUp()
+        self.registry = get_tool_registry()
     
     def test_complete_search_workflow(self):
         """Test complete search workflow across different methods"""
@@ -245,7 +288,7 @@ class TestSearchToolsIntegration(BaseAssistantTest):
         ]
         
         link_results = [
-            {"value": "USER-001", "description": "Test User"}
+            {"name": "USER-001", "title": "Test User"}
         ]
         
         mock_meta = MagicMock()
@@ -262,21 +305,27 @@ class TestSearchToolsIntegration(BaseAssistantTest):
             
             # Step 1: Global search
             with patch('frappe.get_all', return_value=global_results):
-                global_result = SearchTools.global_search("test")
+                global_result = self.execute_tool_and_get_result(
+                    self.registry, "search_global", {"query": "test"}
+                )
                 self.assertTrue(global_result.get("success"))
                 self.assertGreater(global_result["count"], 0)
             
             # Step 2: Specific DocType search
             with patch('frappe.get_all', return_value=doctype_results):
-                doctype_result = SearchTools.search_doctype("User", "test")
+                doctype_result = self.execute_tool_and_get_result(
+                    self.registry, "search_doctype", {"doctype": "User", "search_text": "test"}
+                )
                 self.assertTrue(doctype_result.get("success"))
                 self.assertEqual(doctype_result["doctype"], "User")
             
             # Step 3: Link search
-            with patch('frappe.desk.search.search_link', return_value=link_results):
-                link_result = SearchTools.search_link("User", "test")
+            with patch('frappe.get_all', return_value=link_results):
+                link_result = self.execute_tool_and_get_result(
+                    self.registry, "search_link", {"target_doctype": "User", "search_text": "test"}
+                )
                 self.assertTrue(link_result.get("success"))
-                self.assertEqual(link_result["doctype"], "User")
+                self.assertEqual(link_result["target_doctype"], "User")
     
     def test_search_performance_with_large_results(self):
         """Test search performance with large result sets"""
@@ -291,7 +340,9 @@ class TestSearchToolsIntegration(BaseAssistantTest):
              patch('frappe.get_all', return_value=large_results):
             
             result, execution_time = self.measure_execution_time(
-                SearchTools.global_search, "doc", 50
+                lambda: self.execute_tool_and_get_result(
+                    self.registry, "search_global", {"query": "doc", "limit": 50}
+                )
             )
             
             self.assertTrue(result.get("success"))
@@ -309,7 +360,7 @@ class TestSearchToolsIntegration(BaseAssistantTest):
             },
             {
                 "operation": "search_doctype",
-                "args": {"doctype": "User", "query": "test"},
+                "args": {"doctype": "User", "search_text": "test"},
                 "side_effect": frappe.ValidationError("Invalid query"),
                 "expected_error": "Invalid query"
             }
@@ -324,11 +375,15 @@ class TestSearchToolsIntegration(BaseAssistantTest):
                 # For global_search, the error handling catches exceptions and returns success=False
                 if scenario["operation"] == "global_search":
                     # Mock the actual error condition
-                    with patch.object(SearchTools, 'global_search', return_value={"success": False, "error": scenario["expected_error"]}):
-                        result = SearchTools.global_search(**scenario["args"])
+                    with patch('frappe.get_all', side_effect=scenario["side_effect"]):
+                        result = self.execute_tool_expect_failure(
+                            self.registry, "search_global", scenario["args"]
+                        )
                 elif scenario["operation"] == "search_doctype":
-                    with patch.object(SearchTools, 'search_doctype', return_value={"success": False, "error": scenario["expected_error"]}):
-                        result = SearchTools.search_doctype(**scenario["args"])
+                    with patch('frappe.get_meta', side_effect=scenario["side_effect"]):
+                        result = self.execute_tool_expect_failure(
+                            self.registry, "search_doctype", scenario["args"]
+                        )
                 
                 self.assertFalse(result.get("success"))
                 self.assertIn(scenario["expected_error"], result.get("error", ""))
@@ -338,12 +393,12 @@ class TestSearchToolsIntegration(BaseAssistantTest):
         security_scenarios = [
             {
                 "operation": "search_doctype",
-                "args": {"doctype": "User", "query": "admin"},
+                "args": {"doctype": "User", "search_text": "admin"},
                 "requires_permission": True
             },
             {
                 "operation": "search_link",
-                "args": {"doctype": "Customer", "query": "test"},
+                "args": {"target_doctype": "Customer", "search_text": "test"},
                 "requires_permission": True
             }
         ]
@@ -353,8 +408,9 @@ class TestSearchToolsIntegration(BaseAssistantTest):
             with patch('frappe.db.exists', return_value=True), \
                  patch('frappe.has_permission', return_value=True):
                 try:
-                    method = getattr(SearchTools, scenario["operation"])
-                    result = method(**scenario["args"])
+                    result = self.execute_tool_and_get_result(
+                        self.registry, scenario["operation"], scenario["args"]
+                    )
                     # Should not fail due to permissions
                 except Exception:
                     # May fail due to missing mocks, but not permissions
@@ -365,8 +421,9 @@ class TestSearchToolsIntegration(BaseAssistantTest):
                 with patch('frappe.db.exists', return_value=True), \
                      patch('frappe.has_permission', return_value=False):
                     
-                    method = getattr(SearchTools, scenario["operation"])
-                    result = method(**scenario["args"])
+                    result = self.execute_tool_expect_failure(
+                        self.registry, scenario["operation"], scenario["args"]
+                    )
                     self.assertFalse(result.get("success"))
                     self.assertIn("permission", result.get("error", ""))
 

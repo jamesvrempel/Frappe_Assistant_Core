@@ -1,14 +1,6 @@
 {
  "actions": [],
- "allow_copy": 0,
- "allow_events_in_timeline": 0,
- "allow_guest_to_view": 0,
- "allow_import": 0,
- "allow_rename": 0,
- "beta": 0,
  "creation": "2025-06-21 22:45:07.030425",
- "custom": 0,
- "docstatus": 0,
  "doctype": "DocType",
  "document_type": "Setup",
  "editable_grid": 1,
@@ -24,6 +16,8 @@
   "ssl_enabled",
   "ssl_cert_path",
   "ssl_key_path",
+  "plugins_section",
+  "enabled_plugins",
   "logging_section",
   "log_level",
   "max_log_entries",
@@ -95,6 +89,18 @@
   },
   {
    "collapsible": 1,
+   "fieldname": "plugins_section",
+   "fieldtype": "Section Break",
+   "label": "Plugin Configuration"
+  },
+  {
+   "fieldname": "enabled_plugins",
+   "fieldtype": "Table",
+   "label": "Plugins",
+   "options": "Assistant Plugin Config"
+  },
+  {
+   "collapsible": 1,
    "fieldname": "logging_section",
    "fieldtype": "Section Break",
    "label": "Logging Configuration"
@@ -126,64 +132,48 @@
   },
   {
    "default": "1",
+   "description": "Require all LLMs to use artifact streaming for analysis operations",
    "fieldname": "enforce_artifact_streaming",
    "fieldtype": "Check",
-   "label": "Enforce Artifact Streaming Protocol",
-   "description": "Require all LLMs to use artifact streaming for analysis operations"
+   "label": "Enforce Artifact Streaming Protocol"
   },
   {
    "default": "1",
+   "description": "Automatically promote artifact streaming to prevent LLM response limits",
    "fieldname": "response_limit_prevention",
    "fieldtype": "Check",
-   "label": "Enable Response Limit Prevention",
-   "description": "Automatically promote artifact streaming to prevent LLM response limits"
+   "label": "Enable Response Limit Prevention"
   },
   {
+   "default": "Always create analysis workspace artifacts before performing data analysis.\nStream all detailed work to artifacts to prevent response limits.\nKeep responses minimal with artifact references.\nBuild unlimited analysis depth via progressive artifact updates.",
+   "description": "Additional behavioral instructions for LLMs using the MCP server",
    "fieldname": "streaming_behavior_instructions",
    "fieldtype": "Small Text",
-   "label": "Custom Streaming Instructions",
-   "description": "Additional behavioral instructions for LLMs using the MCP server",
-   "default": "Always create analysis workspace artifacts before performing data analysis.\nStream all detailed work to artifacts to prevent response limits.\nKeep responses minimal with artifact references.\nBuild unlimited analysis depth via progressive artifact updates."
+   "label": "Custom Streaming Instructions"
   }
  ],
- "has_web_view": 0,
- "hide_heading": 0,
- "hide_toolbar": 0,
- "idx": 0,
- "image_view": 0,
- "in_create": 0,
- "is_submittable": 0,
  "issingle": 1,
- "istable": 0,
- "max_attachments": 0,
- "modified": "2024-06-18 12:00:00.000000",
+ "links": [],
+ "modified": "2025-07-04 14:13:29.128409",
  "modified_by": "Administrator",
  "module": "Assistant Core",
  "name": "Assistant Core Settings",
- "naming_rule": "",
  "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
    "delete": 1,
    "email": 1,
-   "export": 1,
    "print": 1,
    "read": 1,
-   "report": 1,
    "role": "System Manager",
    "share": 1,
    "write": 1
   }
  ],
- "quick_entry": 0,
- "read_only": 0,
- "read_only_onload": 0,
- "show_name_in_global_search": 0,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1,
- "track_seen": 0,
- "track_views": 0
+ "track_changes": 1
 }
