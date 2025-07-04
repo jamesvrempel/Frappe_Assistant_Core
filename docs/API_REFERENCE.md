@@ -41,7 +41,7 @@ Initializes MCP connection and returns server capabilities.
     },
     "serverInfo": {
       "name": "frappe-assistant-core",
-      "version": "1.0.0"
+      "version": "1.2.0"
     }
   },
   "id": 1

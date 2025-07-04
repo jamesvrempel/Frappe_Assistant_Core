@@ -9,7 +9,7 @@ app_description = "AI Assistant integration core for Frappe Framework"
 app_icon = "octicon octicon-server"
 app_color = "blue"
 app_email = "jypaulclinton@gmail.com"
-app_license = "Dual License (AGPL-3.0 / Commercial)"
+app_license = "MIT"
 app_version = app_version
 
 # Includes in <head>

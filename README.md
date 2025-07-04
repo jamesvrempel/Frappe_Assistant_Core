@@ -4,7 +4,7 @@
 
 Built for businesses who want to leverage AI to streamline their ERP operations, automate workflows, and gain intelligent insights from their data.
 
-## 🚀 Version 1.0.0 - Major Architecture Overhaul (June 2025)
+## 🚀 Version 1.2.0 - Major Architecture Overhaul (June 2025)
 
 **🎉 What's New:**
 - **🏗️ Modular Architecture**: Complete refactoring with clean, maintainable, extensible codebase
@@ -45,7 +45,7 @@ Built for businesses who want to leverage AI to streamline their ERP operations,
 - **🔧 Tool Registry**: Auto-discovery tool system with zero configuration
 - **🎨 Prompts Support**: Built-in prompts for artifact streaming workflows
 
-### 🏗️ Modern Architecture Features (New in v1.0.0)
+### 🏗️ Modern Architecture Features (New in v1.2.0)
 - **📦 Modular Handlers**: Separated API concerns into focused modules
 - **🔧 Centralized Constants**: All configuration and strings in dedicated module
 - **📝 Professional Logging**: Structured logging with proper levels and formatting
@@ -58,8 +58,8 @@ Built for businesses who want to leverage AI to streamline their ERP operations,
 ## 📦 Installation
 
 ### Prerequisites
-- Frappe Framework 14+
-- Python 3.8+
+- Frappe Framework 15+
+- Python 3.11+
 - MariaDB/MySQL
 
 ### Quick Installation
@@ -102,7 +102,7 @@ bench --site [site-name] set-config assistant_enabled 1
 
 ## 🛠️ Architecture Overview
 
-### Plugin-Based Architecture (v1.0.0)
+### Plugin-Based Architecture (v1.2.0)
 ```
 frappe_assistant_core/
 ├── core/
@@ -264,7 +264,7 @@ result = execute_python_code({"code": code})
 
 ## 📊 Performance & Monitoring
 
-### Performance Improvements (v1.0.0)
+### Performance Improvements (v1.2.0)
 - **Memory Usage**: Reduced through modular loading
 - **Code Maintainability**: Clean separation of concerns
 - **Debugging**: Structured logging for better troubleshooting
@@ -367,5 +367,5 @@ This is an open-source MIT licensed project. Contributions are welcome!
 
 **Built with ❤️ by the community, for the community**
 
-*Last Updated: June 2025 - Version 1.0.0*
+*Last Updated: June 2025 - Version 1.2.0*
 *Architecture: Modular, Modern, Maintainable*

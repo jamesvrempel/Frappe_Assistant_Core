@@ -65,10 +65,6 @@ debug_*.py
 test_*.py
 
 # Build artifacts
-*.dxt
 build/
 client_packages/*/build/
 
-# Development files
-plugin_architectue.md
-frappe_assistant_stdio_bridge.py

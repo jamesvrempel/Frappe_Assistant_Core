@@ -164,11 +164,12 @@ BasePlugin (Abstract)
 - **Loading**: Manages plugin lifecycle and tool registration
 - **Configuration**: Integration with Frappe settings
 
-### 5. Core Plugin Tools
+### 5. Current Plugin Implementations
 
-Core plugin provides essential functionality that's always available.
+The system currently includes several production-ready plugins:
 
-**Tool Categories:**
+#### **Core Plugin** (`plugins/core/`) - Always Enabled
+Essential functionality that's always available:
 
 1. **Document Tools** (`plugins/core/tools/document_*.py`)
    - Create, read, update, delete operations
@@ -194,6 +195,44 @@ Core plugin provides essential functionality that's always available.
    - Workflow action execution
    - Status checking and querying
    - Approval queue management
+
+#### **Data Science Plugin** (`plugins/data_science/`) - Optional
+Advanced analytics and visualization capabilities:
+
+1. **Python Execution** (`execute_python_code.py`)
+   - Safe Python code execution with Frappe context
+   - Pandas DataFrame integration
+   - Custom business logic execution
+
+2. **Data Analysis** (`analyze_frappe_data.py`)
+   - Statistical analysis of business data
+   - Trend analysis and correlations
+   - Automated insights generation
+
+3. **Query Analytics** (`query_and_analyze.py`)
+   - Custom SQL query execution
+   - Advanced data analysis on query results
+   - Business intelligence insights
+
+4. **Visualization** (`create_visualization.py`)
+   - Interactive chart creation (bar, line, pie, scatter, heatmap)
+   - Business dashboard generation
+   - Data visualization export
+
+**Dependencies:** pandas, numpy, matplotlib, seaborn, plotly, scipy
+**Environment Validation:** Automatic dependency checking on plugin load
+
+#### **WebSocket Plugin** (`plugins/websocket/`) - Optional
+Real-time communication capabilities:
+- Live data streaming
+- Real-time notifications
+- Interactive dashboard updates
+
+#### **Batch Processing Plugin** (`plugins/batch_processing/`) - Optional
+Background and bulk operations:
+- Large dataset processing
+- Background task management
+- Bulk operation optimization
 
 ## Data Flow
 
@@ -321,17 +360,32 @@ class MyTool(BaseTool):
 plugins/my_plugin/
 ├── __init__.py
 ├── plugin.py        # Plugin definition
-├── requirements.txt # Dependencies
+├── requirements.txt # Dependencies (optional)
 └── tools/          # Plugin tools
-    └── my_tool.py
+    ├── __init__.py
+    ├── my_tool.py
+    └── another_tool.py
 
 # 2. Implement BasePlugin
 class MyPlugin(BasePlugin):
-    def get_info(self): # ... implementation
-    def get_tools(self): # ... implementation
-    def validate_environment(self): # ... implementation
+    def get_info(self):
+        return {
+            'name': 'my_plugin',
+            'display_name': 'My Plugin',
+            'description': 'Custom plugin description',
+            'version': '1.0.0',
+            'dependencies': ['pandas', 'numpy'],  # Optional
+            'requires_restart': False
+        }
+    
+    def get_tools(self):
+        return ['my_tool', 'another_tool']
+    
+    def validate_environment(self):
+        # Check if dependencies are available
+        return True, None  # True if valid, error message if not
 
-# 3. Plugin automatically discovered
+# 3. Plugin automatically discovered on server start
 ```
 
 ### 3. Customizing Behavior

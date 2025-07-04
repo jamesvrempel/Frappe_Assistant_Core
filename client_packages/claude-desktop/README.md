@@ -1,6 +1,6 @@
 # Claude for Frappe ERP - Desktop Extension
 
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](https://github.com/clinu/Frappe_Assistant_Core)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/clinu/Frappe_Assistant_Core)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](#compatibility)
 [![Claude Desktop](https://img.shields.io/badge/Claude%20Desktop-MCP%20Extension-purple.svg)](https://claude.ai/desktop)
@@ -64,7 +64,7 @@ bench restart
 
 **Option A: Direct Download (Recommended)**
 
-1. Download the latest `claude-for-frappe-v1.0.1.dxt` from the [main project releases](https://github.com/clinu/Frappe_Assistant_Core/releases)
+1. Download the latest `claude-for-frappe-v1.2.0.dxt` from the [main project releases](https://github.com/clinu/Frappe_Assistant_Core/releases)
 2. Double-click the `.dxt` file to install in Claude Desktop
 3. Configure your Frappe server connection (see [Configuration](#configuration))
 
