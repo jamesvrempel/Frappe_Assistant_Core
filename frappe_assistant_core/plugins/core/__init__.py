@@ -1,0 +1,1 @@
+# Core plugin - fundamental Frappe operations

@@ -28,9 +28,44 @@ class BaseAssistantTest(unittest.TestCase):
         # Set test user
         self.test_user = "Administrator"
         frappe.set_user(self.test_user)
+    
+    def execute_tool_and_get_result(self, registry, tool_name, arguments):
+        """
+        Execute a tool via registry and return unwrapped result.
         
-        # Mock common Frappe functions for testing
-        self.setup_mocks()
+        The registry wraps tool results in a 'result' key, this helper
+        extracts the actual tool result for easier testing.
+        """
+        registry_result = registry.execute_tool(tool_name, arguments)
+        
+        # Registry execution should always succeed (unless tool not found)
+        self.assertTrue(registry_result.get("success"), 
+                       f"Registry execution failed: {registry_result.get('error')}")
+        
+        # Return the actual tool result
+        return registry_result.get("result", {})
+    
+    def execute_tool_expect_failure(self, registry, tool_name, arguments, expected_error_text=None):
+        """
+        Execute a tool via registry expecting tool-level failure.
+        Returns the tool result for further assertions.
+        """
+        registry_result = registry.execute_tool(tool_name, arguments)
+        
+        # Registry execution should succeed even if tool fails
+        self.assertTrue(registry_result.get("success"), 
+                       f"Registry execution failed: {registry_result.get('error')}")
+        
+        # Get tool result and verify it failed
+        tool_result = registry_result.get("result", {})
+        self.assertFalse(tool_result.get("success"), 
+                        f"Tool execution should have failed but succeeded: {tool_result}")
+        
+        # Check error message if provided
+        if expected_error_text:
+            self.assertIn(expected_error_text, tool_result.get("error", ""))
+        
+        return tool_result
     
     def tearDown(self):
         """Clean up after each test"""

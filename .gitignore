@@ -57,3 +57,14 @@ jspm_packages/
 # claude
 .claude/
 CLAUDE.md
+
+# Logs and temporary files
+*.log
+logs/
+debug_*.py
+test_*.py
+
+# Build artifacts
+build/
+client_packages/*/build/
+

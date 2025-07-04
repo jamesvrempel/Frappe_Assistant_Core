@@ -7,8 +7,34 @@ import frappe
 import unittest
 import json
 from unittest.mock import patch, MagicMock
-from frappe_assistant_core.tools.metadata_tools import MetadataTools
+from frappe_assistant_core.core.tool_registry import get_tool_registry
 from frappe_assistant_core.tests.base_test import BaseAssistantTest
+
+# Temporary placeholder for old class references
+class MetadataTools:
+    @staticmethod
+    def get_doctype_metadata(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+    
+    @staticmethod
+    def list_doctypes(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def get_permissions(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def get_workflow(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def execute_tool(*args, **kwargs):
+        return "Unknown tool or method - use registry"
+        
+    @staticmethod
+    def get_tools():
+        return []
 
 class TestMetadataTools(BaseAssistantTest):
     """Test suite for metadata tools functionality - FIXED VERSION"""
@@ -16,17 +42,20 @@ class TestMetadataTools(BaseAssistantTest):
     def setUp(self):
         """Set up test environment"""
         super().setUp()
-        self.tools = MetadataTools()
+        self.registry = get_tool_registry()
     
     def test_get_tools_structure(self):
         """Test that get_tools returns proper structure"""
-        tools = MetadataTools.get_tools()
+        tools = self.registry.get_available_tools()
         
-        self.assertIsInstance(tools, list)
-        self.assertGreater(len(tools), 0)
+        # Filter for metadata tools
+        metadata_tools = [t for t in tools if t['name'].startswith('metadata_')]
         
-        # Check each tool has required fields
-        for tool in tools:
+        self.assertIsInstance(metadata_tools, list)
+        self.assertGreater(len(metadata_tools), 0)
+        
+        # Check each metadata tool has required fields
+        for tool in metadata_tools:
             self.assertIn("name", tool)
             self.assertIn("description", tool)
             self.assertIn("inputSchema", tool)
@@ -49,32 +78,43 @@ class TestMetadataTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.get_meta', return_value=mock_meta):
             
-            # FIXED: Use actual method name
-            result = MetadataTools.get_doctype_metadata("User")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_doctype", {"doctype": "User"}
+            )
             
             self.assertTrue(result.get("success"))
-            self.assertEqual(result["doctype"], "User")
-            self.assertEqual(result["module"], "Core")
-            self.assertIn("fields", result)
-            self.assertIn("permissions", result)
+            self.assertEqual(result["metadata"]["doctype"], "User")
+            self.assertEqual(result["metadata"]["module"], "Core")
+            self.assertIn("fields", result["metadata"])
+            self.assertIn("permissions", result["metadata"])
     
     def test_get_doctype_metadata_no_permission(self):
         """Test DocType metadata retrieval without permission - FIXED METHOD NAME"""
         with patch('frappe.db.exists', return_value=True), \
              patch('frappe.has_permission', return_value=False):
             
-            # FIXED: Use actual method name
-            result = MetadataTools.get_doctype_metadata("User")
+            result = self.execute_tool_expect_failure(
+                self.registry, "metadata_doctype", {"doctype": "User"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("permission", result.get("error", ""))
     
     def test_get_doctype_metadata_nonexistent(self):
         """Test DocType metadata for non-existent DocType - FIXED METHOD NAME"""
-        with patch('frappe.db.exists', return_value=False):
+        def mock_get_meta(doctype):
+            if doctype == "NonExistent":
+                raise frappe.DoesNotExistError("DocType NonExistent not found")
+            # Allow other DocTypes (like Error Log) to work normally
+            return MagicMock()
             
-            # FIXED: Use actual method name
-            result = MetadataTools.get_doctype_metadata("NonExistent")
+        with patch('frappe.has_permission', return_value=True), \
+             patch('frappe.get_meta', side_effect=mock_get_meta), \
+             patch('frappe.log_error'):
+            
+            result = self.execute_tool_expect_failure(
+                self.registry, "metadata_doctype", {"doctype": "NonExistent"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("not found", result.get("error", ""))
@@ -107,12 +147,13 @@ class TestMetadataTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.get_meta', return_value=mock_meta):
             
-            # FIXED: Use actual method name
-            result = MetadataTools.get_doctype_metadata("User")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_doctype", {"doctype": "User"}
+            )
             
             self.assertTrue(result.get("success"))
-            self.assertEqual(len(result["fields"]), 1)
-            field = result["fields"][0]
+            self.assertEqual(len(result["metadata"]["fields"]), 1)
+            field = result["metadata"]["fields"][0]
             self.assertEqual(field["fieldname"], "email")
             self.assertEqual(field["fieldtype"], "Data")
             self.assertEqual(field["reqd"], 1)
@@ -143,12 +184,14 @@ class TestMetadataTools(BaseAssistantTest):
         with patch('frappe.get_all', return_value=mock_doctypes), \
              patch('frappe.has_permission', return_value=True):
             
-            result = MetadataTools.list_doctypes()
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_list_doctypes", {}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertIn("doctypes", result)
             self.assertEqual(len(result["doctypes"]), 2)
-            self.assertEqual(result["count"], 2)
+            self.assertEqual(result["summary"]["total_found"], 2)
     
     def test_list_doctypes_with_module_filter(self):
         """Test DocType listing with module filter - VERIFIED WORKING"""
@@ -167,7 +210,9 @@ class TestMetadataTools(BaseAssistantTest):
         with patch('frappe.get_all', return_value=mock_doctypes), \
              patch('frappe.has_permission', return_value=True):
             
-            result = MetadataTools.list_doctypes(module="Core")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_list_doctypes", {"module": "Core"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(len(result["doctypes"]), 1)
@@ -190,7 +235,9 @@ class TestMetadataTools(BaseAssistantTest):
         with patch('frappe.get_all', return_value=mock_doctypes), \
              patch('frappe.has_permission', return_value=True):
             
-            result = MetadataTools.list_doctypes(custom_only=True)
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_list_doctypes", {"custom_only": True}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(len(result["doctypes"]), 1)
@@ -219,7 +266,9 @@ class TestMetadataTools(BaseAssistantTest):
                 return perm in ["read", "write", "create"]
             mock_has_perm.side_effect = permission_side_effect
             
-            result = MetadataTools.get_permissions("User")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_permissions", {"doctype": "User"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["doctype"], "User")
@@ -243,7 +292,9 @@ class TestMetadataTools(BaseAssistantTest):
              patch('frappe.get_roles', return_value=mock_roles), \
              patch('frappe.get_meta', return_value=mock_meta):
             
-            result = MetadataTools.get_permissions("User", "specific@example.com")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_permissions", {"doctype": "User", "user": "specific@example.com"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["user"], "specific@example.com")
@@ -252,7 +303,9 @@ class TestMetadataTools(BaseAssistantTest):
         """Test permission retrieval for non-existent DocType - VERIFIED WORKING"""
         with patch('frappe.db.exists', return_value=False):
             
-            result = MetadataTools.get_permissions("NonExistent")
+            result = self.execute_tool_expect_failure(
+                self.registry, "metadata_permissions", {"doctype": "NonExistent"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("not found", result.get("error", ""))
@@ -284,7 +337,9 @@ class TestMetadataTools(BaseAssistantTest):
              patch('frappe.db.get_value', return_value="User Workflow"), \
              patch('frappe.get_doc', return_value=mock_workflow_doc):
             
-            result = MetadataTools.get_workflow("User")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_workflow", {"doctype": "User"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["doctype"], "User")
@@ -300,7 +355,9 @@ class TestMetadataTools(BaseAssistantTest):
         with patch('frappe.db.exists', return_value=True), \
              patch('frappe.db.get_value', return_value=None):
             
-            result = MetadataTools.get_workflow("User")
+            result = self.execute_tool_and_get_result(
+                self.registry, "metadata_workflow", {"doctype": "User"}
+            )
             
             self.assertTrue(result.get("success"))
             self.assertEqual(result["doctype"], "User")
@@ -311,7 +368,9 @@ class TestMetadataTools(BaseAssistantTest):
         """Test workflow retrieval for non-existent DocType - VERIFIED WORKING"""
         with patch('frappe.db.exists', return_value=False):
             
-            result = MetadataTools.get_workflow("NonExistent")
+            result = self.execute_tool_expect_failure(
+                self.registry, "metadata_workflow", {"doctype": "NonExistent"}
+            )
             
             self.assertFalse(result.get("success"))
             self.assertIn("not found", result.get("error", ""))
@@ -335,8 +394,9 @@ class TestMetadataTools(BaseAssistantTest):
     
     def test_execute_tool_invalid_tool(self):
         """Test execution of invalid tool name - VERIFIED WORKING"""
-        with self.assertRaises(Exception):
-            MetadataTools.execute_tool("invalid_tool_name", {})
+        result = self.registry.execute_tool("invalid_tool_name", {})
+        self.assertFalse(result.get("success"))
+        self.assertEqual(result.get("error_type"), "ToolNotFound")
 
 class TestMetadataToolsIntegration(BaseAssistantTest):
     """Integration tests for metadata tools - FIXED VERSION"""
@@ -344,6 +404,7 @@ class TestMetadataToolsIntegration(BaseAssistantTest):
     def setUp(self):
         """Set up integration test environment"""
         super().setUp()
+        self.registry = get_tool_registry()
     
     def test_complete_doctype_analysis(self):
         """Test complete DocType analysis workflow - FIXED METHOD NAMES"""
@@ -389,32 +450,38 @@ class TestMetadataToolsIntegration(BaseAssistantTest):
             
             mock_session.user = "admin@example.com"
             
-            # Step 1: Get DocType metadata - FIXED METHOD NAME
-            doctype_result = MetadataTools.get_doctype_metadata("User")
+            # Step 1: Get DocType metadata
+            doctype_result = self.execute_tool_and_get_result(
+                self.registry, "metadata_doctype", {"doctype": "User"}
+            )
             self.assertTrue(doctype_result.get("success"))
-            self.assertEqual(len(doctype_result["fields"]), 1)
-            self.assertEqual(len(doctype_result["link_fields"]), 1)
+            self.assertEqual(len(doctype_result["metadata"]["fields"]), 1)
+            self.assertEqual(len(doctype_result["metadata"]["link_fields"]), 1)
             
             # Step 2: Get permissions for this DocType
-            permission_result = MetadataTools.get_permissions("User")
+            permission_result = self.execute_tool_and_get_result(
+                self.registry, "metadata_permissions", {"doctype": "User"}
+            )
             self.assertTrue(permission_result.get("success"))
             self.assertIn("permissions", permission_result)
             self.assertEqual(len(permission_result["user_roles"]), 2)
             
             # Step 3: Check workflow
-            workflow_result = MetadataTools.get_workflow("User")
+            workflow_result = self.execute_tool_and_get_result(
+                self.registry, "metadata_workflow", {"doctype": "User"}
+            )
             self.assertTrue(workflow_result.get("success"))
             self.assertFalse(workflow_result["has_workflow"])
             
             # Verify consistency across results
-            self.assertEqual(doctype_result["doctype"], permission_result["doctype"])
+            self.assertEqual(doctype_result["metadata"]["doctype"], permission_result["doctype"])
             self.assertEqual(permission_result["doctype"], workflow_result["doctype"])
     
     def test_permissions_and_security_check(self):
         """Test permissions and security across metadata operations - FIXED METHOD NAMES"""
         security_scenarios = [
             {
-                "operation": "get_doctype_metadata",  # FIXED METHOD NAME
+                "tool": "metadata_doctype",
                 "args": {"doctype": "User"}
             },
         ]
@@ -425,8 +492,9 @@ class TestMetadataToolsIntegration(BaseAssistantTest):
                  patch('frappe.has_permission', return_value=True), \
                  patch('frappe.log_error'):
                 try:
-                    method = getattr(MetadataTools, scenario["operation"])
-                    result = method(**scenario["args"])
+                    result = self.execute_tool_and_get_result(
+                        self.registry, scenario["tool"], scenario["args"]
+                    )
                     # Should not fail due to permissions
                 except Exception:
                     # May fail due to missing mocks, but not permissions
@@ -437,8 +505,9 @@ class TestMetadataToolsIntegration(BaseAssistantTest):
                  patch('frappe.has_permission', return_value=False), \
                  patch('frappe.log_error'):
                 
-                method = getattr(MetadataTools, scenario["operation"])
-                result = method(**scenario["args"])
+                result = self.execute_tool_expect_failure(
+                    self.registry, scenario["tool"], scenario["args"]
+                )
                 self.assertFalse(result.get("success"))
                 self.assertIn("permission", result.get("error", ""))
     
@@ -446,13 +515,13 @@ class TestMetadataToolsIntegration(BaseAssistantTest):
         """Test error handling in metadata operations"""
         error_scenarios = [
             {
-                "operation": "get_doctype_metadata",
+                "tool": "metadata_doctype",
                 "args": {"doctype": "User"},
                 "side_effect": frappe.ValidationError("Validation failed"),
                 "expected_error": "Validation failed"
             },
             {
-                "operation": "list_doctypes",
+                "tool": "metadata_list_doctypes",
                 "args": {},
                 "side_effect": Exception("Database error"),
                 "expected_error": "Database error"
@@ -464,14 +533,16 @@ class TestMetadataToolsIntegration(BaseAssistantTest):
                  patch('frappe.has_permission', return_value=True), \
                  patch('frappe.log_error'):
                 
-                if scenario["operation"] == "get_doctype_metadata":
+                if scenario["tool"] == "metadata_doctype":
                     with patch('frappe.get_meta', side_effect=scenario["side_effect"]):
-                        method = getattr(MetadataTools, scenario["operation"])
-                        result = method(**scenario["args"])
-                elif scenario["operation"] == "list_doctypes":
+                        result = self.execute_tool_expect_failure(
+                            self.registry, scenario["tool"], scenario["args"]
+                        )
+                elif scenario["tool"] == "metadata_list_doctypes":
                     with patch('frappe.get_all', side_effect=scenario["side_effect"]):
-                        method = getattr(MetadataTools, scenario["operation"])
-                        result = method(**scenario["args"])
+                        result = self.execute_tool_expect_failure(
+                            self.registry, scenario["tool"], scenario["args"]
+                        )
                 
                 self.assertFalse(result.get("success"))
                 self.assertIn(scenario["expected_error"], result.get("error", ""))

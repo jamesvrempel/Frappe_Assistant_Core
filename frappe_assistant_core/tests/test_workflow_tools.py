@@ -7,8 +7,26 @@ import frappe
 import unittest
 import json
 from unittest.mock import patch, MagicMock
-from frappe_assistant_core.tools.workflow_tools import WorkflowTools
+from frappe_assistant_core.core.tool_registry import get_tool_registry
 from frappe_assistant_core.tests.base_test import BaseAssistantTest
+
+# Temporary placeholder for old class references
+class WorkflowTools:
+    @staticmethod
+    def start_workflow(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+    
+    @staticmethod
+    def get_workflow_state(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def get_workflow_actions(*args, **kwargs):
+        return {"success": False, "error": "Method not implemented - use registry"}
+        
+    @staticmethod
+    def execute_tool(*args, **kwargs):
+        return "Unknown tool or method - use registry"
 
 class TestWorkflowTools(BaseAssistantTest):
     """Test suite for workflow tools functionality - FIXED VERSION"""
@@ -16,17 +34,20 @@ class TestWorkflowTools(BaseAssistantTest):
     def setUp(self):
         """Set up test environment"""
         super().setUp()
-        self.tools = WorkflowTools()
+        self.registry = get_tool_registry()
     
     def test_get_tools_structure(self):
         """Test that get_tools returns proper structure"""
-        tools = WorkflowTools.get_tools()
+        tools = self.registry.get_available_tools()
         
-        self.assertIsInstance(tools, list)
-        self.assertGreater(len(tools), 0)
+        # Filter for workflow tools
+        workflow_tools = [t for t in tools if t['name'].startswith('workflow_')]
         
-        # Check each tool has required fields
-        for tool in tools:
+        self.assertIsInstance(workflow_tools, list)
+        self.assertGreater(len(workflow_tools), 0)
+        
+        # Check each workflow tool has required fields
+        for tool in workflow_tools:
             self.assertIn("name", tool)
             self.assertIn("description", tool)
             self.assertIn("inputSchema", tool)
@@ -43,8 +64,14 @@ class TestWorkflowTools(BaseAssistantTest):
              patch('frappe.db.commit'), \
              patch('frappe.log_error'):
             
-            result = WorkflowTools.start_workflow(
-                "Sales Invoice", "SINV-001", "Sales Invoice Workflow", "Submit"
+            result = self.execute_tool_and_get_result(
+                self.registry,
+                "workflow_action",
+                {
+                    "doctype": "Sales Invoice",
+                    "name": "SINV-001", 
+                    "action": "Submit"
+                }
             )
             
             self.assertIsInstance(result, dict)
@@ -55,12 +82,18 @@ class TestWorkflowTools(BaseAssistantTest):
         with patch('frappe.has_permission', return_value=False), \
              patch('frappe.log_error'):
             
-            result = WorkflowTools.start_workflow(
-                "Sales Invoice", "SINV-001", "Sales Invoice Workflow", "Submit"
+            result = self.execute_tool_expect_failure(
+                self.registry,
+                "workflow_action",
+                {
+                    "doctype": "Sales Invoice",
+                    "name": "SINV-001", 
+                    "action": "Submit"
+                },
+                "permission"
             )
             
             self.assertIsInstance(result, dict)
-            self.assertFalse(result.get("success"))
     
     def test_get_workflow_state_basic(self):
         """Test basic workflow state retrieval"""
@@ -72,7 +105,14 @@ class TestWorkflowTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.log_error'):
             
-            result = WorkflowTools.get_workflow_state("Sales Invoice", "SINV-001")
+            result = self.execute_tool_and_get_result(
+                self.registry,
+                "workflow_status",
+                {
+                    "doctype": "Sales Invoice",
+                    "name": "SINV-001"
+                }
+            )
             
             self.assertIsInstance(result, dict)
     
@@ -81,7 +121,7 @@ class TestWorkflowTools(BaseAssistantTest):
         with patch('frappe.has_permission', return_value=False), \
              patch('frappe.log_error'):
             
-            result = WorkflowTools.get_workflow_state("Sales Invoice", "SINV-001")
+            result = self.execute_tool_and_get_result(self.registry, "workflow_status", {"doctype": "Sales Invoice", "name": "SINV-001"})
             
             self.assertIsInstance(result, dict)
             self.assertFalse(result.get("success"))
@@ -96,7 +136,7 @@ class TestWorkflowTools(BaseAssistantTest):
              patch('frappe.has_permission', return_value=True), \
              patch('frappe.log_error'):
             
-            result = WorkflowTools.get_workflow_actions("Sales Invoice", "SINV-001")
+            result = self.execute_tool_and_get_result(self.registry, "workflow_status", {"doctype": "Sales Invoice", "name": "SINV-001"})
             
             self.assertIsInstance(result, dict)
     
@@ -105,7 +145,7 @@ class TestWorkflowTools(BaseAssistantTest):
         with patch('frappe.has_permission', return_value=False), \
              patch('frappe.log_error'):
             
-            result = WorkflowTools.get_workflow_actions("Sales Invoice", "SINV-001")
+            result = self.execute_tool_and_get_result(self.registry, "workflow_status", {"doctype": "Sales Invoice", "name": "SINV-001"})
             
             self.assertIsInstance(result, dict)
             self.assertFalse(result.get("success"))
@@ -120,7 +160,7 @@ class TestWorkflowTools(BaseAssistantTest):
         
         for tool_name in valid_tools:
             try:
-                result = WorkflowTools.execute_tool(tool_name, {})
+                result = self.registry.execute_tool(tool_name, {})
                 self.assertIsInstance(result, str)
             except Exception:
                 # Expected for some tools due to missing arguments
@@ -128,9 +168,9 @@ class TestWorkflowTools(BaseAssistantTest):
     
     def test_execute_tool_invalid_tool(self):
         """Test execution of invalid tool name"""
-        result = WorkflowTools.execute_tool("invalid_tool_name", {})
-        self.assertIsInstance(result, str)
-        self.assertIn("Unknown", result)
+        result = self.registry.execute_tool("invalid_tool_name", {})
+        self.assertFalse(result.get("success"))
+        self.assertEqual(result.get("error_type"), "ToolNotFound")
 
 class TestWorkflowToolsIntegration(BaseAssistantTest):
     """Integration tests for workflow tools - FIXED VERSION"""
@@ -138,6 +178,7 @@ class TestWorkflowToolsIntegration(BaseAssistantTest):
     def setUp(self):
         """Set up integration test environment"""
         super().setUp()
+        self.registry = get_tool_registry()
     
     def test_complete_workflow_scenario(self):
         """Test complete workflow management scenario"""
@@ -151,16 +192,22 @@ class TestWorkflowToolsIntegration(BaseAssistantTest):
              patch('frappe.log_error'):
             
             # Step 1: Get current workflow state
-            state_result = WorkflowTools.get_workflow_state("Sales Invoice", "SINV-001")
+            state_result = self.execute_tool_and_get_result(self.registry, "workflow_status", {"doctype": "Sales Invoice", "name": "SINV-001"})
             self.assertIsInstance(state_result, dict)
             
             # Step 2: Get available actions
-            actions_result = WorkflowTools.get_workflow_actions("Sales Invoice", "SINV-001")
+            actions_result = self.execute_tool_and_get_result(self.registry, "workflow_status", {"doctype": "Sales Invoice", "name": "SINV-001"})
             self.assertIsInstance(actions_result, dict)
             
             # Step 3: Start workflow action
-            workflow_result = WorkflowTools.start_workflow(
-                "Sales Invoice", "SINV-001", "Sales Invoice Workflow", "Submit"
+            workflow_result = self.execute_tool_and_get_result(
+                self.registry,
+                "workflow_action",
+                {
+                    "doctype": "Sales Invoice",
+                    "name": "SINV-001", 
+                    "action": "Submit"
+                }
             )
             self.assertIsInstance(workflow_result, dict)
     
@@ -168,16 +215,12 @@ class TestWorkflowToolsIntegration(BaseAssistantTest):
         """Test various error scenarios in workflow operations"""
         error_scenarios = [
             {
-                "operation": "start_workflow",
-                "args": ["Sales Invoice", "SINV-001", "Test Workflow", "Submit"]
+                "tool": "workflow_action",
+                "args": {"doctype": "Sales Invoice", "name": "SINV-001", "action": "Submit"}
             },
             {
-                "operation": "get_workflow_state",
-                "args": ["Sales Invoice", "SINV-001"]
-            },
-            {
-                "operation": "get_workflow_actions", 
-                "args": ["Sales Invoice", "SINV-001"]
+                "tool": "workflow_status",
+                "args": {"doctype": "Sales Invoice", "name": "SINV-001"}
             }
         ]
         
@@ -186,8 +229,11 @@ class TestWorkflowToolsIntegration(BaseAssistantTest):
                  patch('frappe.get_doc', side_effect=Exception("Database error")), \
                  patch('frappe.log_error'):
                 
-                method = getattr(WorkflowTools, scenario["operation"])
-                result = method(*scenario["args"])
+                result = self.execute_tool_expect_failure(
+                    self.registry,
+                    scenario["tool"],
+                    scenario["args"]
+                )
                 self.assertIsInstance(result, dict)
                 # Workflow tools handle errors gracefully
 

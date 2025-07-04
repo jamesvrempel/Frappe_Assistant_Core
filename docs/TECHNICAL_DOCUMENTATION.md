@@ -24,22 +24,23 @@
 Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Context Protocol (MCP) server implementation that enables AI assistants like Claude to interact seamlessly with Frappe Framework and ERPNext systems. The server implements JSON-RPC 2.0 based assistant protocol for secure document operations, report execution, data analysis, and visualization with inline display capabilities.
 
 ### Key Features
-- **20+ Comprehensive Tools** across 5 categories (all included - no paid tiers)
-- **Auto-Discovery Tool Registry** - Zero configuration tool loading
-- **Intelligent Artifact Streaming** - Automatic detection and streaming for large results (>5 lines)
-- **Python Code Execution** - Safe sandboxed analysis environment with auto-import handling
-- **Enhanced Report Integration** - Execute all Frappe report types with improved debugging
-- **Advanced Data Analysis** - Statistical analysis with pandas/numpy and JSON serialization fixes
-- **Inline Visualization** - Create charts with base64 inline display support
-- **Professional Deliverables** - Tool-specific artifact suggestions and structured outputs
-- **Fixed Document Operations** - Robust CRUD operations with enhanced error handling
-- **Search & Metadata** - Comprehensive data exploration
-- **Permission-Based Access** - Role-based tool filtering
-- **Comprehensive Audit Trail** - Complete operation logging
-- **Modular Architecture** - Clean, maintainable, extensible codebase
-- **Centralized Logging** - Professional logging system replacing print statements
-- **Modern Python Packaging** - pyproject.toml with proper dependency management
-- **MIT Licensed** - Free for all commercial and personal use
+- **🏗️ Plugin-Based Architecture** - Complete architectural redesign from monolithic to modular plugin system
+- **21 Comprehensive Tools** across 4 plugin categories (all included - no paid tiers)
+- **🔌 Plugin Auto-Discovery** - Zero configuration plugin and tool loading
+- **🎯 Plugin Manager** - Centralized plugin lifecycle management with validation
+- **📦 Tool Registry** - Dynamic tool discovery and registration system
+- **⚙️ Runtime Plugin Management** - Enable/disable plugins through web interface
+- **🐍 Python Code Execution** - Safe sandboxed analysis environment with auto-import handling
+- **📊 Data Analysis & Visualization** - Statistical analysis with pandas/numpy and matplotlib integration
+- **📈 Enhanced Report Integration** - Execute all Frappe report types with improved debugging
+- **🔍 Advanced Search & Metadata** - Comprehensive data exploration across all DocTypes
+- **📋 Robust Document Operations** - CRUD operations with enhanced error handling
+- **🔒 Permission-Based Access** - Role-based tool filtering
+- **📝 Comprehensive Audit Trail** - Complete operation logging
+- **🏛️ Modular Architecture** - Clean, maintainable, extensible codebase
+- **📊 Centralized Logging** - Professional logging system replacing print statements
+- **📦 Modern Python Packaging** - pyproject.toml with proper dependency management
+- **⚖️ MIT Licensed** - Free for all commercial and personal use
 
 ### Technology Stack
 - **Backend**: Python, Frappe Framework
@@ -54,66 +55,97 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 
 ## Architecture
 
-### System Components
+### Plugin-Based Architecture
 
-#### 1. **Modular API Layer** 🔄 *Recently Refactored*
+#### 1. **Core System Components**
 ```
-frappe_assistant_core/api/
-├── assistant_api.py              # Main API handler (200 lines, was 1580)
-└── handlers/                     # Modular request handlers
-    ├── __init__.py              # Handler exports
-    ├── initialize.py            # MCP initialization 
-    ├── tools.py                 # Tools list/call handlers
-    ├── prompts.py               # Prompts handlers
-    └── notification_handler.py  # Cancellation handling
-```
-
-**Key Improvements:**
-- **90% Code Reduction**: Main API file reduced from 1580 to 200 lines
-- **Separation of Concerns**: Each handler focuses on specific functionality
-- **Error Handling**: Centralized error management with constants
-- **Logging**: Professional logging replacing all print statements
-
-#### 2. **Constants & Configuration** 🆕 *New Architecture*
-```
-frappe_assistant_core/constants/
-├── __init__.py
-└── definitions.py               # Centralized constants
+frappe_assistant_core/
+├── core/                        # Core system components
+│   ├── tool_registry.py         # Auto-discovery tool registry
+│   └── base_tool.py             # Base tool implementation class
+├── utils/                       # Utility modules
+│   ├── plugin_manager.py        # Plugin discovery and loading
+│   └── logger.py                # Professional logging system
+└── assistant_core/              # Frappe DocType implementations
+    └── doctype/
+        ├── assistant_core_settings/        # Main settings
+        ├── assistant_plugin_repository/    # Plugin management
+        └── assistant_tool_registry/        # Tool registration
 ```
 
-**Contains:**
-- `ErrorCodes`: JSON-RPC error codes
-- `ErrorMessages`: User-friendly error messages  
-- `LogMessages`: Structured log message templates
-- `ToolCategories`: Tool classification constants
-- `StreamingMessages`: Artifact streaming templates
-- `AnalysisThresholds`: Configurable limits
-
-#### 3. **Centralized Logging** 🆕 *Professional Logging*
+#### 2. **Plugin System** 🆕 *Plugin Architecture*
 ```
-frappe_assistant_core/utils/
-├── logger.py                    # Centralized logging system
-└── [other utilities]
+frappe_assistant_core/plugins/
+├── core/                        # Core tools plugin (always enabled)
+│   ├── plugin.py                # Plugin definition and metadata
+│   └── tools/                   # Tool implementations
+│       ├── document_create.py   # Document creation
+│       ├── document_get.py      # Document retrieval  
+│       ├── document_update.py   # Document updates
+│       ├── document_delete.py   # Document deletion
+│       ├── document_list.py     # Document listing
+│       ├── search_global.py     # Global search
+│       ├── search_doctype.py    # DocType-specific search
+│       ├── search_link.py       # Link field search
+│       ├── metadata_*.py        # Metadata tools
+│       ├── report_*.py          # Report tools
+│       └── workflow_*.py        # Workflow tools
+├── data_science/                # Data science plugin (optional)
+│   ├── plugin.py                # Plugin definition
+│   └── tools/
+│       ├── execute_python_code.py      # Python code execution
+│       ├── analyze_frappe_data.py      # Data analysis
+│       ├── query_and_analyze.py        # SQL analysis
+│       └── create_visualization.py     # Chart generation
+├── websocket/                   # WebSocket plugin (optional)
+└── batch_processing/            # Batch processing plugin (optional)
 ```
 
-**Features:**
-- `AssistantLogger` class with proper log levels
-- Structured logging with timestamps
-- Debug, info, warning, error, critical levels
-- Replaces all print statements throughout codebase
+#### 3. **Plugin Architecture Benefits**
+- **🔌 Modular Design**: Tools organized in logical, discoverable plugins
+- **🚀 Auto-Discovery**: Automatic plugin and tool discovery on startup
+- **⚙️ Runtime Management**: Enable/disable plugins through web interface
+- **🎯 Focused Functionality**: Each plugin handles specific domain
+- **🔧 Extensibility**: Easy to add new plugins without core changes
+- **📦 Dependency Management**: Plugin-specific dependencies and validation
 
-#### 4. **Enhanced Tool System**
+### Tool Discovery and Registry System
+
+#### 1. **Tool Registry** 🔄 *Plugin-Based Discovery*
+```python
+# Core registry handles plugin-based tool discovery
+from frappe_assistant_core.core.tool_registry import ToolRegistry
+
+registry = ToolRegistry()
+# Automatically discovers tools from all enabled plugins
+available_tools = registry.get_available_tools()
 ```
-frappe_assistant_core/tools/
-├── __init__.py
-├── tool_registry.py             # Auto-discovery registry
-├── registry.py                  # Compatibility wrapper
-├── executor.py                  # Tool execution engine
-├── analysis_tools.py            # Python execution & analysis
-├── document_tools.py            # CRUD operations
-├── report_tools.py              # Report execution
-├── search_tools.py              # Search functionality
-└── metadata_tools.py            # System metadata
+
+#### 2. **Plugin Manager** 🆕 *Plugin Lifecycle*  
+```python
+from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+
+plugin_manager = get_plugin_manager()
+# Discovers all available plugins
+discovered_plugins = plugin_manager.get_discovered_plugins()
+# Loads enabled plugins based on settings
+plugin_manager.load_enabled_plugins(['core', 'data_science'])
+```
+
+#### 3. **Base Tool Class** 🔧 *Standardized Interface*
+```python
+from frappe_assistant_core.core.base_tool import BaseTool
+
+class MyTool(BaseTool):
+    def __init__(self):
+        super().__init__()
+        self.name = "my_tool"
+        self.description = "Tool description"
+        self.input_schema = {...}  # JSON schema
+    
+    def execute(self, arguments):
+        # Tool implementation
+        return {"success": True, "result": "..."}
 ```
 
 ### Modern Python Packaging 🆕
@@ -126,7 +158,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "frappe-assistant-core"
-version = "1.0.0"
+version = "1.2.0"
 requires-python = ">=3.8"
 dependencies = [
     "frappe",
@@ -148,21 +180,47 @@ dependencies = [
 
 ## Refactoring & Modernization
 
-### Recent Comprehensive Refactoring (June 2025)
+### Recent Comprehensive Refactoring (July 2025)
 
-#### 1. **Modular Architecture Implementation**
+#### 1. **Plugin-Based Architecture Implementation** ⭐ **MAJOR**
 
 **Before:**
 - Single 1580-line monolithic API file
-- Hardcoded strings throughout codebase
-- Print statements for debugging
+- Hardcoded tool discovery
+- Fixed tool structure
 - Legacy setup.py packaging
 
 **After:**
-- Modular handler architecture (5 focused modules)
-- Centralized constants in dedicated module
-- Professional logging system
+- Complete plugin-based architecture
+- 4 distinct plugin categories (core, data_science, websocket, batch_processing)
+- Automatic plugin and tool discovery
+- Plugin Manager with lifecycle management
+- Tool Registry with dynamic registration
+- BaseTool framework for standardized development
 - Modern pyproject.toml packaging
+
+#### 2. **Modular Architecture Implementation**
+
+**Additional Improvements:**
+- Centralized constants in dedicated module
+- Professional logging system replacing print statements
+- Enhanced error handling and validation
+- Improved data compatibility (fixed pandas DataFrame issues)
+
+#### 3. **Critical Data Compatibility Fixes** 🔧
+
+**Data Science Plugin Enhancements:**
+- ✅ **Fixed `invalid __array_struct__` errors** with pandas DataFrame creation from Frappe data
+- ✅ **Resolved matplotlib import scope issues** in visualization tools  
+- ✅ **Enhanced SQL-based data fetching** to bypass frappe._dict compatibility problems
+- ✅ **Improved data serialization** for complex Frappe data types
+- ✅ **Better error handling** with meaningful error messages for debugging
+
+**Impact:**
+- All 21 tools now functional without data conversion errors
+- Seamless pandas integration with Frappe business data
+- Reliable visualization creation across all chart types
+- Enhanced user experience with clear error messages
 
 #### 2. **Code Quality Improvements**
 
@@ -208,63 +266,133 @@ dependencies = [
 
 ## Tool System
 
-### Tool Categories
+### Plugin-Based Tool Categories
 
-#### 1. **Document Operations** (`document_*`)
+#### 1. **Core Plugin Tools** (`plugins/core/`) - Always Enabled
+Essential Frappe operations that are always available:
+
+**Document Operations** (`document_*`)
 - `document_create` - Create new documents
-- `document_read` - Read document data
+- `document_get` - Retrieve document data
 - `document_update` - Update existing documents
 - `document_delete` - Delete documents
 - `document_list` - List documents with filters
 
-#### 2. **Analysis Tools** (`execute_*`, `analyze_*`, `query_*`)
-- `execute_python_code` - Sandboxed Python execution (enhanced security)
-- `analyze_frappe_data` - Statistical data analysis
-- `query_and_analyze` - SQL queries with analysis
-- `create_visualization` - Chart generation with base64 display
+**Search Tools** (`search_*`)
+- `search_global` - Global search across all DocTypes
+- `search_doctype` - DocType-specific search
+- `search_link` - Link field search and filtering
 
-#### 3. **Report Tools** (`report_*`)
+**Metadata Tools** (`metadata_*`)
+- `metadata_doctype` - Get DocType structure information
+- `metadata_list_doctypes` - List all available DocTypes
+- `metadata_doctype_fields` - Get field definitions
+- `metadata_permissions` - Permission information
+- `metadata_workflow` - Workflow information
+
+**Report Tools** (`report_*`)
 - `report_execute` - Execute any Frappe report type
 - `report_list` - Get available reports
-- `report_filters` - Get report filter options
+- `report_details` - Get report structure and parameters
 
-#### 4. **Search Tools** (`search_*`)
-- `search_documents` - Global document search
-- `search_users` - User directory search
+**Workflow Tools** (`workflow_*`)
+- `workflow_action` - Execute workflow actions
+- `workflow_list` - List available workflows
+- `workflow_status` - Get workflow status
 
-#### 5. **Metadata Tools** (`metadata_*`)
-- `metadata_doctypes` - Get DocType information
-- `metadata_fields` - Get field definitions
-- `metadata_permissions` - Permission information
+#### 2. **Data Science Plugin Tools** (`plugins/data_science/`) - Optional
+Advanced analytics and visualization capabilities:
 
-### Auto-Discovery Registry System
+**Analysis Tools**
+- `execute_python_code` - Sandboxed Python execution with Frappe context
+- `analyze_frappe_data` - Statistical data analysis with pandas
+- `query_and_analyze` - SQL queries with advanced analysis
+- `create_visualization` - Chart generation with matplotlib (bar, line, pie, scatter, heatmap)
 
-#### AutoToolRegistry Class
+**Dependencies:** pandas, numpy, matplotlib, seaborn, plotly, scipy
+
+#### 3. **WebSocket Plugin Tools** (`plugins/websocket/`) - Optional
+Real-time communication capabilities:
+- Live data streaming
+- Real-time notifications
+- Interactive dashboard updates
+
+#### 4. **Batch Processing Plugin Tools** (`plugins/batch_processing/`) - Optional
+Background and bulk operations:
+- Large dataset processing
+- Background task management
+- Bulk operation optimization
+
+### Plugin-Based Auto-Discovery System
+
+#### Tool Registry with Plugin Integration 🆕
 ```python
-class AutoToolRegistry:
-    """Auto-discovers and manages tools from code with streaming metadata"""
+# frappe_assistant_core/core/tool_registry.py
+class ToolRegistry:
+    """Registry for all available tools. Handles discovery from plugins."""
     
-    @classmethod
-    def get_all_tools(cls) -> List[Dict[str, Any]]:
-        """Discover all available tools from tool classes"""
+    def __init__(self):
+        self.tools: Dict[str, BaseTool] = {}
+        self._discover_tools()
+    
+    def _discover_tools(self):
+        """Discover all available tools from enabled plugins"""
+        self._discover_plugin_tools()
+    
+    def _discover_plugin_tools(self):
+        """Discover tools from enabled plugins"""
+        plugin_manager = get_plugin_manager()
+        enabled_plugins = plugin_manager.get_enabled_plugins()
         
-    @classmethod
-    def get_tools_for_user(cls, user: str = None) -> List[Dict[str, Any]]:
-        """Get tools filtered by user permissions"""
-        
-    @classmethod
-    def execute_tool(cls, tool_name: str, arguments: Dict[str, Any]) -> str:
-        """Execute a tool by name"""
+        for plugin_name, plugin_instance in enabled_plugins.items():
+            # Load tools from each enabled plugin
+            plugin_tools = plugin_manager.get_plugin_tools(plugin_name)
+            self.tools.update(plugin_tools)
 ```
 
-#### Tool Execution Engine 🆕
+#### Plugin Manager 🆕
 ```python
-# frappe_assistant_core/tools/executor.py
-def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> str:
-    """Centralized tool execution with validation and logging"""
+# frappe_assistant_core/utils/plugin_manager.py
+class PluginManager:
+    """Manages plugin discovery, loading, and lifecycle"""
     
-def validate_tool_arguments(tool_name: str, arguments: Dict[str, Any]) -> bool:
-    """Validate arguments against tool schema"""
+    def _discover_plugins(self):
+        """Auto-discover all plugins in the plugins directory"""
+        plugins_dir = Path(__file__).parent.parent / "plugins"
+        
+        for item in plugins_dir.iterdir():
+            if item.is_dir() and not item.name.startswith(('_', '.')):
+                self._discover_plugin(item)
+    
+    def get_enabled_plugins(self) -> Dict[str, BasePlugin]:
+        """Get all enabled plugin instances"""
+        
+    def get_plugin_tools(self, plugin_name: str) -> Dict[str, BaseTool]:
+        """Get all tools from a specific plugin"""
+```
+
+#### Base Tool Framework 🆕
+```python
+# frappe_assistant_core/core/base_tool.py
+class BaseTool:
+    """Base class for all tools with standardized interface"""
+    
+    def __init__(self):
+        self.name: str = ""
+        self.description: str = ""
+        self.input_schema: Dict = {}
+        self.requires_permission: Optional[str] = None
+    
+    def execute(self, arguments: Dict[str, Any]) -> Any:
+        """Execute the tool - must be implemented by subclasses"""
+        raise NotImplementedError
+    
+    def validate_arguments(self, arguments: Dict[str, Any]) -> bool:
+        """Validate arguments against tool schema"""
+    
+    def check_permission(self, user: str = None) -> bool:
+        """Check if user has permission to use this tool"""
+```
     
 def get_tool_info(tool_name: str) -> Dict[str, Any]:
     """Get detailed tool information"""
@@ -677,7 +805,7 @@ pytest --cov=frappe_assistant_core tests/
 
 ## Recent Improvements
 
-### Version 1.0.0 - Comprehensive Refactoring (June 2025)
+### Version 1.2.0 - Comprehensive Refactoring (July 2025)
 
 #### 🏗️ **Architecture Modernization**
 - **Modular API Handlers**: Separated concerns into focused modules
@@ -810,5 +938,5 @@ This is an open-source MIT licensed project. Contributions are welcome!
 
 ---
 
-*Last Updated: June 2025 - Version 1.0.0*
+*Last Updated: July 2025 - Version 1.2.0*
 *Architecture: Modular, Modern, Maintainable*

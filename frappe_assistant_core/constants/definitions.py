@@ -6,7 +6,7 @@ Centralizes all string literals, messages, and configuration constants
 # MCP Protocol Constants
 MCP_PROTOCOL_VERSION = "2024-11-05"
 SERVER_NAME = "Frappe Assistant Core MCP Server"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.2.0"
 
 # API Error Codes
 class ErrorCodes:

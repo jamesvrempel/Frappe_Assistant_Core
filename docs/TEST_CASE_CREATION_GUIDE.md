@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides comprehensive instructions for creating test cases for Frappe Assistant Core tools, based on actual test execution results and real implementation patterns. The testing framework is built on Python's unittest and integrates with Frappe's testing infrastructure.
+This guide provides comprehensive instructions for creating test cases for Frappe Assistant Core tools in the plugin architecture, based on actual test execution results and real implementation patterns. The testing framework is built on Python's unittest and integrates with Frappe's testing infrastructure.
 
 ## Test Execution Results & Findings
 
@@ -45,17 +45,19 @@ All test classes inherit from `BaseAssistantTest`, which provides:
 - Utility methods for test data creation
 - Performance measurement helpers
 - Mock configuration for Frappe objects
+- Registry integration for plugin-based tool testing
 
 ### Test Categories
 
 1. **Unit Tests**: Test individual tool methods in isolation
-2. **Integration Tests**: Test tool interactions with Frappe framework
-3. **Performance Tests**: Measure execution time and resource usage
-4. **Security Tests**: Validate permissions and access controls
+2. **Integration Tests**: Test tool interactions with Frappe framework and registry
+3. **Plugin Tests**: Test plugin discovery, loading, and tool registration
+4. **Performance Tests**: Measure execution time and resource usage
+5. **Security Tests**: Validate permissions and access controls
 
 ## Corrected Test File Structure
 
-Each tool category has two test classes:
+Each tool category has multiple test classes:
 
 ```python
 class TestToolName(BaseAssistantTest):
@@ -63,6 +65,35 @@ class TestToolName(BaseAssistantTest):
     
 class TestToolNameIntegration(BaseAssistantTest):
     """Integration tests with Frappe framework"""
+
+class TestToolNamePlugin(BaseAssistantTest):
+    """Plugin-specific tests for tool registration and discovery"""
+```
+
+## Plugin Testing Patterns
+
+### Plugin Discovery Tests
+```python
+def test_plugin_discovery(self):
+    """Test plugin is discovered correctly"""
+    from frappe_assistant_core.core.tool_registry import get_tool_registry
+    
+    registry = get_tool_registry()
+    available_tools = registry.get_available_tools()
+    plugin_tools = [t for t in available_tools if t['name'].startswith('plugin_prefix')]
+    
+    self.assertGreater(len(plugin_tools), 0)
+    self.assertIn('expected_tool_name', [t['name'] for t in plugin_tools])
+
+def test_registry_integration(self):
+    """Test tool registration through registry"""
+    from frappe_assistant_core.core.tool_registry import get_tool_registry
+    
+    registry = get_tool_registry()
+    result = registry.execute_tool("tool_name", {"param": "value"})
+    
+    self.assertIsInstance(result, dict)
+    self.assertIn("success", result)
 ```
 
 ## Essential Test Components (Verified Working Patterns)

@@ -1,16 +1,17 @@
 # Frappe Assistant Core - Tool Usage Guide for LLMs
 
-This guide provides comprehensive information about the Frappe Assistant Core tools to help LLMs make the most effective use of them when assisting users. 
+This guide provides comprehensive information about the Frappe Assistant Core tools in the plugin architecture to help LLMs make the most effective use of them when assisting users. 
 
-**⚠️ Important**: This guide reflects the latest improvements including fixed document listing, inline visualization display, and enhanced error handling.
+**⚠️ Important**: This guide reflects the latest plugin-based architecture with improved tool organization, discovery, and management.
 
 ## Overview
 
-The Frappe Assistant Core provides powerful tools for interacting with Frappe/ERPNext systems. These tools are designed for business data analysis, document management, reporting, and visualization.
+The Frappe Assistant Core provides powerful tools for interacting with Frappe/ERPNext systems through a plugin-based architecture. These tools are organized in discoverable plugins and designed for business data analysis, document management, reporting, and visualization.
 
-## Core Tool Categories
+## Plugin-Based Tool Categories
 
-### 📄 Document Management Tools
+### 📦 Core Plugin - Document Management Tools
+**Plugin:** `core` (always enabled)  
 **Primary Use Cases:** CRUD operations on business documents
 
 #### `document_list` - 🔍 Primary Discovery Tool ✅ FIXED
@@ -43,7 +44,8 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
   - Fetch the document first to understand current values
   - Only include fields that need to be changed
 
-### 📊 Report & Analytics Tools
+### 📦 Core Plugin - Report & Analytics Tools
+**Plugin:** `core` (always enabled)  
 **Primary Use Cases:** Business intelligence and data analysis
 
 #### `report_list` - 📋 Report Discovery
@@ -64,7 +66,8 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 - **When to use:** You need to understand report fields before execution or visualization
 - **Best practices:** Use before creating visualizations from report data
 
-### 📊 Data Analysis & Visualization Tools
+### 🧪 Data Science Plugin - Analysis & Visualization Tools
+**Plugin:** `data_science` (optional - enable through settings)  
 **Primary Use Cases:** Statistical analysis and chart creation
 
 #### `analyze_frappe_data` - 📈 Statistical Analysis

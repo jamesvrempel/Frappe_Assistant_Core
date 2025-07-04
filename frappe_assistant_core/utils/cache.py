@@ -191,10 +191,15 @@ def get_cached_category_performance():
 @site_cache(ttl=CACHE_TTL["tool_registry"])
 def get_cached_tool_registry_stats():
     """Cache tool registry statistics - process-local cache"""
-    from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
+    from frappe_assistant_core.core.tool_registry import get_tool_registry
     
     try:
-        stats = AutoToolRegistry.get_stats()
+        registry = get_tool_registry()
+        tools = registry.get_available_tools()
+        stats = {
+            "total_tools": len(tools),
+            "enabled_tools": len(tools)  # All tools from registry are enabled
+        }
         return stats
     except Exception as e:
         frappe.log_error(f"Tool registry stats error: {str(e)}")
@@ -203,10 +208,11 @@ def get_cached_tool_registry_stats():
 @redis_cache(ttl=CACHE_TTL["user_permissions"], user=True)
 def get_cached_user_tool_permissions(user=None):
     """Cache user's tool permissions"""
-    from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
+    from frappe_assistant_core.core.tool_registry import get_tool_registry
     
     user = user or frappe.session.user
-    accessible_tools = AutoToolRegistry.get_tools_for_user(user)
+    registry = get_tool_registry()
+    accessible_tools = registry.get_available_tools(user)
     
     return {
         "user": user,
@@ -269,7 +275,7 @@ def get_cached_system_health():
         }
 
 # Cache invalidation functions
-def invalidate_settings_cache():
+def invalidate_settings_cache(doc=None, method=None):
     """Invalidate settings-related caches"""
     cache_keys = [
         get_cache_key(CACHE_KEYS["settings"]),
@@ -292,10 +298,11 @@ def invalidate_dashboard_cache():
 
 def invalidate_tool_registry_cache():
     """Invalidate tool registry caches"""
-    from frappe_assistant_core.tools.tool_registry import AutoToolRegistry
+    from frappe_assistant_core.core.tool_registry import get_tool_registry
     
     # Clear registry caches
-    AutoToolRegistry.clear_cache()
+    registry = get_tool_registry()
+    registry._discover_tools()  # Force refresh
     frappe.cache.delete_key("get_cached_tool_registry_stats")
     frappe.cache.delete_keys("get_cached_user_tool_permissions_*")
 

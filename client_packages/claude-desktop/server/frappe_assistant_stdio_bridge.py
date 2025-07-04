@@ -12,13 +12,20 @@ from typing import Dict, Any
 
 class StdioMCPWrapper:
     def __init__(self):
-        self.server_url = "http://127.0.0.1:8000"
+        self.server_url = os.environ.get("FRAPPE_SERVER_URL", "https://erptest.promantia.in")
         self.api_key = os.environ.get("FRAPPE_API_KEY")
         self.api_secret = os.environ.get("FRAPPE_API_SECRET")
+        
+        if not self.server_url:
+            self.log_error("Missing FRAPPE_SERVER_URL environment variable")
+            sys.exit(1)
         
         if not self.api_key or not self.api_secret:
             self.log_error("Missing FRAPPE_API_KEY or FRAPPE_API_SECRET environment variables")
             sys.exit(1)
+        
+        # Remove trailing slash if present
+        self.server_url = self.server_url.rstrip('/')
         
         self.headers = {
             "Authorization": f"token {self.api_key}:{self.api_secret}",
@@ -68,11 +75,11 @@ class StdioMCPWrapper:
                 )
                 
         except requests.exceptions.ConnectionError:
-            self.log_error("Cannot connect to assistant server. Make sure it's running on http://127.0.0.1:8000")
+            self.log_error("Cannot connect to assistant server. Make sure it's running on "+self.server_url)
             return self.format_error_response(
                 -32603,
                 "Connection failed to assistant server",
-                "Make sure the server is running on http://127.0.0.1:8000",
+                "Make sure the server is running on "+self.server_url,
                 request_data.get("id")
             )
         except Exception as e:

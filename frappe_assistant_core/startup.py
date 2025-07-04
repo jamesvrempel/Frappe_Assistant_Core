@@ -7,6 +7,9 @@ def startup():
         # Check and populate tool registry if empty
         ensure_tools_registered()
         
+        # Check and populate plugin repository if empty
+        ensure_plugins_registered()
+        
         # Initialize assistant server if enabled
         settings = frappe.get_single("Assistant Core Settings")
         if settings and settings.server_enabled:
@@ -32,3 +35,24 @@ def ensure_tools_registered():
             api_logger.debug("Assistant Tool Registry table not found during startup")
     except Exception as e:
         api_logger.debug(f"Error checking tool registry during startup: {e}")
+
+def ensure_plugins_registered():
+    """Ensure plugins are registered in the plugin repository"""
+    try:
+        # Check if Assistant Plugin Repository table exists and has plugins
+        if frappe.db.table_exists("tabAssistant Plugin Repository"):
+            plugin_count = frappe.db.count("Assistant Plugin Repository")
+            
+            if plugin_count == 0:
+                api_logger.info("Assistant Plugin Repository is empty, auto-registering plugins...")
+                from frappe_assistant_core.install import register_default_plugins
+                register_default_plugins()
+            else:
+                api_logger.debug(f"Assistant Plugin Repository has {plugin_count} plugins")
+                # Always refresh plugins on startup to ensure they're up to date
+                from frappe_assistant_core.assistant_core.doctype.assistant_plugin_repository.assistant_plugin_repository import refresh_plugin_repository
+                refresh_plugin_repository()
+        else:
+            api_logger.debug("Assistant Plugin Repository table not found during startup")
+    except Exception as e:
+        api_logger.debug(f"Error checking plugin repository during startup: {e}")

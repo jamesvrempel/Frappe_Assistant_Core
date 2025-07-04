@@ -1,0 +1,1 @@
+# Assistant Plugin Repository DocType
