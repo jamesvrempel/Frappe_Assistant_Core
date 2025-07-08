@@ -66,6 +66,6 @@ def check_assistant_permission(user=None):
         user = frappe.session.user
     
     user_roles = frappe.get_roles(user)
-    assistant_roles = ["System Manager", "assistant Admin", "assistant User"]
+    assistant_roles = ["System Manager", "Assistant Admin", "Assistant User"]
     
     return any(role in user_roles for role in assistant_roles)

@@ -134,8 +134,19 @@ class ToolRegistry:
         except Exception as e:
             self.logger.warning(f"Could not load plugin settings for filtering: {str(e)}")
         
+        # Import security configuration
+        from frappe_assistant_core.core.security_config import check_tool_access, get_user_primary_role
+        
+        # Get user's primary role (includes Default for all users)
+        user_primary_role = get_user_primary_role(user)
+        
         for tool in self.tools.values():
             try:
+                # Check role-based tool access first
+                if not check_tool_access(user_primary_role, tool.name):
+                    self.logger.debug(f"Tool {tool.name} not accessible for role {user_primary_role}")
+                    continue
+                
                 # Check if user has permission for this tool
                 if tool.requires_permission:
                     if not frappe.has_permission(

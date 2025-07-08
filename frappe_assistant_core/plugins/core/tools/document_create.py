@@ -52,14 +52,59 @@ class DocumentCreate(BaseTool):
         data = arguments.get("data", {})
         submit = arguments.get("submit", False)
         
-        # Check permission for DocType
-        if not frappe.has_permission(doctype, "create"):
-            return {
-                "success": False,
-                "error": f"Insufficient permissions to create {doctype} document"
-            }
+        # Import security validation
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        
+        # Validate document access with comprehensive permission checking
+        validation_result = validate_document_access(
+            user=frappe.session.user,
+            doctype=doctype,
+            name=None,  # No specific document for create operation
+            perm_type="create"
+        )
+        
+        if not validation_result["success"]:
+            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
+            return validation_result
+        
+        user_role = validation_result["role"]
         
         try:
+            # Filter out sensitive fields that user shouldn't be able to set
+            from frappe_assistant_core.core.security_config import SENSITIVE_FIELDS, ADMIN_ONLY_FIELDS
+            
+            # Get restricted fields for this role and doctype
+            restricted_fields = set()
+            restricted_fields.update(SENSITIVE_FIELDS.get("all_doctypes", []))
+            restricted_fields.update(SENSITIVE_FIELDS.get(doctype, []))
+            
+            if user_role == "Assistant User":
+                restricted_fields.update(ADMIN_ONLY_FIELDS.get("all_doctypes", []))
+                doctype_admin_fields = ADMIN_ONLY_FIELDS.get(doctype, [])
+                if doctype_admin_fields != "*":
+                    restricted_fields.update(doctype_admin_fields)
+            
+            # Check for attempts to set restricted fields
+            restricted_fields_attempted = [field for field in data.keys() if field in restricted_fields]
+            if restricted_fields_attempted:
+                result = {
+                    "success": False,
+                    "error": f"Cannot set restricted fields: {', '.join(restricted_fields_attempted)}. These fields require higher privileges."
+                }
+                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                return result
+            
+            # Check submit permission for Assistant Users
+            if submit and user_role == "Assistant User":
+                # Assistant Users typically shouldn't be able to submit documents directly
+                if not frappe.has_permission(doctype, "submit"):
+                    result = {
+                        "success": False,
+                        "error": f"Insufficient permissions to submit {doctype} documents"
+                    }
+                    audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                    return result
+            
             # Create document
             doc = frappe.new_doc(doctype)
             
@@ -74,7 +119,7 @@ class DocumentCreate(BaseTool):
             if submit and doc.docstatus == 0:
                 doc.submit()
             
-            return {
+            result = {
                 "success": True,
                 "name": doc.name,
                 "doctype": doctype,
@@ -82,17 +127,25 @@ class DocumentCreate(BaseTool):
                 "submitted": doc.docstatus == 1 if submit else False
             }
             
+            # Log successful creation
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
+            
         except Exception as e:
             frappe.log_error(
                 title=_("Document Creation Error"),
                 message=f"Error creating {doctype}: {str(e)}"
             )
             
-            return {
+            result = {
                 "success": False,
                 "error": str(e),
                 "doctype": doctype
             }
+            
+            # Log failed creation
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
 
 
 # Make sure class name matches file name for discovery
