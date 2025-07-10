@@ -46,6 +46,9 @@ def handle_assistant_request() -> Dict[str, Any]:
     
     api_logger.info(LogMessages.API_AUTHENTICATED.format(authenticated_user))
     
+    # CRITICAL: Ensure user context is maintained for the entire request
+    frappe.set_user(authenticated_user)
+    
     try:
         # Log connection
         log_assistant_connection()

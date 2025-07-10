@@ -94,16 +94,39 @@ class DocumentCreate(BaseTool):
                 audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
-            # Check submit permission for Assistant Users
-            if submit and user_role == "Assistant User":
-                # Assistant Users typically shouldn't be able to submit documents directly
+            # Enhanced submit permission checking based on user role
+            if submit:
+                # Check if user has submit permission for this doctype
                 if not frappe.has_permission(doctype, "submit"):
                     result = {
                         "success": False,
-                        "error": f"Insufficient permissions to submit {doctype} documents"
+                        "error": f"Insufficient permissions to submit {doctype} documents. Current user: {frappe.session.user}"
                     }
                     audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                     return result
+                
+                # Additional role-based restrictions
+                if user_role in ["Assistant User", "Default"]:
+                    # For basic users, check if they have explicit submit permission
+                    # This allows proper role-based access while maintaining security
+                    user_roles = frappe.get_roles(frappe.session.user)
+                    meta = frappe.get_meta(doctype)
+                    
+                    # Check if any of the user's roles have submit permission
+                    can_submit = False
+                    for perm in meta.permissions:
+                        if perm.role in user_roles and perm.submit:
+                            can_submit = True
+                            break
+                    
+                    if not can_submit:
+                        result = {
+                            "success": False,
+                            "error": f"Your role does not have submit permission for {doctype} documents. Document will be saved as draft."
+                        }
+                        audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                        # Don't return error, just disable submit
+                        submit = False
             
             # Create document
             doc = frappe.new_doc(doctype)
@@ -115,17 +138,54 @@ class DocumentCreate(BaseTool):
             # Save document
             doc.insert()
             
-            # Submit if requested
-            if submit and doc.docstatus == 0:
-                doc.submit()
-            
+            # Initialize result with basic information
             result = {
                 "success": True,
                 "name": doc.name,
                 "doctype": doctype,
-                "message": f"{doctype} '{doc.name}' created successfully",
-                "submitted": doc.docstatus == 1 if submit else False
+                "docstatus": doc.docstatus,
+                "owner": doc.owner,
+                "creation": str(doc.creation),
+                "submitted": False,
+                "can_submit": False
             }
+            
+            # Submit if requested and allowed
+            if submit and doc.docstatus == 0:
+                try:
+                    doc.submit()
+                    result["submitted"] = True
+                    result["docstatus"] = 1
+                    result["message"] = f"{doctype} '{doc.name}' created and submitted successfully"
+                except Exception as e:
+                    result["message"] = f"{doctype} '{doc.name}' created as draft. Submit failed: {str(e)}"
+                    result["submit_error"] = str(e)
+            else:
+                result["message"] = f"{doctype} '{doc.name}' created successfully as draft"
+            
+            # Check if user can submit this document later
+            if doc.docstatus == 0:  # Only for draft documents
+                try:
+                    result["can_submit"] = frappe.has_permission(doctype, "submit", doc=doc.name)
+                except Exception:
+                    result["can_submit"] = False
+            
+            # Add workflow information if available
+            if hasattr(doc, 'workflow_state') and doc.workflow_state:
+                result["workflow_state"] = doc.workflow_state
+            
+            # Add useful next steps information
+            if doc.docstatus == 0:
+                result["next_steps"] = [
+                    f"Document is in draft state",
+                    f"You can update this document using document_update tool",
+                    f"Submit permission: {'Available' if result['can_submit'] else 'Not available'}"
+                ]
+            else:
+                result["next_steps"] = [
+                    f"Document is submitted and cannot be modified",
+                    f"Use document_get to view the submitted document"
+                ]
             
             # Log successful creation
             audit_log_tool_access(frappe.session.user, self.name, arguments, result)

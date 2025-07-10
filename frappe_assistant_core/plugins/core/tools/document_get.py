@@ -45,6 +45,15 @@ class DocumentGet(BaseTool):
         doctype = arguments.get("doctype")
         name = arguments.get("name")
         
+        # SECURITY: Prevent hardcoded Administrator access attempts
+        import frappe
+        current_user = frappe.session.user
+        if name == "Administrator" and current_user != "Administrator":
+            return {
+                "success": False,
+                "error": f"Access denied: Cannot access Administrator record. Current user: {current_user}"
+            }
+        
         # Import security validation
         from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
         

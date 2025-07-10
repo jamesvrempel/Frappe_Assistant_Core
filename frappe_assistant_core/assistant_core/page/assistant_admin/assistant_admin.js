@@ -1,14 +1,14 @@
 frappe.pages['assistant-admin'].on_page_load = function(wrapper) {
     var page = frappe.ui.make_app_page({
         parent: wrapper,
-        title: 'Assistant Server Admin',
+        title: 'Assistant MCP Admin',
         single_column: true
     });
 
     page.main.html(`
         <div class="frappe-card">
             <div class="frappe-card-head">
-                <strong>Server Status</strong>
+                <strong>MCP API Status</strong>
             </div>
             <div class="frappe-card-body">
                 <div id="status-display" class="text-muted">Loading...</div>
@@ -18,12 +18,13 @@ frappe.pages['assistant-admin'].on_page_load = function(wrapper) {
         
         <div class="frappe-card">
             <div class="frappe-card-head">
-                <strong>Server Controls</strong>
+                <strong>Configuration</strong>
             </div>
             <div class="frappe-card-body">
-                <button class="btn btn-success btn-sm" id="start-server">Start Server</button>
-                <button class="btn btn-danger btn-sm" id="stop-server">Stop Server</button>
-                <button class="btn btn-secondary btn-sm" id="open-settings">Open Settings</button>
+                <button class="btn btn-primary btn-sm" id="open-settings">Open Settings</button>
+                <p class="text-muted mt-2">
+                    <small>Enable/disable MCP API access in the settings. The API uses Frappe's web server - no separate server process required.</small>
+                </p>
             </div>
         </div>
         
@@ -58,9 +59,9 @@ frappe.pages['assistant-admin'].on_page_load = function(wrapper) {
                 if (response.message) {
                     const status = response.message;
                     const statusDisplay = page.main.find('#status-display');
-                    const statusText = status.running ? 
-                        `<span class="text-success">Running</span> (Enabled: ${status.enabled ? 'Yes' : 'No'})` :
-                        `<span class="text-danger">Stopped</span> (Enabled: ${status.enabled ? 'Yes' : 'No'})`;
+                    const statusText = status.enabled ? 
+                        `<span class="text-success">Enabled</span> - MCP API endpoints are active` :
+                        `<span class="text-danger">Disabled</span> - MCP API endpoints are inactive`;
                     statusDisplay.html(statusText);
                 }
             }
@@ -156,35 +157,6 @@ frappe.pages['assistant-admin'].on_page_load = function(wrapper) {
         });
     });
 
-    page.main.find('#start-server').on('click', function() {
-        frappe.call({
-            method: "frappe_assistant_core.assistant_core.server.start_server",
-            callback: function(response) {
-                if (response.message) {
-                    frappe.show_alert({
-                        message: response.message.message,
-                        indicator: response.message.success ? 'green' : 'red'
-                    });
-                    loadServerStatus();
-                }
-            }
-        });
-    });
-
-    page.main.find('#stop-server').on('click', function() {
-        frappe.call({
-            method: "frappe_assistant_core.assistant_core.server.stop_server",
-            callback: function(response) {
-                if (response.message) {
-                    frappe.show_alert({
-                        message: response.message.message,
-                        indicator: response.message.success ? 'green' : 'red'
-                    });
-                    loadServerStatus();
-                }
-            }
-        });
-    });
 
     page.main.find('#open-settings').on('click', function() {
         frappe.set_route('Form', 'Assistant Core Settings');

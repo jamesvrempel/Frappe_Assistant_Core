@@ -54,38 +54,38 @@ class assistantServer:
     def __init__(self):
         self.running = False
         
-    def start(self):
-        """Enable the assistant server (MCP API endpoints)"""
+    def enable(self):
+        """Enable the assistant MCP API endpoints"""
         try:
             settings = frappe.get_single("Assistant Core Settings")
             
             if not settings.server_enabled:
-                return {"success": False, "message": "assistant Server is disabled in settings"}
+                return {"success": False, "message": "MCP API is disabled in settings"}
             
-            # Mark as running (API endpoints are always available when enabled)
+            # Mark as enabled (API endpoints are always available when enabled)
             self.running = True
             
             frappe.logger().info("assistant MCP API endpoints enabled")
-            return {"success": True, "message": f"assistant MCP API enabled - available at /api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request"}
+            return {"success": True, "message": f"MCP API enabled - available at /api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request"}
             
         except Exception as e:
-            frappe.log_error(f"Failed to enable assistant server: {str(e)}")
-            return {"success": False, "message": f"Failed to enable server: {str(e)}"}
+            frappe.log_error(f"Failed to enable MCP API: {str(e)}")
+            return {"success": False, "message": f"Failed to enable MCP API: {str(e)}"}
     
-    def stop(self):
-        """Disable the assistant server (MCP API endpoints)"""
+    def disable(self):
+        """Disable the assistant MCP API endpoints"""
         if not self.running:
-            return {"success": False, "message": "Server is not running"}
+            return {"success": False, "message": "MCP API is not enabled"}
         
         try:
             self.running = False
             
             frappe.logger().info("assistant MCP API endpoints disabled")
-            return {"success": True, "message": "assistant MCP API endpoints disabled"}
+            return {"success": True, "message": "MCP API endpoints disabled"}
             
         except Exception as e:
-            frappe.log_error(f"Failed to disable assistant server: {str(e)}")
-            return {"success": False, "message": f"Failed to disable server: {str(e)}"}
+            frappe.log_error(f"Failed to disable MCP API: {str(e)}")
+            return {"success": False, "message": f"Failed to disable MCP API: {str(e)}"}
     
     def get_status(self):
         """Get server status including WebSocket status"""
@@ -112,13 +112,14 @@ class assistantServer:
                 websocket_status = {"enabled": True, "running": False, "error": "Failed to get WebSocket status"}
         
         return {
-            "running": is_running,
+            "running": is_running,  # For backward compatibility
             "enabled": settings.get("server_enabled"),
             "api_endpoint": f"/api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request",
             "ping_endpoint": f"/api/method/frappe_assistant_core.api.assistant_api.ping",
             "protocol": "mcp",
             "frappe_port": f"{get_frappe_port()} (detected)",
-            "websocket": websocket_status
+            "websocket": websocket_status,
+            "status_note": "MCP API endpoints are part of Frappe's web server - no separate process required"
         }
 
 # Global server instance
@@ -132,16 +133,27 @@ def get_server_instance() -> assistantServer:
     return _server_instance
 
 @frappe.whitelist(allow_guest=False)
-def start_server():
-    """Start the assistant server"""
+def enable_api():
+    """Enable the assistant MCP API"""
     server = get_server_instance()
-    return server.start()
+    return server.enable()
+
+@frappe.whitelist(allow_guest=False)
+def disable_api():
+    """Disable the assistant MCP API"""
+    server = get_server_instance()
+    return server.disable()
+
+# Legacy functions for backward compatibility
+@frappe.whitelist(allow_guest=False)
+def start_server():
+    """Legacy: Enable the assistant MCP API"""
+    return enable_api()
 
 @frappe.whitelist(allow_guest=False)
 def stop_server():
-    """Stop the assistant server"""
-    server = get_server_instance()
-    return server.stop()
+    """Legacy: Disable the assistant MCP API"""
+    return disable_api()
 
 @frappe.whitelist(allow_guest=False)
 def get_server_status():
@@ -191,5 +203,9 @@ def update_connection_stats():
         frappe.log_error(f"Failed to update connection stats: {str(e)}")
 
 def start_background_server():
-    """Start server in background job"""
-    return start_server()
+    """Enable API in background job (legacy)"""
+    return enable_api()
+
+def enable_background_api():
+    """Enable API in background job"""
+    return enable_api()

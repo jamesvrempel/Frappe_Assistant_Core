@@ -65,6 +65,10 @@ class DocumentList(BaseTool):
         limit = arguments.get("limit", 20)
         order_by = arguments.get("order_by", "creation desc")
         
+        # Get current user context
+        import frappe
+        current_user = frappe.session.user
+        
         # Import security validation
         from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
         
@@ -81,6 +85,13 @@ class DocumentList(BaseTool):
             return validation_result
         
         user_role = validation_result["role"]
+        
+        # SECURITY: Special handling for User DocType - non-admins can only see themselves
+        if doctype == "User" and user_role in ["Assistant User", "Default"]:
+            # Filter to only show current user
+            if not filters:
+                filters = {}
+            filters["name"] = current_user
         
         try:
             # Filter sensitive fields from requested fields for Assistant Users
