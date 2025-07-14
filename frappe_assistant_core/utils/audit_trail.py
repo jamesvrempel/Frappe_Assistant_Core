@@ -8,7 +8,7 @@ def log_document_change(doc, method):
     if should_log_document(doc.doctype):
         try:
             frappe.get_doc({
-                "doctype": "assistant Audit Log",
+                "doctype": "Assistant Audit Log",
                 "action": "update_document",
                 "user": frappe.session.user,
                 "status": "Success",
@@ -25,8 +25,8 @@ def log_document_submit(doc, method):
     if should_log_document(doc.doctype):
         try:
             frappe.get_doc({
-                "doctype": "assistant Audit Log",
-                "action": "submit_document",
+                "doctype": "Assistant Audit Log",
+                "action": "update_document",
                 "user": frappe.session.user,
                 "status": "Success",
                 "timestamp": now(),
@@ -42,8 +42,8 @@ def log_document_cancel(doc, method):
     if should_log_document(doc.doctype):
         try:
             frappe.get_doc({
-                "doctype": "assistant Audit Log",
-                "action": "cancel_document",
+                "doctype": "Assistant Audit Log",
+                "action": "update_document",
                 "user": frappe.session.user,
                 "status": "Success",
                 "timestamp": now(),

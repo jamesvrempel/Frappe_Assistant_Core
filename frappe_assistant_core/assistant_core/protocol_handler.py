@@ -120,8 +120,10 @@ class assistantProtocolHandler:
         
         # Check permissions
         if not self._check_tool_access(tool_config):
+            # Map tool name to proper audit action
+            action = self._get_audit_action(tool_name)
             self._log_audit_entry(
-                action="tool_call",
+                action=action,
                 tool_name=tool_name,
                 status="Permission Denied",
                 input_data=json.dumps(arguments),
@@ -135,8 +137,9 @@ class assistantProtocolHandler:
             execution_time = time.time() - start_time
             
             # Log successful execution
+            action = self._get_audit_action(tool_name)
             self._log_audit_entry(
-                action="tool_call",
+                action=action,
                 tool_name=tool_name,
                 status="Success",
                 input_data=json.dumps(arguments),
@@ -158,8 +161,9 @@ class assistantProtocolHandler:
             error_msg = str(e)
             
             # Log failed execution
+            action = self._get_audit_action(tool_name)
             self._log_audit_entry(
-                action="tool_call",
+                action=action,
                 tool_name=tool_name,
                 status="Error",
                 input_data=json.dumps(arguments),
@@ -328,6 +332,23 @@ class assistantProtocolHandler:
             tool_doc.update_usage_stats(success=success)
         except Exception:
             pass  # Ignore stats update errors
+    
+    def _get_audit_action(self, tool_name: str) -> str:
+        """Map tool name to valid audit log action"""
+        tool_action_mapping = {
+            "document_get": "get_document",
+            "document_list": "search_documents", 
+            "document_create": "create_document",
+            "document_update": "update_document",
+            "document_delete": "delete_document",
+            "document_submit": "update_document",
+            "report_execute": "run_report",
+            "metadata_doctype": "get_metadata",
+            "metadata_get": "get_metadata"
+        }
+        
+        # Get the appropriate action, default to custom_tool
+        return tool_action_mapping.get(tool_name, "custom_tool")
     
     def _log_audit_entry(self, action: str, status: str, tool_name: str = None, 
                         input_data: str = None, output_data: str = None, 
