@@ -8,13 +8,14 @@
 4. [Refactoring & Modernization](#refactoring--modernization)
 5. [Tool System](#tool-system)
 6. [Auto-Discovery Registry](#auto-discovery-registry)
-7. [Artifact Streaming System](#artifact-streaming-system)
-8. [API Documentation](#api-documentation)
-9. [Installation & Setup](#installation--setup)
-10. [Testing](#testing)
-11. [Recent Improvements](#recent-improvements)
-12. [Troubleshooting](#troubleshooting)
-13. [Future Enhancements](#future-enhancements)
+7. [Security Framework](#security-framework)
+8. [Artifact Streaming System](#artifact-streaming-system)
+9. [API Documentation](#api-documentation)
+10. [Installation & Setup](#installation--setup)
+11. [Testing](#testing)
+12. [Recent Improvements](#recent-improvements)
+13. [Troubleshooting](#troubleshooting)
+14. [Future Enhancements](#future-enhancements)
 
 ---
 
@@ -35,8 +36,10 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 - **📈 Enhanced Report Integration** - Execute all Frappe report types with improved debugging
 - **🔍 Advanced Search & Metadata** - Comprehensive data exploration across all DocTypes
 - **📋 Robust Document Operations** - CRUD operations with enhanced error handling
-- **🔒 Permission-Based Access** - Role-based tool filtering
-- **📝 Comprehensive Audit Trail** - Complete operation logging
+- **🔒 Multi-Layer Security Framework** - Comprehensive role-based access control with row-level security
+- **🛡️ Advanced Permission System** - Granular permissions with document-level and field-level security
+- **🔐 Sensitive Data Protection** - Automatic filtering of passwords, API keys, and sensitive information
+- **📝 Comprehensive Audit Trail** - Complete operation logging with security monitoring
 - **🏛️ Modular Architecture** - Clean, maintainable, extensible codebase
 - **📊 Centralized Logging** - Professional logging system replacing print statements
 - **📦 Modern Python Packaging** - pyproject.toml with proper dependency management
@@ -48,7 +51,7 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 - **Data Analysis**: pandas, numpy, matplotlib, seaborn
 - **Database**: MariaDB (via Frappe ORM)
 - **Communication**: WebSocket, HTTP REST API
-- **Security**: Frappe's built-in role-based permissions
+- **Security**: Multi-layer security framework with role-based permissions, field-level filtering, and audit trails
 - **Architecture**: Modular handlers, centralized constants, proper logging
 
 ---
@@ -397,6 +400,419 @@ class BaseTool:
 def get_tool_info(tool_name: str) -> Dict[str, Any]:
     """Get detailed tool information"""
 ```
+
+---
+
+## Security Framework
+
+### Overview
+
+Frappe Assistant Core implements a **comprehensive multi-layer security framework** designed to ensure secure AI assistant operations within business environments. The security system provides role-based access control, document-level permissions, field-level data protection, and complete audit trails while seamlessly integrating with Frappe's built-in permission system.
+
+### Multi-Layer Security Architecture
+
+#### 1. **Role-Based Tool Access Control**
+
+**File:** `frappe_assistant_core/core/security_config.py`
+
+The system implements a sophisticated role-based access matrix that controls which tools each user role can access:
+
+```python
+ROLE_TOOL_ACCESS = {
+    "System Manager": {
+        "allowed_tools": "*",  # Full access to all tools
+        "restricted_tools": [],
+        "description": "Full access to all assistant tools including dangerous operations"
+    },
+    "Assistant Admin": {
+        "allowed_tools": [
+            *BASIC_CORE_TOOLS,  # All basic tools
+            "metadata_permissions", "metadata_workflow", 
+            "tool_registry_list", "audit_log_view", "workflow_action"
+        ],
+        "restricted_tools": ["execute_python_code", "query_and_analyze"],
+        "description": "Administrative access without code execution capabilities"
+    },
+    "Assistant User": {
+        "allowed_tools": BASIC_CORE_TOOLS,
+        "restricted_tools": [
+            "execute_python_code", "query_and_analyze",
+            "metadata_permissions", "tool_registry_list", "audit_log_view"
+        ],
+        "description": "Basic business user access with document-level permissions"
+    },
+    "Default": {
+        "allowed_tools": BASIC_CORE_TOOLS,
+        "restricted_tools": ["execute_python_code", "query_and_analyze"],
+        "description": "Basic tool access for all users - document permissions control actual access"
+    }
+}
+```
+
+**Tool Categories by Role:**
+- **System Manager**: Full access to all 21 tools including dangerous operations
+- **Assistant Admin**: 16 tools excluding code execution and direct database queries  
+- **Assistant User**: 14 basic tools for standard business operations
+- **Default**: 14 basic tools for any other Frappe user roles
+
+#### 2. **Document-Level Permission Validation**
+
+**Core Function:** `validate_document_access()`
+
+Every document operation goes through comprehensive permission validation:
+
+```python
+def validate_document_access(user: str, doctype: str, name: str, perm_type: str = "read") -> Dict[str, Any]:
+    """Multi-layer document access validation"""
+    
+    # Layer 1: Role-based DocType accessibility
+    if not is_doctype_accessible(doctype, primary_role):
+        return {"success": False, "error": "Access to {doctype} is restricted for your role"}
+    
+    # Layer 2: Frappe DocType-level permissions
+    if not frappe.has_permission(doctype, perm_type, user=user):
+        return {"success": False, "error": "Insufficient {perm_type} permissions for {doctype}"}
+    
+    # Layer 3: Document-specific permissions (row-level security)
+    if name and not frappe.has_permission(doctype, perm_type, doc=name, user=user):
+        return {"success": False, "error": "Insufficient {perm_type} permissions for {doctype} {name}"}
+    
+    # Layer 4: Submitted document state validation
+    if perm_type in ["write", "delete"]:
+        # Prevent modification of submitted documents
+        doc = frappe.get_doc(doctype, name)
+        if hasattr(doc, 'docstatus') and doc.docstatus == 1:
+            return {"success": False, "error": "Cannot modify submitted document"}
+```
+
+**Permission Layers:**
+1. **Role-based DocType Access**: Certain DocTypes restricted by user role
+2. **Frappe DocType Permissions**: Standard Frappe permission checking
+3. **Row-Level Security**: Document-specific access (company/user filters)
+4. **Document State Validation**: Submitted document protection
+
+#### 3. **Field-Level Data Protection**
+
+**Sensitive Field Filtering:** Automatic filtering of sensitive data based on user roles
+
+```python
+SENSITIVE_FIELDS = {
+    "all_doctypes": [
+        "password", "new_password", "api_key", "api_secret", "secret_key",
+        "private_key", "access_token", "refresh_token", "reset_password_key",
+        "unsubscribe_key", "email_signature", "bank_account_no", "iban",
+        "encryption_key"
+    ],
+    "User": [
+        "password", "api_key", "api_secret", "reset_password_key",
+        "login_after", "user_type", "simultaneous_sessions", "restrict_ip",
+        "last_password_reset_date", "last_login", "last_active"
+    ],
+    "Email Account": [
+        "password", "smtp_password", "access_token", "refresh_token"
+    ]
+    # ... 50+ sensitive fields across 15+ DocTypes
+}
+
+def filter_sensitive_fields(doc_dict: Dict[str, Any], doctype: str, user_role: str) -> Dict[str, Any]:
+    """Filter sensitive fields based on user role"""
+    if user_role == "System Manager":
+        return doc_dict  # System Manager can see all fields
+    
+    # Replace sensitive values with "***RESTRICTED***"
+    for field in sensitive_fields:
+        if field in filtered_doc:
+            filtered_doc[field] = "***RESTRICTED***"
+```
+
+**Data Protection Features:**
+- **Global Sensitive Fields**: 18 universally sensitive fields across all DocTypes
+- **DocType-Specific Protection**: Custom sensitive field lists for 15+ DocTypes
+- **Admin-Only Fields**: System metadata hidden from Assistant Users
+- **Automatic Masking**: Sensitive values replaced with `***RESTRICTED***`
+
+#### 4. **DocType Access Restrictions**
+
+**Restricted DocTypes for Assistant Users:**
+
+```python
+RESTRICTED_DOCTYPES = {
+    "Assistant User": [
+        # System administration DocTypes
+        "System Settings", "Print Settings", "Email Domain", "LDAP Settings",
+        "OAuth Settings", "Social Login Key", "Dropbox Settings",
+        
+        # Security and permissions DocTypes  
+        "Role", "User Permission", "Role Permission", "Custom Role",
+        "Module Profile", "Role Profile", "Custom DocPerm", "DocShare",
+        
+        # System logs and audit DocTypes
+        "Error Log", "Activity Log", "Access Log", "View Log",
+        "Scheduler Log", "Integration Request",
+        
+        # System customization DocTypes
+        "Server Script", "Client Script", "Custom Script", "Property Setter",
+        "DocType", "DocField", "DocPerm", "Custom Field",
+        
+        # Development and maintenance DocTypes
+        "Package", "Data Import", "Data Export", "Bulk Update"
+        # ... 30+ restricted DocTypes total
+    ]
+}
+```
+
+**Access Control:**
+- **30+ Restricted DocTypes** for Assistant Users to prevent system tampering
+- **Administrative Protection**: Core system DocTypes only accessible to System Managers
+- **Security-Critical Access**: Permission and role management restricted to admins
+- **Development Tool Restriction**: System customization tools restricted appropriately
+
+#### 5. **Row-Level Security Implementation**
+
+**Company-Based Filtering**: Automatic enforcement of company-based data access
+
+```python
+# Example: User DocType access control
+if doctype == "User" and user_role in ["Assistant User", "Default"]:
+    filters["name"] = current_user  # Users can only see themselves
+
+# Example: Audit log access control  
+def get_permission_query_conditions(user=None):
+    if "System Manager" in frappe.get_roles(user):
+        return ""  # See all records
+    elif "Assistant Admin" in frappe.get_roles(user):
+        return ""  # See all records
+    elif "Assistant User" in frappe.get_roles(user):
+        return f"`tabAssistant Audit Log`.user = '{user}'"  # Only own records
+    return "1=0"  # No access for others
+```
+
+**Row-Level Security Features:**
+- **Company-Based Access**: Automatic filtering based on user's company permissions
+- **User-Scoped Data**: Users can only access their own audit logs and connection logs
+- **Permission Query Integration**: Uses Frappe's permission query system
+- **Dynamic Filtering**: Contextual data filtering based on user roles and permissions
+
+#### 6. **Comprehensive Audit Trail**
+
+**Security Event Logging**: Complete audit trail of all assistant operations
+
+```python
+def audit_log_tool_access(user: str, tool_name: str, arguments: Dict[str, Any], result: Dict[str, Any]):
+    """Log all tool access attempts for security monitoring"""
+    audit_log = frappe.get_doc({
+        "doctype": "Assistant Audit Log",
+        "user": user,
+        "action": "tool_execution", 
+        "tool_name": tool_name,
+        "arguments": frappe.as_json(arguments),
+        "success": result.get("success", False),
+        "error": result.get("error", ""),
+        "ip_address": frappe.local.request_ip,
+        "timestamp": frappe.utils.now()
+    })
+    audit_log.insert(ignore_permissions=True)
+```
+
+**Audit Features:**
+- **Complete Tool Logging**: Every tool execution logged with full context
+- **Success/Failure Tracking**: Both successful and failed operations recorded
+- **IP Address Tracking**: Security monitoring with source IP logging
+- **User-Scoped Access**: Users can only view their own audit entries
+- **Admin Oversight**: System Managers can view all audit entries
+- **Argument Preservation**: Complete record of tool arguments for security analysis
+
+### Security Validation Flow
+
+#### Document Access Validation Process
+
+```mermaid
+graph TD
+    A[Tool Execution Request] --> B[Extract User Context]
+    B --> C[Check Tool Permission]
+    C --> D{Tool Allowed?}
+    D -->|No| E[Access Denied]
+    D -->|Yes| F[Check DocType Access]
+    F --> G{DocType Accessible?}
+    G -->|No| H[DocType Restricted]
+    G -->|Yes| I[Frappe Permission Check]
+    I --> J{Frappe Permissions?}
+    J -->|No| K[Permission Denied]
+    J -->|Yes| L[Document-Level Check]
+    L --> M{Document Access?}
+    M -->|No| N[Document Access Denied]
+    M -->|Yes| O[Execute Tool]
+    O --> P[Filter Sensitive Fields]
+    P --> Q[Log Audit Entry]
+    Q --> R[Return Filtered Result]
+```
+
+### Security Integration Points
+
+#### 1. **Base Tool Security Framework**
+
+**File:** `frappe_assistant_core/core/base_tool.py`
+
+All tools inherit security validation:
+
+```python
+class BaseTool:
+    """Base class with built-in security validation"""
+    
+    def execute_with_security(self, arguments: Dict[str, Any]) -> Any:
+        """Execute tool with comprehensive security validation"""
+        
+        # 1. User context validation
+        current_user = frappe.session.user
+        if not current_user or current_user == "Guest":
+            return {"success": False, "error": "Authentication required"}
+        
+        # 2. Tool permission validation
+        user_role = get_user_primary_role(current_user)
+        if not check_tool_access(user_role, self.name):
+            return {"success": False, "error": "Insufficient permissions for this tool"}
+        
+        # 3. Argument validation
+        if not self.validate_arguments(arguments):
+            return {"success": False, "error": "Invalid arguments provided"}
+        
+        # 4. Execute with error handling
+        try:
+            result = self.execute(arguments)
+            
+            # 5. Filter sensitive data
+            if isinstance(result, dict) and "data" in result:
+                result["data"] = self.filter_result_data(result["data"], user_role)
+            
+            # 6. Audit logging
+            audit_log_tool_access(current_user, self.name, arguments, result)
+            
+            return result
+            
+        except Exception as e:
+            error_result = {"success": False, "error": str(e)}
+            audit_log_tool_access(current_user, self.name, arguments, error_result)
+            return error_result
+```
+
+#### 2. **Document Tool Security**
+
+**Example:** Document Get Tool with Security
+
+```python
+# frappe_assistant_core/plugins/core/tools/document_get.py
+def execute(self, arguments):
+    doctype = arguments.get("doctype")
+    name = arguments.get("name")
+    current_user = frappe.session.user
+    
+    # Security validation
+    validation_result = validate_document_access(
+        user=current_user,
+        doctype=doctype, 
+        name=name,
+        perm_type="read"
+    )
+    
+    if not validation_result["success"]:
+        return validation_result
+    
+    # Special Administrator protection
+    if name == "Administrator" and current_user != "Administrator":
+        return {"success": False, "error": "Access denied: Cannot access Administrator record"}
+    
+    # Get document data
+    doc = frappe.get_doc(doctype, name)
+    doc_dict = doc.as_dict()
+    
+    # Filter sensitive fields based on user role
+    user_role = get_user_primary_role(current_user)
+    filtered_doc = filter_sensitive_fields(doc_dict, doctype, user_role)
+    
+    return {"success": True, "data": filtered_doc}
+```
+
+### Security Best Practices Implemented
+
+#### 1. **Defense in Depth**
+- **Multiple Security Layers**: Role → DocType → Document → Field validation
+- **Permission Redundancy**: Both custom and Frappe permission checking
+- **Fail-Safe Defaults**: Restrictive permissions by default
+
+#### 2. **Principle of Least Privilege**  
+- **Role-Based Minimum Access**: Each role gets only necessary tool access
+- **Granular Permissions**: Fine-grained control over operations
+- **Data Scoping**: Users see only data they're authorized to access
+
+#### 3. **Complete Audit Trail**
+- **Comprehensive Logging**: All operations logged with full context
+- **Security Monitoring**: Failed access attempts recorded
+- **Forensic Capability**: Complete audit trail for security investigations
+
+#### 4. **Data Protection**
+- **Sensitive Field Masking**: Automatic filtering of sensitive information
+- **Role-Based Filtering**: Data visibility based on user roles
+- **No Data Leakage**: Secure error messages without sensitive data exposure
+
+### Security Configuration
+
+#### Role Assignment
+
+```python
+# Standard roles provided by the system
+standard_roles = [
+    {"role": "Assistant User", "role_color": "#3498db"},
+    {"role": "Assistant Admin", "role_color": "#e74c3c"}
+]
+
+# Role assignment in Frappe
+# System Manager: Built-in Frappe role
+# Assistant Admin: Custom administrative role
+# Assistant User: Custom business user role  
+# Default: Any other Frappe role gets basic access
+```
+
+#### Permission Customization
+
+```python
+# Custom permission query conditions
+permission_query_conditions = {
+    "Assistant Connection Log": "frappe_assistant_core.utils.permissions.get_permission_query_conditions",
+    "Assistant Audit Log": "frappe_assistant_core.utils.permissions.get_audit_permission_query_conditions"
+}
+
+# Security settings can be customized through DocTypes:
+# - Assistant Core Settings: General security configuration  
+# - Assistant Tool Registry: Tool-specific permission settings
+```
+
+### Security Monitoring & Analytics
+
+#### Audit Log Analysis
+- **Tool Usage Patterns**: Track which tools are used most frequently
+- **Access Attempt Monitoring**: Monitor failed access attempts for security threats
+- **User Activity Analysis**: Analyze user behavior for anomaly detection
+- **Role Effectiveness**: Evaluate if role permissions are appropriately configured
+
+#### Security Metrics
+- **Permission Denial Rate**: Percentage of requests denied due to permissions
+- **Sensitive Data Access**: Monitor access to sensitive DocTypes and fields
+- **Tool Usage by Role**: Understand tool usage patterns across different user roles
+- **Security Incident Tracking**: Track and analyze security-related events
+
+### Integration with Frappe Security
+
+#### Native Permission System
+- **frappe.has_permission()**: Deep integration with Frappe's permission engine
+- **Permission Query Conditions**: Custom query filters for row-level security
+- **User Permissions**: Automatic enforcement of user-specific data restrictions
+- **Company-Based Filtering**: Seamless multi-company security support
+
+#### Built-in Security Features
+- **Session Management**: Leverages Frappe's session handling
+- **IP Restriction**: Integration with Frappe's IP-based access control
+- **Two-Factor Authentication**: Compatible with Frappe's 2FA system
+- **Password Policies**: Honors Frappe's password complexity requirements
 
 ---
 
@@ -804,6 +1220,29 @@ pytest --cov=frappe_assistant_core tests/
 ---
 
 ## Recent Improvements
+
+### Version 1.3.0 - Security & Reliability Release (July 2025)
+
+#### 🔒 **Comprehensive Security Framework** ⭐ **MAJOR**
+
+**Multi-Layer Security Implementation:**
+- **Role-Based Access Control**: 4-tier user role system (System Manager, Assistant Admin, Assistant User, Default)
+- **Document-Level Permissions**: Deep integration with Frappe's permission system for DocType and document-specific access
+- **Row-Level Security**: Automatic company-based filtering and user-specific data access enforcement
+- **Field-Level Protection**: Sensitive field filtering with 50+ protected fields across 15+ DocTypes
+- **DocType Restrictions**: 30+ administrative DocTypes restricted for Assistant Users
+- **Comprehensive Audit Trail**: Complete logging of all tool executions with IP tracking and security monitoring
+
+**Security Validation Flow:**
+- **4-Layer Validation**: Role → DocType → Document → Field level security checks
+- **Permission Integration**: Uses `frappe.has_permission()` for row-level security including company filters
+- **Sensitive Data Masking**: Automatic filtering of passwords, API keys, tokens, and administrative fields
+- **Audit Logging**: Every tool execution logged with user, arguments, success/failure, and IP address
+
+**Administrator Protection:**
+- **Hardcoded Safeguards**: Special protection for Administrator account access
+- **Submitted Document Protection**: Prevents modification of submitted documents without proper permissions
+- **System Manager Privileges**: Full access with appropriate security logging
 
 ### Version 1.2.0 - Comprehensive Refactoring (July 2025)
 
