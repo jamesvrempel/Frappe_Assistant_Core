@@ -52,12 +52,22 @@ class MetadataDoctype(BaseTool):
         include_fields = arguments.get("include_fields", True)
         include_permissions = arguments.get("include_permissions", True)
         
-        # Check permission for DocType
-        if not frappe.has_permission(doctype, "read"):
-            return {
-                "success": False,
-                "error": f"Insufficient permissions to access {doctype} metadata"
-            }
+        # Import security validation
+        from frappe_assistant_core.core.security_config import validate_document_access, audit_log_tool_access
+        
+        # Validate document access with comprehensive permission checking
+        validation_result = validate_document_access(
+            user=frappe.session.user,
+            doctype=doctype,
+            name=None,  # No specific document for metadata operation
+            perm_type="read"
+        )
+        
+        if not validation_result["success"]:
+            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
+            return validation_result
+        
+        user_role = validation_result["role"]
         
         try:
             # Get DocType metadata
@@ -119,34 +129,43 @@ class MetadataDoctype(BaseTool):
                     })
                 metadata["link_fields"] = link_fields
             
-            # Add permission information
-            if include_permissions:
+            # Add permission information (restrict for non-admins)
+            if include_permissions and user_role in ["System Manager", "Assistant Admin"]:
                 permissions = []
                 for perm in meta.permissions:
                     perm_info = {
                         "role": perm.role,
-                        "read": perm.read,
-                        "write": perm.write,
-                        "create": perm.create,
-                        "delete": perm.delete,
-                        "submit": perm.submit,
-                        "cancel": perm.cancel,
-                        "amend": perm.amend,
-                        "report": perm.report,
-                        "export": perm.export,
-                        "import": perm.import_,
-                        "share": perm.share,
-                        "print": perm.print_,
-                        "email": perm.email
+                        "read": getattr(perm, 'read', 0),
+                        "write": getattr(perm, 'write', 0),
+                        "create": getattr(perm, 'create', 0),
+                        "delete": getattr(perm, 'delete', 0),
+                        "submit": getattr(perm, 'submit', 0),
+                        "cancel": getattr(perm, 'cancel', 0),
+                        "amend": getattr(perm, 'amend', 0),
+                        "report": getattr(perm, 'report', 0),
+                        "export": getattr(perm, 'export', 0),
+                        "import": getattr(perm, 'import', 0),  # Correct attribute name
+                        "share": getattr(perm, 'share', 0),
+                        "print": getattr(perm, 'print', 0),   # Correct attribute name
+                        "email": getattr(perm, 'email', 0),
+                        "if_owner": getattr(perm, 'if_owner', 0),
+                        "permlevel": getattr(perm, 'permlevel', 0)
                     }
                     permissions.append(perm_info)
                 
                 metadata["permissions"] = permissions
+            elif include_permissions:
+                # For regular users, only show that permission info is restricted
+                metadata["permissions"] = "Permission details restricted for your role"
             
-            return {
+            result = {
                 "success": True,
                 "metadata": metadata
             }
+            
+            # Log successful access
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
             
         except Exception as e:
             frappe.log_error(
@@ -154,11 +173,15 @@ class MetadataDoctype(BaseTool):
                 message=f"Error getting metadata for {doctype}: {str(e)}"
             )
             
-            return {
+            result = {
                 "success": False,
                 "error": str(e),
                 "doctype": doctype
             }
+            
+            # Log failed access
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
 
 
 # Make sure class name matches file name for discovery

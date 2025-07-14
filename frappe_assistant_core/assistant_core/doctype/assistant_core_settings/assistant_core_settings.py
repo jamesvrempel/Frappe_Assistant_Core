@@ -25,63 +25,72 @@ class AssistantCoreSettings(Document):
     
     
     def restart_assistant_core(self):
-        """Restart the assistant server with new settings"""
+        """Restart the assistant MCP API with new settings"""
         try:
-            # Stop existing server
-            self.stop_assistant_core()
+            # Disable existing API
+            self.disable_assistant_api()
             
-            # Start server with new settings
-            self.start_assistant_core()
+            # Enable API with new settings
+            self.enable_assistant_api()
             
-            frappe.msgprint("assistant Server restarted successfully")
+            frappe.msgprint("assistant MCP API restarted successfully")
             
         except Exception as e:
-            frappe.log_error(f"Failed to restart assistant server: {str(e)}")
-            frappe.throw(f"Failed to restart assistant server: {str(e)}")
+            frappe.log_error(f"Failed to restart assistant MCP API: {str(e)}")
+            frappe.throw(f"Failed to restart assistant MCP API: {str(e)}")
     
-    def start_assistant_core(self):
-        """Start the assistant server"""
+    def enable_assistant_api(self):
+        """Enable the assistant MCP API"""
         try:
             server = assistantServer()
-            server.start()
+            server.enable()
             
-            # Log the server start (skip if DocType doesn't exist)
+            # Log the API enable (skip if DocType doesn't exist)
             try:
                 if frappe.db.table_exists("tabAssistant Connection Log"):
                     frappe.get_doc({
                         "doctype": "Assistant Connection Log",
-                        "action": "server_start",
+                        "action": "api_enabled",
                         "user": frappe.session.user,
-                        "details": "assistant Server started (MCP API)"
+                        "details": "assistant MCP API enabled"
                     }).insert(ignore_permissions=True)
             except:
-                pass  # Don't fail server start if logging fails
+                pass  # Don't fail API enable if logging fails
             
         except Exception as e:
-            frappe.log_error(f"Failed to start assistant server: {str(e)}")
+            frappe.log_error(f"Failed to enable assistant MCP API: {str(e)}")
             raise
+    
+    def disable_assistant_api(self):
+        """Disable the assistant MCP API"""
+        try:
+            server = assistantServer()
+            server.disable()
+            
+            # Log the API disable (skip if DocType doesn't exist)
+            try:
+                if frappe.db.table_exists("tabAssistant Connection Log"):
+                    frappe.get_doc({
+                        "doctype": "Assistant Connection Log",
+                        "action": "api_disabled",
+                        "user": frappe.session.user,
+                        "details": "assistant MCP API disabled"
+                    }).insert(ignore_permissions=True)
+            except:
+                pass  # Don't fail API disable if logging fails
+            
+        except Exception as e:
+            frappe.log_error(f"Failed to disable assistant MCP API: {str(e)}")
+            raise
+    
+    # Legacy function names for backward compatibility
+    def start_assistant_core(self):
+        """Legacy: Enable the assistant MCP API"""
+        return self.enable_assistant_api()
     
     def stop_assistant_core(self):
-        """Stop the assistant server"""
-        try:
-            server = assistantServer()
-            server.stop()
-            
-            # Log the server stop (skip if DocType doesn't exist)
-            try:
-                if frappe.db.table_exists("tabAssistant Connection Log"):
-                    frappe.get_doc({
-                        "doctype": "Assistant Connection Log",
-                        "action": "server_stop",
-                        "user": frappe.session.user,
-                        "details": "assistant Server stopped"
-                    }).insert(ignore_permissions=True)
-            except:
-                pass  # Don't fail server stop if logging fails
-            
-        except Exception as e:
-            frappe.log_error(f"Failed to stop assistant server: {str(e)}")
-            raise
+        """Legacy: Disable the assistant MCP API"""
+        return self.disable_assistant_api()
     
     def get_streaming_protocol(self):
         """Get current streaming protocol configuration"""
@@ -245,17 +254,15 @@ Build unlimited analysis depth via progressive artifact updates.
         server = get_server_instance()
         server_was_enabled = self.has_value_changed('server_enabled')
         
-        # Handle server enable/disable
+        # Handle MCP API enable/disable
         if self.server_enabled:
             if server_was_enabled or not server.running:
-                # Start server if it was just enabled or not running
-                frappe.enqueue('frappe_assistant_core.assistant_core.server.start_background_server', queue='short')
-                frappe.msgprint("Assistant Server is starting...")
+                # Enable API if it was just enabled or not running
+                frappe.enqueue('frappe_assistant_core.assistant_core.server.enable_background_api', queue='short')
         else:
             if server_was_enabled and server.running:
-                # Stop server if it was just disabled
-                self.stop_assistant_core()
-                frappe.msgprint("Assistant Server stopped")
+                # Disable API if it was just disabled
+                self.disable_assistant_api()
         
         # Handle plugin changes
         if hasattr(self, 'enabled_plugins') and self.enabled_plugins:

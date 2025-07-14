@@ -292,26 +292,181 @@ Lifecycle Hook Execution
 
 ## Security Architecture
 
-### 1. Permission System
+Frappe Assistant Core implements a **comprehensive multi-layer security framework** that provides enterprise-grade security for AI assistant operations in business environments.
 
-- **Frappe Integration**: Uses native Frappe permission system
-- **Tool-Level Permissions**: Each tool can specify required permissions
-- **Dynamic Checking**: Permissions checked at execution time
-- **User Context**: All operations respect current user context
+### 1. Multi-Layer Security Framework
 
-### 2. Input Validation
+#### **Security Layers Overview**
+```
+Layer 1: Role-Based Tool Access Control
+    ↓
+Layer 2: DocType Access Restrictions  
+    ↓
+Layer 3: Frappe Permission Integration
+    ↓
+Layer 4: Document-Level Permissions (Row-Level Security)
+    ↓
+Layer 5: Field-Level Data Protection
+    ↓
+Layer 6: Audit Trail & Monitoring
+```
 
-- **JSON Schema**: All tool inputs validated against schemas
+#### **Core Security Components**
+
+**1. Role-Based Access Control**
+- **System Manager**: Full access to all 21 tools including dangerous operations
+- **Assistant Admin**: 16 tools excluding code execution and direct database queries
+- **Assistant User**: 14 basic tools for standard business operations  
+- **Default**: 14 basic tools for any other Frappe user roles
+
+**2. DocType Access Matrix**
+```python
+RESTRICTED_DOCTYPES = {
+    "Assistant User": [
+        # 30+ system administration DocTypes
+        "System Settings", "Role", "User Permission", "Custom Script",
+        "Server Script", "DocType", "Custom Field", etc.
+    ]
+}
+```
+
+**3. Sensitive Field Protection**
+```python
+SENSITIVE_FIELDS = {
+    "all_doctypes": ["password", "api_key", "secret_key", "private_key", ...],
+    "User": ["password", "api_key", "login_attempts", "last_login", ...],
+    "Email Account": ["password", "smtp_password", "access_token", ...]
+    # 50+ sensitive fields across 15+ DocTypes
+}
+```
+
+### 2. Permission Validation System
+
+#### **Document Access Validation Flow**
+```python
+def validate_document_access(user, doctype, name, perm_type="read"):
+    # 1. Check role-based DocType accessibility
+    if not is_doctype_accessible(doctype, user_role):
+        return access_denied
+    
+    # 2. Frappe DocType-level permissions  
+    if not frappe.has_permission(doctype, perm_type, user=user):
+        return permission_denied
+    
+    # 3. Document-specific permissions (row-level security)
+    if name and not frappe.has_permission(doctype, perm_type, doc=name, user=user):
+        return document_access_denied
+    
+    # 4. Submitted document state validation
+    if perm_type in ["write", "delete"] and doc.docstatus == 1:
+        return submitted_document_protection
+```
+
+#### **Row-Level Security Implementation**
+- **Company-Based Filtering**: Automatic enforcement through Frappe's permission system
+- **User-Scoped Data**: Users can only access their own audit logs and connection logs
+- **Permission Query Conditions**: Custom query filters for enhanced security
+- **Dynamic Filtering**: Contextual data access based on user roles and permissions
+
+### 3. Input Validation & Data Protection
+
+#### **JSON Schema Validation**
+- **Tool Arguments**: All tool inputs validated against JSON schemas
 - **Type Checking**: Automatic type validation and conversion
 - **Sanitization**: Input sanitization for security
 - **Error Handling**: Secure error messages without data leakage
 
-### 3. SQL Security
+#### **Sensitive Data Filtering**
+```python
+def filter_sensitive_fields(doc_dict, doctype, user_role):
+    if user_role == "System Manager":
+        return doc_dict  # Full access for System Managers
+    
+    # Replace sensitive values with "***RESTRICTED***"
+    for field in get_sensitive_fields(doctype):
+        if field in doc_dict:
+            doc_dict[field] = "***RESTRICTED***"
+```
 
+### 4. SQL Security & Query Protection
+
+#### **Query Security Controls**
 - **Query Restrictions**: Only SELECT statements allowed in query tools
-- **Parameterization**: All queries use parameterized statements
+- **Parameterization**: All queries use parameterized statements  
 - **Permission Checks**: Database access requires appropriate permissions
 - **Timeout Protection**: Query timeouts prevent resource exhaustion
+- **Result Filtering**: Query results filtered through permission system
+
+#### **Safe Execution Environment**
+- **Sandboxed Python**: Safe code execution with restricted imports
+- **Context Isolation**: User context preserved throughout execution
+- **Resource Limits**: Memory and execution time limits
+- **Error Isolation**: Tool errors don't affect core system
+
+### 5. Comprehensive Audit Trail
+
+#### **Security Event Logging**
+```python
+def audit_log_tool_access(user, tool_name, arguments, result):
+    audit_log = {
+        "user": user,
+        "tool_name": tool_name,
+        "arguments": frappe.as_json(arguments),
+        "success": result.get("success", False),
+        "error": result.get("error", ""),
+        "ip_address": frappe.local.request_ip,
+        "timestamp": frappe.utils.now()
+    }
+```
+
+#### **Audit Features**
+- **Complete Tool Logging**: Every tool execution logged with full context
+- **Success/Failure Tracking**: Both successful and failed operations recorded
+- **IP Address Tracking**: Security monitoring with source IP logging
+- **User-Scoped Access**: Users can only view their own audit entries
+- **Admin Oversight**: System Managers can view all audit entries
+
+### 6. Administrative Protection
+
+#### **Special Safeguards**
+- **Administrator Account Protection**: Hardcoded protection preventing non-admin access
+- **Submitted Document Protection**: Prevents modification of submitted documents
+- **System Settings Restriction**: Complete access restriction to system configuration
+- **Role Management Security**: Permission and role management restricted to admins
+
+#### **Security Best Practices**
+- **Defense in Depth**: Multiple security layers with redundant checking
+- **Principle of Least Privilege**: Minimal access rights for each role
+- **Fail-Safe Defaults**: Restrictive permissions by default
+- **Complete Audit Trail**: Full logging for security monitoring and forensics
+
+### 7. Integration with Frappe Security
+
+#### **Native Permission System Integration**
+- **frappe.has_permission()**: Deep integration with Frappe's permission engine
+- **Permission Query Conditions**: Custom query filters for row-level security  
+- **User Permissions**: Automatic enforcement of user-specific data restrictions
+- **Company-Based Filtering**: Seamless multi-company security support
+
+#### **Built-in Security Features**
+- **Session Management**: Leverages Frappe's session handling
+- **IP Restriction**: Integration with Frappe's IP-based access control
+- **Two-Factor Authentication**: Compatible with Frappe's 2FA system
+- **Password Policies**: Honors Frappe's password complexity requirements
+
+### 8. Security Monitoring & Analytics
+
+#### **Real-time Security Monitoring**
+- **Permission Denial Tracking**: Monitor failed access attempts
+- **Tool Usage Patterns**: Analyze tool usage across different roles
+- **Sensitive Data Access**: Monitor access to sensitive DocTypes and fields
+- **Security Incident Detection**: Automated detection of suspicious activities
+
+#### **Security Metrics**
+- **Access Control Effectiveness**: Permission denial rates and patterns
+- **User Activity Analysis**: Behavioral analysis for anomaly detection
+- **Role Distribution**: Understanding of role-based tool usage
+- **Audit Compliance**: Complete audit trails for regulatory requirements
 
 ## Performance Considerations
 

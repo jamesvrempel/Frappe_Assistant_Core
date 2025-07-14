@@ -45,20 +45,41 @@ class DocumentGet(BaseTool):
         doctype = arguments.get("doctype")
         name = arguments.get("name")
         
-        # Check permission for DocType
-        if not frappe.has_permission(doctype, "read"):
+        # SECURITY: Prevent hardcoded Administrator access attempts
+        import frappe
+        current_user = frappe.session.user
+        if name == "Administrator" and current_user != "Administrator":
             return {
                 "success": False,
-                "error": f"Insufficient permissions to read {doctype} document"
+                "error": f"Access denied: Cannot access Administrator record. Current user: {current_user}"
             }
+        
+        # Import security validation
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        
+        # Validate document access with comprehensive permission checking
+        validation_result = validate_document_access(
+            user=frappe.session.user,
+            doctype=doctype,
+            name=name,
+            perm_type="read"
+        )
+        
+        if not validation_result["success"]:
+            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
+            return validation_result
+        
+        user_role = validation_result["role"]
         
         try:
             # Check if document exists
             if not frappe.db.exists(doctype, name):
-                return {
+                result = {
                     "success": False,
                     "error": f"{doctype} '{name}' not found"
                 }
+                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                return result
             
             # Get document
             doc = frappe.get_doc(doctype, name)
@@ -66,13 +87,20 @@ class DocumentGet(BaseTool):
             # Convert to dict
             doc_dict = doc.as_dict()
             
-            return {
+            # Filter sensitive fields based on user role
+            filtered_doc = filter_sensitive_fields(doc_dict, doctype, user_role)
+            
+            result = {
                 "success": True,
                 "doctype": doctype,
                 "name": name,
-                "data": doc_dict,
+                "data": filtered_doc,
                 "message": f"{doctype} '{name}' retrieved successfully"
             }
+            
+            # Log successful access
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
             
         except Exception as e:
             frappe.log_error(
@@ -80,12 +108,16 @@ class DocumentGet(BaseTool):
                 message=f"Error retrieving {doctype} '{name}': {str(e)}"
             )
             
-            return {
+            result = {
                 "success": False,
                 "error": str(e),
                 "doctype": doctype,
                 "name": name
             }
+            
+            # Log failed access
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
 
 
 # Make sure class name matches file name for discovery

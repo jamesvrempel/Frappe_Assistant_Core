@@ -65,36 +65,88 @@ class DocumentList(BaseTool):
         limit = arguments.get("limit", 20)
         order_by = arguments.get("order_by", "creation desc")
         
-        # Check permission for DocType
-        if not frappe.has_permission(doctype, "read"):
-            return {
-                "success": False,
-                "error": f"Insufficient permissions to read {doctype} documents"
-            }
+        # Get current user context
+        import frappe
+        current_user = frappe.session.user
+        
+        # Import security validation
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        
+        # Validate document access with comprehensive permission checking
+        validation_result = validate_document_access(
+            user=frappe.session.user,
+            doctype=doctype,
+            name=None,  # No specific document for list operation
+            perm_type="read"
+        )
+        
+        if not validation_result["success"]:
+            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
+            return validation_result
+        
+        user_role = validation_result["role"]
+        
+        # SECURITY: Special handling for User DocType - non-admins can only see themselves
+        if doctype == "User" and user_role in ["Assistant User", "Default"]:
+            # Filter to only show current user
+            if not filters:
+                filters = {}
+            filters["name"] = current_user
         
         try:
-            # Get documents
+            # Filter sensitive fields from requested fields for Assistant Users
+            from frappe_assistant_core.core.security_config import SENSITIVE_FIELDS, ADMIN_ONLY_FIELDS
+            
+            if user_role == "Assistant User":
+                # Get restricted fields
+                restricted_fields = set()
+                restricted_fields.update(SENSITIVE_FIELDS.get("all_doctypes", []))
+                restricted_fields.update(SENSITIVE_FIELDS.get(doctype, []))
+                restricted_fields.update(ADMIN_ONLY_FIELDS.get("all_doctypes", []))
+                
+                doctype_admin_fields = ADMIN_ONLY_FIELDS.get(doctype, [])
+                if doctype_admin_fields != "*":
+                    restricted_fields.update(doctype_admin_fields)
+                
+                # Filter out restricted fields from requested fields
+                filtered_fields = [field for field in fields if field not in restricted_fields]
+                if not filtered_fields:
+                    filtered_fields = ["name"]  # Always allow name field
+                fields = filtered_fields
+            
+            # Get documents with proper permission checking
             documents = frappe.get_all(
                 doctype,
                 filters=filters,
                 fields=fields,
                 limit=limit,
-                order_by=order_by
+                order_by=order_by,
+                ignore_permissions=False  # Ensure permission checking
             )
+            
+            # Filter sensitive fields from document data
+            filtered_documents = []
+            for doc in documents:
+                filtered_doc = filter_sensitive_fields(doc, doctype, user_role)
+                filtered_documents.append(filtered_doc)
             
             # Get total count for pagination info
             total_count = frappe.db.count(doctype, filters)
             
-            return {
+            result = {
                 "success": True,
                 "doctype": doctype,
-                "data": documents,
-                "count": len(documents),
+                "data": filtered_documents,
+                "count": len(filtered_documents),
                 "total_count": total_count,
                 "has_more": total_count > limit,
                 "filters_applied": filters,
-                "message": f"Found {len(documents)} {doctype} records"
+                "message": f"Found {len(filtered_documents)} {doctype} records"
             }
+            
+            # Log successful access
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
             
         except Exception as e:
             frappe.log_error(

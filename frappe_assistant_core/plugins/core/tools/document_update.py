@@ -50,23 +50,95 @@ class DocumentUpdate(BaseTool):
         name = arguments.get("name")
         data = arguments.get("data", {})
         
-        # Check permission for DocType
-        if not frappe.has_permission(doctype, "write"):
-            return {
-                "success": False,
-                "error": f"Insufficient permissions to update {doctype} document"
-            }
+        # Import security validation
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        
+        # Validate document access with comprehensive permission checking
+        validation_result = validate_document_access(
+            user=frappe.session.user,
+            doctype=doctype,
+            name=name,
+            perm_type="write"
+        )
+        
+        if not validation_result["success"]:
+            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
+            return validation_result
+        
+        user_role = validation_result["role"]
         
         try:
             # Check if document exists
             if not frappe.db.exists(doctype, name):
-                return {
+                result = {
                     "success": False,
                     "error": f"{doctype} '{name}' not found"
                 }
+                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                return result
             
             # Get document
             doc = frappe.get_doc(doctype, name)
+            
+            # Enhanced document state validation
+            current_docstatus = getattr(doc, 'docstatus', 0)
+            current_workflow_state = getattr(doc, 'workflow_state', None)
+            
+            # Check if document is submitted (protection against editing submitted docs)
+            if current_docstatus == 1:
+                result = {
+                    "success": False,
+                    "error": f"Cannot modify submitted document {doctype} '{name}'. Submitted documents are read-only.",
+                    "docstatus": current_docstatus,
+                    "workflow_state": current_workflow_state,
+                    "suggestion": "Use document_get to view the submitted document, or create a new document if needed."
+                }
+                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                return result
+            
+            # Check if document is cancelled
+            if current_docstatus == 2:
+                result = {
+                    "success": False,
+                    "error": f"Cannot modify cancelled document {doctype} '{name}'. Cancelled documents are read-only.",
+                    "docstatus": current_docstatus,
+                    "workflow_state": current_workflow_state,
+                    "suggestion": "Use document_get to view the cancelled document, or create a new document if needed."
+                }
+                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                return result
+            
+            # Provide helpful information about document state
+            doc_state_info = {
+                "docstatus": current_docstatus,
+                "state_description": "Draft" if current_docstatus == 0 else "Unknown",
+                "workflow_state": current_workflow_state,
+                "is_editable": current_docstatus == 0
+            }
+            
+            # Filter out sensitive fields that user shouldn't be able to update
+            from frappe_assistant_core.core.security_config import SENSITIVE_FIELDS, ADMIN_ONLY_FIELDS
+            
+            # Get restricted fields for this role and doctype
+            restricted_fields = set()
+            restricted_fields.update(SENSITIVE_FIELDS.get("all_doctypes", []))
+            restricted_fields.update(SENSITIVE_FIELDS.get(doctype, []))
+            
+            if user_role == "Assistant User":
+                restricted_fields.update(ADMIN_ONLY_FIELDS.get("all_doctypes", []))
+                doctype_admin_fields = ADMIN_ONLY_FIELDS.get(doctype, [])
+                if doctype_admin_fields != "*":
+                    restricted_fields.update(doctype_admin_fields)
+            
+            # Check for attempts to update restricted fields
+            restricted_updates = [field for field in data.keys() if field in restricted_fields]
+            if restricted_updates:
+                result = {
+                    "success": False,
+                    "error": f"Cannot update restricted fields: {', '.join(restricted_updates)}. These fields require higher privileges."
+                }
+                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+                return result
             
             # Update field values
             for field, value in data.items():
@@ -75,13 +147,54 @@ class DocumentUpdate(BaseTool):
             # Save document
             doc.save()
             
-            return {
+            # Get updated document state
+            doc.reload()
+            updated_docstatus = getattr(doc, 'docstatus', 0)
+            updated_workflow_state = getattr(doc, 'workflow_state', None)
+            
+            result = {
                 "success": True,
                 "name": doc.name,
                 "doctype": doctype,
-                "message": f"{doctype} '{doc.name}' updated successfully",
-                "updated_fields": list(data.keys())
+                "updated_fields": list(data.keys()),
+                "docstatus": updated_docstatus,
+                "state_description": "Draft" if updated_docstatus == 0 else "Unknown",
+                "workflow_state": updated_workflow_state,
+                "owner": doc.owner,
+                "modified": str(doc.modified),
+                "modified_by": doc.modified_by,
+                "message": f"{doctype} '{doc.name}' updated successfully"
             }
+            
+            # Check if user can submit this document
+            if updated_docstatus == 0:  # Only for draft documents
+                try:
+                    result["can_submit"] = frappe.has_permission(doctype, "submit", doc=doc.name)
+                except Exception:
+                    result["can_submit"] = False
+            else:
+                result["can_submit"] = False
+            
+            # Add useful next steps information
+            if updated_docstatus == 0:
+                result["next_steps"] = [
+                    f"Document remains in draft state",
+                    f"You can continue updating this document",
+                    f"Submit permission: {'Available' if result['can_submit'] else 'Not available'}"
+                ]
+                
+                # Add workflow actions if available
+                if updated_workflow_state:
+                    result["next_steps"].append(f"Current workflow state: {updated_workflow_state}")
+            else:
+                result["next_steps"] = [
+                    f"Document state: {result['state_description']}",
+                    f"Further modifications may be restricted"
+                ]
+            
+            # Log successful update
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
             
         except Exception as e:
             frappe.log_error(
@@ -89,12 +202,16 @@ class DocumentUpdate(BaseTool):
                 message=f"Error updating {doctype} '{name}': {str(e)}"
             )
             
-            return {
+            result = {
                 "success": False,
                 "error": str(e),
                 "doctype": doctype,
                 "name": name
             }
+            
+            # Log failed update
+            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
+            return result
 
 
 # Make sure class name matches file name for discovery

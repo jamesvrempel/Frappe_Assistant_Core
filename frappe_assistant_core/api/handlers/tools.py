@@ -22,7 +22,8 @@ def handle_tools_list(request_id: Optional[Any]) -> Dict[str, Any]:
         api_logger.debug(LogMessages.TOOLS_LIST_REQUEST)
         
         registry = get_tool_registry()
-        tools = registry.get_available_tools()
+        # Pass current user explicitly to ensure proper filtering
+        tools = registry.get_available_tools(user=frappe.session.user)
         
         response = {
             "jsonrpc": "2.0",
@@ -35,7 +36,7 @@ def handle_tools_list(request_id: Optional[Any]) -> Dict[str, Any]:
         if request_id is not None:
             response["id"] = request_id
             
-        api_logger.info(f"Tools list request completed, returned {len(tools)} tools")
+        api_logger.info(f"Tools list request completed for user {frappe.session.user}, returned {len(tools)} tools")
         return response
         
     except Exception as e:
@@ -77,9 +78,10 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
                 response["id"] = request_id
             return response
         
-        # Get tool registry and execute
+        # Get tool registry and execute with proper user context
         registry = get_tool_registry()
-        tools_registry = registry.get_available_tools()
+        # Get available tools for current user to validate access
+        tools_registry = registry.get_available_tools(user=frappe.session.user)
         tool_found = False
         
         for tool in tools_registry:
@@ -88,6 +90,7 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
                 break
         
         if not tool_found:
+            api_logger.warning(f"Tool {tool_name} not available for user {frappe.session.user}")
             response = {
                 "jsonrpc": "2.0",
                 "error": {
@@ -99,7 +102,8 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
                 response["id"] = request_id
             return response
         
-        # Execute the tool using registry
+        # Execute the tool using registry with proper user context
+        api_logger.info(f"Executing tool {tool_name} for user {frappe.session.user}")
         result = registry.execute_tool(tool_name, arguments)
         
         # Ensure result is a string for Claude Desktop compatibility
