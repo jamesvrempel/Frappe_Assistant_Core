@@ -34,9 +34,23 @@ class AnalysisThresholds:
     MEDIUM_OUTPUT_LINES = 10
     MEDIUM_VARIABLE_COUNT = 8
 
-# Streaming Messages
+# Streaming Messages - Updated to use settings-driven configuration
 class StreamingMessages:
-    TOOL_PREFIX = """📊 ANALYSIS TOOL - Artifact Streaming Recommended:
+    """
+    Streaming messages that now use settings-driven configuration.
+    Provides fallback messages if streaming manager is unavailable.
+    """
+    
+    @staticmethod
+    def get_tool_prefix(tool_name: str = "") -> str:
+        """Get tool prefix message based on settings"""
+        try:
+            from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+            
+            streaming_manager = get_streaming_manager()
+            return streaming_manager.get_tool_description_suffix(tool_name)
+        except Exception:
+            return """📊 ANALYSIS TOOL - Artifact Streaming Available:
 
 💡 SUGGESTION: For complex multi-step analysis, consider creating workspace artifacts to:
 • Prevent response limits during extensive analysis
@@ -46,19 +60,22 @@ class StreamingMessages:
 
 This tool works perfectly in responses AND artifacts - use artifacts for unlimited analysis scope."""
 
-    SYSTEM_INSTRUCTIONS = """🔄 FRAPPE ARTIFACT STREAMING PROTOCOL - MANDATORY FOR ANALYSIS
+    @staticmethod
+    def get_system_instructions() -> str:
+        """Get system instructions based on settings"""
+        try:
+            from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+            
+            streaming_manager = get_streaming_manager()
+            custom_instructions = streaming_manager.get_custom_instructions()
+            
+            if streaming_manager.should_enforce_streaming():
+                return f"""🔄 FRAPPE ARTIFACT STREAMING PROTOCOL - ENFORCED BY ADMINISTRATOR
 
-⚠️ CRITICAL REQUIREMENT: All substantial analysis using Frappe analysis tools (execute_python_code, analyze_frappe_data, query_and_analyze, create_visualization) MUST be performed in workspace artifacts.
+⚠️ CRITICAL REQUIREMENT: Administrator has enforced artifact streaming for analysis operations.
 
-🚫 RESPONSE LIMIT PREVENTION:
-Analysis tools will enforce artifact streaming automatically when substantial results are detected to prevent response truncation.
-
-📋 MANDATORY WORKFLOW FOR ANALYSIS:
-• Simple data queries → Direct response (small results)
-• ANY substantial analysis → REQUIRED artifact workspace
-• Multi-step analysis → MUST use artifacts exclusively  
-• Data visualization → REQUIRED in artifacts
-• Business intelligence → REQUIRED in artifacts
+📋 ADMINISTRATOR CONFIGURATION:
+{custom_instructions}
 
 ⚡ AUTOMATIC ENFORCEMENT:
 The server detects substantial analysis results and enforces artifact streaming by:
@@ -67,27 +84,99 @@ The server detects substantial analysis results and enforces artifact streaming 
 - Ensuring unlimited analysis depth through artifact streaming
 
 🎯 ARTIFACT STREAMING TRIGGERS:
-- Output > 500 characters
-- Variables > 10 created
-- Data rows > 50 processed
-- Any visualization creation
-- Multi-step analytical workflows
+- Line threshold: {streaming_manager.get_line_threshold()}+ lines
+- Character threshold: {streaming_manager.get_char_threshold():,}+ characters
+- Analysis tools: enforce_artifact_streaming = {streaming_manager.should_enforce_streaming()}
+- Response limit prevention: {streaming_manager.should_prevent_response_limits()}
 
-✅ BENEFITS OF MANDATORY APPROACH:
+✅ BENEFITS OF CONFIGURED APPROACH:
 - Eliminates response limit errors completely
 - Professional deliverable creation guaranteed
 - Unlimited analytical depth ensured
 - Stakeholder-ready outputs automatic
 
 This protocol ensures reliable, unlimited analysis capabilities through intelligent artifact streaming."""
+            else:
+                return f"""🔄 FRAPPE ARTIFACT STREAMING PROTOCOL - OPTIONAL
 
-    ARTIFACT_CREATION_PROMPT = """I'll create a comprehensive analysis artifact to present these substantial results without response limits.
+💡 GUIDANCE: Artifact streaming is available for enhanced analysis workflows.
 
-{summary}
+📋 ADMINISTRATOR CONFIGURATION:
+{custom_instructions}
 
-The analysis contains extensive output that benefits from artifact presentation for professional formatting and unlimited depth. Let me create a dedicated workspace for these results:
+🎯 STREAMING RECOMMENDATIONS:
+- Line threshold: {streaming_manager.get_line_threshold()}+ lines (current: optional)
+- Character threshold: {streaming_manager.get_char_threshold():,}+ characters (current: optional)
+- Analysis tools: artifact streaming available
+- Response limit prevention: {streaming_manager.should_prevent_response_limits()}
 
-{content}"""
+✅ BENEFITS OF ARTIFACT STREAMING:
+- Prevents response limit errors
+- Professional deliverable creation
+- Unlimited analytical depth
+- Stakeholder-ready outputs
+
+Use artifacts for complex analysis workflows."""
+        except Exception:
+            return """🔄 FRAPPE ARTIFACT STREAMING PROTOCOL - CONFIGURATION ERROR
+
+⚠️ WARNING: Unable to load streaming configuration from settings.
+
+💡 FALLBACK: Basic artifact streaming available for complex analysis.
+
+Please check Assistant Core Settings for streaming configuration."""
+
+    @staticmethod
+    def get_artifact_creation_prompt() -> str:
+        """Get artifact creation prompt based on settings"""
+        try:
+            from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+            
+            streaming_manager = get_streaming_manager()
+            custom_instructions = streaming_manager.get_custom_instructions()
+            
+            if streaming_manager.should_enforce_streaming():
+                return f"""I'll create a comprehensive analysis artifact as required by administrator configuration.
+
+Administrator Guidelines:
+{custom_instructions}
+
+This ensures unlimited analysis depth and professional deliverables."""
+            else:
+                return f"""I'll create a comprehensive analysis artifact for better organization and unlimited depth.
+
+Guidelines:
+{custom_instructions}
+
+This provides professional deliverables and prevents response limits."""
+        except Exception:
+            return """I'll create a comprehensive analysis artifact to present these substantial results without response limits."""
+
+    # Legacy constants for backward compatibility - now use settings-driven approach
+    @classmethod
+    def _get_legacy_tool_prefix(cls):
+        return cls.get_tool_prefix()
+    
+    @classmethod  
+    def _get_legacy_system_instructions(cls):
+        return cls.get_system_instructions()
+    
+    @classmethod
+    def _get_legacy_artifact_creation_prompt(cls):
+        return cls.get_artifact_creation_prompt()
+    
+    # Dynamic properties for legacy compatibility
+    @property
+    def TOOL_PREFIX(self):
+        return self._get_legacy_tool_prefix()
+    
+    @property
+    def SYSTEM_INSTRUCTIONS(self):
+        return self._get_legacy_system_instructions()
+    
+    @property
+    def ARTIFACT_CREATION_PROMPT(self):
+        return self._get_legacy_artifact_creation_prompt()
 
     SMALL_ANALYSIS_TIP = """
 

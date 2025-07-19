@@ -1,155 +1,98 @@
 """
-Artifact streaming helper functions for tools
+Artifact streaming helper functions for tools.
+Updated to use settings-driven configuration instead of hardcoded values.
 """
 
 import frappe
 from typing import Dict, Any
 
 
-def should_stream_to_artifact(result: str, tool_name: str, line_threshold: int = 5, char_threshold: int = 1000) -> bool:
-    """Determine if result should be streamed to artifact"""
+def should_stream_to_artifact(result: str, tool_name: str, line_threshold: int = None, char_threshold: int = None) -> bool:
+    """
+    Determine if result should be streamed to artifact using settings.
     
-    # Always stream for analysis tools (these generate complex data)
+    Args:
+        result: Tool execution result
+        tool_name: Name of the tool
+        line_threshold: Legacy parameter (ignored, uses settings)
+        char_threshold: Legacy parameter (ignored, uses settings)
+        
+    Returns:
+        bool: True if result should be streamed
+    """
+    try:
+        from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+        
+        streaming_manager = get_streaming_manager()
+        return streaming_manager.should_stream_tool_result(result, tool_name)
+        
+    except Exception as e:
+        frappe.logger("tools_streaming").error(f"Error determining streaming requirement: {str(e)}")
+        # Fallback to basic logic for safety
+        return _fallback_streaming_logic(result, tool_name)
+
+
+def _fallback_streaming_logic(result: str, tool_name: str) -> bool:
+    """Fallback streaming logic if settings cannot be loaded"""
+    # Basic fallback using hardcoded values
     analysis_tools = ["analyze_frappe_data", "execute_python_code", "query_and_analyze", "create_visualization"]
     if tool_name in analysis_tools:
         return True
     
-    # Stream if result has more than threshold lines
     line_count = len(result.split('\n'))
-    if line_count > line_threshold:
-        return True
-    
-    # Stream if result is very long (> character threshold)
-    if len(result) > char_threshold:
-        return True
-    
-    # Stream if result contains JSON with many records (indicates large dataset)
-    if result.strip().startswith('{') and '"data"' in result and result.count('"name"') > 3:
-        return True
-    
-    # Stream if result contains extensive tabular data
-    if result.count('|') > 20:  # Likely a large table
-        return True
-        
-    # Stream if result has many list items
-    if result.count('\n- ') > 10 or result.count('\n• ') > 10:
+    if line_count > 5 or len(result) > 1000:
         return True
     
     return False
 
 
 def format_for_artifact_streaming(result: str, tool_name: str, arguments: Dict[str, Any]) -> str:
-    """Format result for artifact streaming with instructions"""
+    """
+    Format result for artifact streaming using settings-driven configuration.
     
-    # Extract key information for preview
-    lines = result.split('\n')
-    line_count = len(lines)
-    char_count = len(result)
-    
-    # Create preview (first few lines)
-    preview_lines = lines[:3] if len(lines) > 3 else lines
-    preview = '\n'.join(preview_lines)
-    if len(lines) > 3:
-        preview += f"\n... ({line_count - 3} more lines)"
-    
-    # Determine tool category for artifact suggestions
-    if tool_name in ["analyze_frappe_data", "execute_python_code", "query_and_analyze"]:
-        artifact_type = "Data Analysis Report"
-        sections = ["Executive Summary", "Key Findings", "Detailed Analysis", "Recommendations"]
-    elif tool_name.startswith("report_"):
-        artifact_type = "Business Report"
-        sections = ["Report Summary", "Key Metrics", "Detailed Data", "Action Items"]
-    elif tool_name.startswith("search_") or tool_name.startswith("metadata_"):
-        artifact_type = "Technical Documentation"
-        sections = ["Overview", "Search Results", "Technical Details", "Usage Notes"]
-    else:
-        artifact_type = "Comprehensive Results"
-        sections = ["Summary", "Main Results", "Detailed Output", "Next Steps"]
+    Args:
+        result: Tool execution result
+        tool_name: Name of the tool
+        arguments: Tool arguments
+        
+    Returns:
+        str: Formatted streaming instructions
+    """
+    try:
+        from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+        
+        streaming_manager = get_streaming_manager()
+        return streaming_manager.get_streaming_instructions(tool_name, result, arguments)
+        
+    except Exception as e:
+        frappe.logger("tools_streaming").error(f"Error formatting streaming instructions: {str(e)}")
+        # Fallback to basic formatting
+        return _fallback_streaming_format(result, tool_name, arguments)
 
-    # For extremely large results (>10,000 chars), don't include full result to prevent overwhelming
-    include_full_result = char_count <= 10000
+
+def _fallback_streaming_format(result: str, tool_name: str, arguments: Dict[str, Any]) -> str:
+    """Fallback streaming format if settings cannot be loaded"""
+    lines = len(result.split('\n'))
+    chars = len(result)
     
-    if include_full_result:
-        streaming_instructions = f"""
-🚨 ARTIFACT STREAMING REQUIRED - LARGE RESULT DETECTED
+    return f"""
+⚠️ STREAMING CONFIGURATION ERROR
 
 📊 **Result Statistics:**
-• Lines: {line_count} (threshold: 5+)
-• Characters: {char_count:,} (threshold: 1,000+)
+• Lines: {lines}
+• Characters: {chars:,}
 • Tool: {tool_name}
 
-📋 **REQUIRED WORKFLOW:**
-1. **CREATE ARTIFACT** - Type: {artifact_type}
-2. **ADD SECTIONS:** {', '.join(sections)}
-3. **STREAM FULL RESULTS** to artifact sections
-4. **KEEP RESPONSE MINIMAL** (only summary/confirmation)
+⚠️ **FALLBACK MODE**: Streaming configuration could not be loaded.
+Please check Assistant Core Settings for streaming configuration.
 
-⚠️ **CRITICAL:** The full result below MUST be moved to an artifact to prevent response limits and provide professional deliverables.
-
-═══════════════════════════════════════════════════════════
-
-📄 **PREVIEW:**
-```
-{preview}
-```
-
-🔧 **Tool Execution Details:**
+🔧 **Tool Details:**
 • Tool: {tool_name}
 • Arguments: {arguments}
 • Timestamp: {frappe.utils.now()}
 
-════════════════════════════════════════════════════════════════
-
-🔄 **FULL RESULT FOR ARTIFACT STREAMING:**
-
+**RESULT:**
 {result}
 
-════════════════════════════════════════════════════════════════
-
-⚠️ **NEXT STEPS:**
-1. Create workspace artifact with suggested sections above
-2. Stream the complete result to appropriate artifact sections
-3. Provide executive summary in your response
-4. Build unlimited depth analysis via artifact streaming
+**Note:** This is a fallback display. Configure streaming settings in Assistant Core Settings.
 """
-    else:
-        # For extremely large results, provide instructions without full content
-        streaming_instructions = f"""
-🚨 ARTIFACT STREAMING REQUIRED - EXTREMELY LARGE RESULT
-
-📊 **Result Statistics:**
-• Lines: {line_count} (threshold: 5+)
-• Characters: {char_count:,} (threshold: 1,000+)
-• Tool: {tool_name}
-• Status: Result too large for direct display ({char_count:,} characters)
-
-📋 **MANDATORY WORKFLOW:**
-1. **CREATE ARTIFACT** - Type: {artifact_type}
-2. **ADD SECTIONS:** {', '.join(sections)}
-3. **Re-execute tool and stream to artifact**
-4. **Keep response minimal**
-
-⚠️ **CRITICAL:** This result is too large to display directly. You MUST re-execute the tool and stream results to an artifact.
-
-═══════════════════════════════════════════════════════════
-
-📄 **PREVIEW (First 3 lines only):**
-```
-{preview}
-```
-
-🔧 **Tool Execution Details:**
-• Tool: {tool_name}
-• Arguments: {arguments}
-• Timestamp: {frappe.utils.now()}
-
-⚠️ **REQUIRED ACTION:**
-1. Create workspace artifact with the suggested sections
-2. Re-run this exact tool with same arguments
-3. Stream all results directly to artifact sections
-4. Provide only executive summary in response
-
-**Result is {char_count:,} characters - too large for conversation display.**
-"""
-
-    return streaming_instructions

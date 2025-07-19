@@ -24,30 +24,7 @@ class AnalyzeFrappeData(BaseTool):
     def __init__(self):
         super().__init__()
         self.name = "analyze_frappe_data"
-        self.description = """
-🚨 MANDATORY ARTIFACT STREAMING - REQUIRED FOR ALL ANALYSIS:
-
-⚠️ CRITICAL: This tool REQUIRES creating workspace artifacts BEFORE execution to prevent response limits.
-
-📋 REQUIRED WORKFLOW:
-1. CREATE workspace artifact FIRST (mandatory)
-2. Add sections: Executive Summary, Data Analysis, Findings, Recommendations
-3. Stream ALL analysis results to artifact sections
-4. Keep response minimal (only confirmation/summary)
-5. Build unlimited analysis depth via artifact streaming
-
-❌ WITHOUT ARTIFACTS: Tool will hit response limits and fail
-✅ WITH ARTIFACTS: Unlimited analysis depth and professional deliverables
-
-⚠️ DO NOT attempt analysis without creating artifacts first - conversation will hit limits.
-
-
-Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType. Perfect for understanding sales patterns, customer behavior, and operational metrics.
-
-💡 ARTIFACT TIP: Create workspace artifacts for comprehensive analysis without response limits.
-
-
-🔄 **Progress Streaming Enabled**: This tool provides real-time progress updates during execution."""
+        self.description = self._get_dynamic_description()
         self.requires_permission = None  # Permission checked dynamically per DocType
         
         self.input_schema = {
@@ -84,6 +61,25 @@ Perform comprehensive statistical analysis on Frappe business data. Calculate av
             },
             "required": ["doctype", "analysis_type"]
         }
+    
+    def _get_dynamic_description(self) -> str:
+        """Generate description based on current streaming settings"""
+        base_description = """Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType. Perfect for understanding sales patterns, customer behavior, and operational metrics.
+
+🔄 **Progress Streaming Enabled**: This tool provides real-time progress updates during execution."""
+        
+        try:
+            from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+            
+            streaming_manager = get_streaming_manager()
+            streaming_suffix = streaming_manager.get_tool_description_suffix(self.name)
+            
+            return base_description + streaming_suffix
+            
+        except Exception as e:
+            # Fallback to basic description if streaming manager fails
+            frappe.logger("analyze_frappe_data").warning(f"Failed to load streaming configuration: {str(e)}")
+            return base_description + "\n\n💡 **ARTIFACT STREAMING**: Consider using artifacts for complex analysis results."
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Perform data analysis on Frappe data"""

@@ -26,25 +26,50 @@ class ExecutePythonCode(BaseTool):
     def __init__(self):
         super().__init__()
         self.name = "execute_python_code"
-        self.description = """
-🚨 MANDATORY ARTIFACT STREAMING - REQUIRED FOR ALL ANALYSIS:
-
-⚠️ CRITICAL: This tool REQUIRES creating workspace artifacts BEFORE execution to prevent response limits.
-
-📋 REQUIRED WORKFLOW:
-1. CREATE workspace artifact FIRST (mandatory)
-2. Add sections: Executive Summary, Data Analysis, Findings, Recommendations
-3. Stream ALL analysis results to artifact sections
-4. Keep response minimal (only confirmation/summary)
-5. Build unlimited analysis depth via artifact streaming
-
-❌ WITHOUT ARTIFACTS: Tool will hit response limits and fail
-✅ WITH ARTIFACTS: Unlimited analysis depth and professional deliverables
-
-⚠️ DO NOT attempt analysis without creating artifacts first - conversation will hit limits.
-
-
-Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework and extensive library ecosystem.
+        self.description = self._get_dynamic_description()
+        self.requires_permission = None  # Available to all users
+        
+        self.input_schema = {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "description": "Python code to execute"
+                },
+                "data_query": {
+                    "type": "object",
+                    "description": "Query to fetch data and make it available as 'data' variable",
+                    "properties": {
+                        "doctype": {"type": "string"},
+                        "fields": {"type": "array", "items": {"type": "string"}},
+                        "filters": {"type": "object"},
+                        "limit": {"type": "integer", "default": 100}
+                    }
+                },
+                "timeout": {
+                    "type": "integer",
+                    "description": "Execution timeout in seconds (default: 30)",
+                    "default": 30,
+                    "minimum": 1,
+                    "maximum": 300
+                },
+                "capture_output": {
+                    "type": "boolean",
+                    "description": "Whether to capture print output (default: true)",
+                    "default": True
+                },
+                "return_variables": {
+                    "type": "array",
+                    "description": "Variable names to return values for",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["code"]
+        }
+    
+    def _get_dynamic_description(self) -> str:
+        """Generate description based on current streaming settings"""
+        base_description = """Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework and extensive library ecosystem.
 
 🔐 **SECURITY:** Requires System Manager role. Executes in secure sandbox environment.
 
@@ -121,49 +146,20 @@ print(f"Mean calculated: {result}")
 print("Available variables:", list(locals().keys()))
 ```
 
-💡 ARTIFACT TIP: For extensive analysis workflows, stream results to artifacts for unlimited depth.
-
-
 🔄 **Progress Streaming Enabled**: This tool provides real-time progress updates during execution."""
-        self.requires_permission = None  # Available to all users
         
-        self.input_schema = {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "Python code to execute"
-                },
-                "data_query": {
-                    "type": "object",
-                    "description": "Query to fetch data and make it available as 'data' variable",
-                    "properties": {
-                        "doctype": {"type": "string"},
-                        "fields": {"type": "array", "items": {"type": "string"}},
-                        "filters": {"type": "object"},
-                        "limit": {"type": "integer", "default": 100}
-                    }
-                },
-                "timeout": {
-                    "type": "integer",
-                    "description": "Execution timeout in seconds (default: 30)",
-                    "default": 30,
-                    "minimum": 1,
-                    "maximum": 300
-                },
-                "capture_output": {
-                    "type": "boolean",
-                    "description": "Whether to capture print output (default: true)",
-                    "default": True
-                },
-                "return_variables": {
-                    "type": "array",
-                    "description": "Variable names to return values for",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["code"]
-        }
+        try:
+            from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
+            
+            streaming_manager = get_streaming_manager()
+            streaming_suffix = streaming_manager.get_tool_description_suffix(self.name)
+            
+            return base_description + streaming_suffix
+            
+        except Exception as e:
+            # Fallback to basic description if streaming manager fails
+            frappe.logger("execute_python_code").warning(f"Failed to load streaming configuration: {str(e)}")
+            return base_description + "\n\n💡 **ARTIFACT STREAMING**: Consider using artifacts for complex code execution results."
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute Python code safely"""

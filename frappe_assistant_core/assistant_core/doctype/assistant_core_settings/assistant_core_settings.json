@@ -25,7 +25,9 @@
   "streaming_section",
   "enforce_artifact_streaming",
   "response_limit_prevention",
-  "streaming_behavior_instructions"
+  "streaming_behavior_instructions",
+  "streaming_line_threshold",
+  "streaming_char_threshold"
  ],
  "fields": [
   {
@@ -150,6 +152,20 @@
    "fieldname": "streaming_behavior_instructions",
    "fieldtype": "Small Text",
    "label": "Custom Streaming Instructions"
+  },
+  {
+   "default": "5",
+   "description": "Number of lines in tool result that triggers artifact streaming",
+   "fieldname": "streaming_line_threshold",
+   "fieldtype": "Int",
+   "label": "Line Threshold for Streaming"
+  },
+  {
+   "default": "1000",
+   "description": "Number of characters in tool result that triggers artifact streaming",
+   "fieldname": "streaming_char_threshold",
+   "fieldtype": "Int",
+   "label": "Character Threshold for Streaming"
   }
  ],
  "issingle": 1,
