@@ -232,7 +232,13 @@ class DashboardManager(BaseTool):
             
             # Update dashboard with chart references
             if chart_docs:
-                dashboard_doc.charts = chart_docs
+                # Clear existing charts and add new ones
+                dashboard_doc.charts = []
+                for chart_data in chart_docs:
+                    dashboard_doc.append("charts", {
+                        "chart": chart_data["chart"],
+                        "width": chart_data.get("width", "Half")
+                    })
                 dashboard_doc.save()
             
             # Setup sharing
@@ -300,7 +306,13 @@ class DashboardManager(BaseTool):
             
             # Update dashboard with chart references
             if chart_docs:
-                dashboard_doc.charts = chart_docs
+                # Clear existing charts and add new ones
+                dashboard_doc.charts = []
+                for chart_data in chart_docs:
+                    dashboard_doc.append("charts", {
+                        "chart": chart_data["chart"],
+                        "width": chart_data.get("width", "Half")
+                    })
                 dashboard_doc.save()
             
             # Setup permissions
