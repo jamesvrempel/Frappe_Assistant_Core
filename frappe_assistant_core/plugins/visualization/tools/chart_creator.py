@@ -214,7 +214,8 @@ class ChartCreator(BaseTool):
             
             # Create chart based on type
             chart_result = self._create_chart_by_type(
-                chart_type, chart_data, title, chart_options, export_format
+                chart_type, chart_data, title, chart_options, export_format,
+                x_field, y_field, aggregate
             )
             
             return {
@@ -416,7 +417,8 @@ class ChartCreator(BaseTool):
             return data
     
     def _create_chart_by_type(self, chart_type: str, data: List[Dict], title: str,
-                             chart_options: Dict, export_format: str) -> Dict[str, Any]:
+                             chart_options: Dict, export_format: str, x_field: str, 
+                             y_field: str, aggregate: str) -> Dict[str, Any]:
         """Create chart based on type"""
         try:
             # Import visualization library
