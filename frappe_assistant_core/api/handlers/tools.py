@@ -1,6 +1,6 @@
 """
-Tools handlers for MCP protocol
-Handles tools/list and tools/call requests
+Clean tools handlers using the new plugin manager architecture.
+Replaces workarounds with proper state management and error handling.
 """
 
 import frappe
@@ -11,6 +11,7 @@ from frappe_assistant_core.constants.definitions import (
 )
 from frappe_assistant_core.utils.logger import api_logger
 from frappe_assistant_core.core.tool_registry import get_tool_registry
+from frappe_assistant_core.utils.plugin_manager import PluginError, PluginNotFoundError, PluginValidationError
 from frappe_assistant_core.api.handlers.tools_streaming import (
     should_stream_to_artifact, format_for_artifact_streaming
 )
@@ -22,7 +23,6 @@ def handle_tools_list(request_id: Optional[Any]) -> Dict[str, Any]:
         api_logger.debug(LogMessages.TOOLS_LIST_REQUEST)
         
         registry = get_tool_registry()
-        # Pass current user explicitly to ensure proper filtering
         tools = registry.get_available_tools(user=frappe.session.user)
         
         response = {
@@ -32,7 +32,6 @@ def handle_tools_list(request_id: Optional[Any]) -> Dict[str, Any]:
             }
         }
         
-        # Only include id if it's not None
         if request_id is not None:
             response["id"] = request_id
             
@@ -51,7 +50,6 @@ def handle_tools_list(request_id: Optional[Any]) -> Dict[str, Any]:
             }
         }
         
-        # Only include id if it's not None
         if request_id is not None:
             response["id"] = request_id
             
@@ -78,18 +76,14 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
                 response["id"] = request_id
             return response
         
-        # Get tool registry and execute with proper user context
+        # Execute tool using registry
         registry = get_tool_registry()
-        # Get available tools for current user to validate access
-        tools_registry = registry.get_available_tools(user=frappe.session.user)
-        tool_found = False
+        api_logger.info(f"Executing tool {tool_name} for user {frappe.session.user}")
         
-        for tool in tools_registry:
-            if tool["name"] == tool_name:
-                tool_found = True
-                break
-        
-        if not tool_found:
+        try:
+            result = registry.execute_tool(tool_name, arguments)
+        except ValueError as e:
+            # Tool not found
             api_logger.warning(f"Tool {tool_name} not available for user {frappe.session.user}")
             response = {
                 "jsonrpc": "2.0",
@@ -101,22 +95,28 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
             if request_id is not None:
                 response["id"] = request_id
             return response
-        
-        # Execute the tool using registry with proper user context
-        api_logger.info(f"Executing tool {tool_name} for user {frappe.session.user}")
-        result = registry.execute_tool(tool_name, arguments)
+        except PermissionError:
+            # Permission denied
+            api_logger.warning(f"Permission denied for tool {tool_name} and user {frappe.session.user}")
+            response = {
+                "jsonrpc": "2.0",
+                "error": {
+                    "code": ErrorCodes.AUTHENTICATION_REQUIRED,
+                    "message": ErrorMessages.ACCESS_DENIED
+                }
+            }
+            if request_id is not None:
+                response["id"] = request_id
+            return response
         
         # Ensure result is a string for Claude Desktop compatibility
         if not isinstance(result, str):
             result = str(result)
         
-        # Check if result should be streamed to artifacts (> 5 lines or very long)
+        # Check if result should be streamed to artifacts
         should_stream = should_stream_to_artifact(result, tool_name)
-        
         if should_stream:
-            # Provide artifact streaming instructions with truncated result
-            artifact_result = format_for_artifact_streaming(result, tool_name, arguments)
-            result = artifact_result
+            result = format_for_artifact_streaming(result, tool_name, arguments)
         
         response = {
             "jsonrpc": "2.0",
@@ -130,7 +130,6 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
             }
         }
         
-        # Only include id if it's not None
         if request_id is not None:
             response["id"] = request_id
             
@@ -149,7 +148,6 @@ def handle_tool_call(params: Dict[str, Any], request_id: Optional[Any]) -> Dict[
             }
         }
         
-        # Only include id if it's not None
         if request_id is not None:
             response["id"] = request_id
             

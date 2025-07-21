@@ -17,7 +17,8 @@
   "ssl_cert_path",
   "ssl_key_path",
   "plugins_section",
-  "enabled_plugins",
+  "enabled_plugins_list",
+  "plugin_status_html",
   "logging_section",
   "log_level",
   "max_log_entries",
@@ -96,10 +97,17 @@
    "label": "Plugin Configuration"
   },
   {
-   "fieldname": "enabled_plugins",
-   "fieldtype": "Table",
-   "label": "Plugins",
-   "options": "Assistant Plugin Config"
+   "fieldname": "enabled_plugins_list",
+   "fieldtype": "JSON",
+   "label": "Enabled Plugins",
+   "hidden": 1,
+   "default": "[]"
+  },
+  {
+   "fieldname": "plugin_status_html",
+   "fieldtype": "HTML",
+   "label": "Plugin Status",
+   "options": "<div id='plugin-status-container'>Loading plugin information...</div>"
   },
   {
    "collapsible": 1,

@@ -102,14 +102,14 @@ bench --site [site-name] set-config assistant_enabled 1
 
 ## 🛠️ Architecture Overview
 
-### Plugin-Based Architecture (v1.2.0)
+### Clean Plugin Architecture (v1.2.0)
 ```
 frappe_assistant_core/
 ├── core/
-│   ├── tool_registry.py         # Auto-discovery tool registry
+│   ├── tool_registry.py         # Clean tool registry interface
 │   └── base_tool.py             # Base tool class
-├── plugins/                     # Plugin system
-│   ├── core/                    # Core tools plugin
+├── plugins/                     # Internal plugin system
+│   ├── core/                    # Core tools plugin (always enabled)
 │   │   ├── plugin.py            # Plugin definition
 │   │   └── tools/               # Core tool implementations
 │   │       ├── document_*.py    # Document operations
@@ -117,36 +117,77 @@ frappe_assistant_core/
 │   │       ├── metadata_*.py    # Metadata tools
 │   │       ├── report_*.py      # Report tools
 │   │       └── workflow_*.py    # Workflow tools
-│   ├── data_science/            # Data science plugin
+│   ├── data_science/            # Data science plugin (optional)
 │   │   ├── plugin.py            # Plugin definition
 │   │   └── tools/               # Analysis tool implementations
 │   │       ├── execute_python_code.py
 │   │       ├── analyze_frappe_data.py
 │   │       ├── query_and_analyze.py
 │   │       └── create_visualization.py
-│   ├── websocket/               # WebSocket plugin
-│   └── batch_processing/        # Batch processing plugin
+│   └── batch_processing/        # Batch processing plugin (optional)
 ├── utils/
-│   ├── plugin_manager.py        # Plugin discovery & loading
+│   ├── plugin_manager.py        # Thread-safe plugin management
 │   └── logger.py                # Professional logging
 ├── assistant_core/
 │   └── doctype/                 # Frappe DocTypes
-│       ├── assistant_core_settings/
-│       ├── assistant_plugin_repository/
-│       └── assistant_tool_registry/
+│       └── assistant_core_settings/  # Plugin management UI
 └── pyproject.toml               # Modern packaging
 ```
 
-### Plugin Architecture Benefits
-- **🔌 Modular Plugins**: Tools organized in discoverable plugins
-- **🚀 Auto-Discovery**: Automatic tool registration from enabled plugins
-- **⚙️ Plugin Management**: Web interface for enabling/disabling plugins
-- **🔧 Extensible**: Easy to add new plugins and tools
-- **🎯 Focused**: Each plugin handles specific functionality
+### Architecture Benefits
+- **🧵 Thread-Safe**: Clean, thread-safe plugin management with proper locking
+- **🔄 State Persistence**: Plugin states persist across system restarts
+- **⚙️ Atomic Operations**: Plugin enable/disable with rollback on failure
+- **🏗️ Clean Architecture**: Single responsibility, dependency injection patterns
+- **🔧 External App Support**: Tools can be developed in any Frappe app via hooks
+- **📋 Configuration Hierarchy**: Tool → App → Site level configuration support
 
 ---
 
-## 🔧 Tools Available (Plugin-Based)
+## 🔧 Tool Development
+
+### 🌟 External App Tools (Recommended)
+Create tools in your custom Frappe apps using the hooks system:
+
+```python
+# In your_app/hooks.py
+assistant_tools = [
+    "your_app.assistant_tools.sales_analyzer.SalesAnalyzer",
+    "your_app.assistant_tools.inventory_manager.InventoryManager"
+]
+
+# Optional: App-level configuration overrides
+assistant_tool_configs = {
+    "sales_analyzer": {
+        "timeout": 60,
+        "max_records": 5000
+    }
+}
+```
+
+**Benefits:**
+- 🔧 **No Core Modifications**: Keep tools with your business logic
+- 🚀 **Easy Deployment**: Tools deploy with your app
+- ⚙️ **App-Specific Config**: Configure tools per your app's needs
+- 🔒 **Isolated Development**: Changes don't affect core system
+
+See [EXTERNAL_APP_DEVELOPMENT.md](docs/EXTERNAL_APP_DEVELOPMENT.md) for complete guide.
+
+### 🔌 Internal Plugin Tools
+For core functionality within frappe_assistant_core:
+
+```python
+# frappe_assistant_core/plugins/my_plugin/plugin.py
+class MyPlugin(BasePlugin):
+    def get_tools(self):
+        return ["my_tool", "another_tool"]
+```
+
+See [PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) for plugin development.
+
+---
+
+## 🔧 Available Tools
 
 ### 📦 Core Plugin
 **Document Operations**
@@ -184,10 +225,6 @@ frappe_assistant_core/
 - `analyze_frappe_data` - Statistical analysis of Frappe data
 - `query_and_analyze` - SQL query execution with analysis
 - `create_visualization` - Chart and graph generation
-
-### 🌐 WebSocket Plugin
-**Real-time Communication**
-- WebSocket server integration for real-time features
 
 ### ⚡ Batch Processing Plugin  
 **Bulk Operations**
@@ -319,10 +356,20 @@ Contact us at jypaulclinton@gmail.com
 
 ## 📚 Documentation
 
-- **[Technical Documentation](docs/TECHNICAL_DOCUMENTATION.md)** - Complete technical details and architecture
-- **[API Reference](docs/API_REFERENCE.md)** - Detailed API documentation
-- **[Installation Guide](docs/INSTALLATION.md)** - Step-by-step installation instructions
-- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+### 🚀 **Getting Started**
+- **[External App Development](docs/EXTERNAL_APP_DEVELOPMENT.md)** - 🌟 Create tools in your Frappe apps (Recommended)
+- **[Tool Development Templates](docs/TOOL_DEVELOPMENT_TEMPLATES.md)** - Code templates and examples
+- **[Tool Usage Guide](docs/TOOL_USAGE_GUIDE.md)** - How to use available tools
+
+### 🏗️ **Architecture & Development**
+- **[Architecture Overview](docs/ARCHITECTURE.md)** - Complete system architecture and design
+- **[Plugin Development](docs/PLUGIN_DEVELOPMENT.md)** - Internal plugin development guide
+- **[Technical Documentation](docs/TECHNICAL_DOCUMENTATION.md)** - Detailed technical implementation
+
+### 📖 **Reference**
+- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+- **[Security Guide](docs/COMPREHENSIVE_SECURITY_GUIDE.md)** - Security features and best practices
+- **[Capabilities Report](docs/CAPABILITIES_REPORT.md)** - Complete feature overview
 
 ---
 
@@ -358,10 +405,11 @@ This is an open-source MIT licensed project. Contributions are welcome!
 
 ### Planned Features
 1. **Enhanced Analytics**: Advanced statistical analysis tools
-2. **Real-time Collaboration**: Multi-user sessions
-3. **Plugin System**: Third-party tool extensions
+2. **Real-time Features**: WebSocket integration for live updates
+3. **Tool Marketplace**: Community-driven tool repository
 4. **API Rate Limiting**: Advanced throttling mechanisms
 5. **Webhook Integration**: External service notifications
+6. **Multi-tenant Support**: Enhanced isolation for multi-site deployments
 
 ---
 

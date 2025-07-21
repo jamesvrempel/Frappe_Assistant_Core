@@ -4,6 +4,8 @@
 
 This comprehensive guide covers creating plugins for Frappe Assistant Core. Plugins allow you to extend the system with custom functionality while maintaining clean separation from core features.
 
+> **Note**: For most use cases, we recommend creating tools in external Frappe apps using the hooks system (see TOOL_DEVELOPMENT_TEMPLATES.md). Internal plugins are primarily for core functionality within frappe_assistant_core.
+
 ## Plugin Architecture
 
 ### Plugin Structure

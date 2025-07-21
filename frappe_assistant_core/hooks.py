@@ -71,13 +71,16 @@ jenv = {
 # ------------
 
 # before_install = "frappe_assistant_core.install.before_install"
-after_install = "frappe_assistant_core.install.after_install"
+after_install = [
+    "frappe_assistant_core.install.after_install",
+    "frappe_assistant_core.utils.migration_hooks.after_install"
+]
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "frappe_assistant_core.uninstall.before_uninstall"
-# after_uninstall = "frappe_assistant_core.uninstall.after_uninstall"
+after_uninstall = "frappe_assistant_core.utils.migration_hooks.after_uninstall"
 
 # Desk Notifications
 # ------------------
@@ -118,11 +121,6 @@ doc_events = {
     },
     "Assistant Core Settings": {
         "on_update": "frappe_assistant_core.utils.cache.invalidate_settings_cache"
-    },
-    "Assistant Tool Registry": {
-        "on_update": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache",
-        "after_insert": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache",
-        "on_trash": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache"
     },
     "Assistant Connection Log": {
         "after_insert": "frappe_assistant_core.utils.cache.invalidate_dashboard_cache"
@@ -234,4 +232,25 @@ standard_roles = [
 # -------
 
 app_startup = "frappe_assistant_core.startup.startup"
-after_migrate = "frappe_assistant_core.startup.startup"
+before_migrate = "frappe_assistant_core.utils.migration_hooks.before_migrate"
+after_migrate = [
+    "frappe_assistant_core.startup.startup",
+    "frappe_assistant_core.utils.migration_hooks.after_migrate"
+]
+
+# Enhanced Plugin Architecture
+# ----------------------------
+
+# Tool discovery from external apps via hooks
+assistant_tools = [
+    # Core tools are discovered automatically from plugins
+]
+
+# Tool configuration overrides
+assistant_tool_configs = {
+    # Example tool config:
+    # "document_create": {
+    #     "max_batch_size": 100,
+    #     "timeout": 30
+    # }
+}

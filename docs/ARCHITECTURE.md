@@ -76,19 +76,23 @@ The Model Context Protocol (MCP) layer handles communication between AI assistan
 
 ### 2. Tool Registry
 
-The tool registry manages discovery, registration, and execution of all available tools through a plugin-based architecture.
+The tool registry manages discovery, registration, and execution of all available tools through a clean plugin architecture with support for external app tools.
 
 **Architecture:**
 ```python
 ToolRegistry
-├── Plugin Discovery
-│   ├── Scans plugins/*/plugin.py
-│   ├── Discovers enabled plugins
-│   └── Validates plugin requirements
-├── Tool Loading
+├── Plugin Manager Integration
+│   ├── Uses PluginManager for plugin discovery
 │   ├── Loads tools from enabled plugins
+│   └── Manages plugin lifecycle
+├── External App Discovery
+│   ├── Discovers tools via app hooks
+│   ├── Loads tools from assistant_tools hook
+│   └── Supports multi-app tool development
+├── Tool Management
 │   ├── Instantiates tool classes
-│   └── Registers with plugin metadata
+│   ├── Manages tool metadata
+│   └── Provides unified tool access
 └── Permission Filtering
     ├── Checks user permissions
     ├── Filters available tools
@@ -96,10 +100,11 @@ ToolRegistry
 ```
 
 **Features:**
-- **Plugin-Based Discovery**: Tools discovered from enabled plugins
+- **Multi-Source Discovery**: Tools from plugins and external apps
+- **Clean Architecture**: Thread-safe plugin management
 - **Runtime Management**: Enable/disable plugins through web interface
 - **Permission Integration**: Only accessible tools are exposed
-- **Metadata Management**: Tool information cached for performance
+- **Configuration Support**: Hierarchical tool configuration
 
 ### 3. Base Tool Architecture
 
@@ -134,7 +139,7 @@ BaseTool (Abstract)
 
 ### 4. Plugin System
 
-The plugin system enables modular functionality that can be enabled/disabled as needed.
+The plugin system enables modular functionality that can be enabled/disabled as needed, with clean architecture and thread-safe operations.
 
 **Plugin Architecture:**
 ```python
@@ -158,13 +163,47 @@ BasePlugin (Abstract)
     └── on_server_stop()
 ```
 
-**Plugin Manager:**
-- **Discovery**: Automatically finds plugin directories
-- **Validation**: Checks dependencies and environment
-- **Loading**: Manages plugin lifecycle and tool registration
-- **Configuration**: Integration with Frappe settings
+**Plugin Manager (Clean Architecture):**
+- **Thread-Safe Discovery**: Safe plugin directory scanning with proper locking
+- **State Persistence**: Plugin states persist across system restarts
+- **Atomic Operations**: Plugin enable/disable with rollback on failure
+- **Environment Validation**: Comprehensive dependency and environment checking
+- **Configuration Management**: Integration with Frappe settings and site configuration
+- **Error Recovery**: Specific exceptions with proper recovery mechanisms
 
-### 5. Current Plugin Implementations
+### 5. Tool Development Methods
+
+The system supports two primary methods for tool development:
+
+#### **Method 1: External App Tools (Recommended)**
+Tools can be developed in any Frappe app using the hooks system:
+
+```python
+# In your_app/hooks.py
+assistant_tools = [
+    "your_app.assistant_tools.sales_analyzer.SalesAnalyzer",
+    "your_app.assistant_tools.inventory_tool.InventoryTool"
+]
+
+# Optional: App-level configuration overrides
+assistant_tool_configs = {
+    "sales_analyzer": {
+        "timeout": 60,
+        "max_records": 5000
+    }
+}
+```
+
+**Benefits:**
+- No modification needed to frappe_assistant_core
+- Tools stay with your business logic
+- Easy maintenance and deployment
+- Support for app-specific configurations
+
+#### **Method 2: Internal Plugin Tools**
+Tools developed within frappe_assistant_core plugins for core functionality.
+
+### 6. Current Plugin Implementations
 
 The system currently includes several production-ready plugins:
 
@@ -472,10 +511,11 @@ def audit_log_tool_access(user, tool_name, arguments, result):
 
 ### 1. Caching Strategy
 
-- **Tool Registry**: Cached between requests
-- **Permission Results**: Cached with TTL
-- **Plugin State**: Cached plugin configurations
-- **Metadata**: DocType metadata cached
+- **Plugin State**: Plugin states persisted in database
+- **Tool Registry**: Efficient tool discovery and registration
+- **Permission Results**: Cached with TTL through Frappe
+- **Configuration**: Hierarchical configuration caching
+- **Metadata**: DocType metadata cached through Frappe
 
 ### 2. Lazy Loading
 

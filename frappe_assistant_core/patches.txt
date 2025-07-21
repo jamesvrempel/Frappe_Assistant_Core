@@ -1,2 +1,5 @@
 # Patches for frappe_assistant_core
 # Format: patches.patch_file
+
+# Version 2.0.0 - Enhanced Plugin Architecture
+frappe_assistant_core.patches.v2_0_0.remove_deprecated_doctypes

@@ -1,58 +1,57 @@
+"""
+Clean startup initialization using the new plugin manager.
+Removes workarounds and provides proper initialization flow.
+"""
+
 import frappe
 from frappe_assistant_core.utils.logger import api_logger
+
 
 def startup():
     """App startup initialization"""
     try:
-        # Check and populate tool registry if empty
-        ensure_tools_registered()
-        
-        # Check and populate plugin repository if empty
-        ensure_plugins_registered()
+        # Initialize plugin manager - this automatically loads enabled plugins from settings
+        initialize_plugin_system()
         
         # Initialize assistant server if enabled
         settings = frappe.get_single("Assistant Core Settings")
         if settings and settings.server_enabled:
             from frappe_assistant_core.assistant_core.server import start_server
             start_server()
+            
     except Exception as e:
         api_logger.debug(f"Startup error (non-critical): {e}")
 
-def ensure_tools_registered():
-    """Ensure tools are registered in the database registry"""
-    try:
-        # Check if Assistant Tool Registry table exists and has tools
-        if frappe.db.table_exists("tabAssistant Tool Registry"):
-            tool_count = frappe.db.count("Assistant Tool Registry")
-            
-            if tool_count == 0:
-                api_logger.info("Assistant Tool Registry is empty, auto-registering tools...")
-                from frappe_assistant_core.install import register_default_tools
-                register_default_tools()
-            else:
-                api_logger.debug(f"Assistant Tool Registry has {tool_count} tools")
-        else:
-            api_logger.debug("Assistant Tool Registry table not found during startup")
-    except Exception as e:
-        api_logger.debug(f"Error checking tool registry during startup: {e}")
 
-def ensure_plugins_registered():
-    """Ensure plugins are registered in the plugin repository"""
+def initialize_plugin_system():
+    """Initialize the plugin system with clean architecture"""
     try:
-        # Check if Assistant Plugin Repository table exists and has plugins
-        if frappe.db.table_exists("tabAssistant Plugin Repository"):
-            plugin_count = frappe.db.count("Assistant Plugin Repository")
-            
-            if plugin_count == 0:
-                api_logger.info("Assistant Plugin Repository is empty, auto-registering plugins...")
-                from frappe_assistant_core.install import register_default_plugins
-                register_default_plugins()
-            else:
-                api_logger.debug(f"Assistant Plugin Repository has {plugin_count} plugins")
-                # Always refresh plugins on startup to ensure they're up to date
-                from frappe_assistant_core.assistant_core.doctype.assistant_plugin_repository.assistant_plugin_repository import refresh_plugin_repository
-                refresh_plugin_repository()
-        else:
-            api_logger.debug("Assistant Plugin Repository table not found during startup")
+        from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+        
+        # Get plugin manager - this automatically initializes and loads enabled plugins
+        plugin_manager = get_plugin_manager()
+        
+        # Get stats for logging
+        enabled_plugins = plugin_manager.get_enabled_plugins()
+        available_tools = plugin_manager.get_all_tools()
+        
+        api_logger.info(
+            f"Plugin system initialized: {len(enabled_plugins)} plugins enabled, "
+            f"{len(available_tools)} tools available"
+        )
+        
     except Exception as e:
-        api_logger.debug(f"Error checking plugin repository during startup: {e}")
+        api_logger.error(f"Failed to initialize plugin system: {e}")
+
+
+# Legacy compatibility - can be removed after verifying no external calls
+def load_enabled_plugins_from_settings():
+    """Legacy compatibility function - now handled by plugin manager initialization"""
+    api_logger.debug("load_enabled_plugins_from_settings called - delegating to plugin manager")
+    initialize_plugin_system()
+
+
+def ensure_enhanced_registry_initialized():
+    """Legacy compatibility function - now handled by plugin manager initialization"""
+    api_logger.debug("ensure_enhanced_registry_initialized called - delegating to plugin manager")
+    initialize_plugin_system()
