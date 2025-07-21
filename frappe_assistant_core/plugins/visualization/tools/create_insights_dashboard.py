@@ -207,33 +207,37 @@ class DashboardManager(BaseTool):
                     "fallback_required": True
                 }
             
-            # Create Dashboard document
+            # Create dashboard charts first (before dashboard creation)
+            created_charts = []
+            chart_links = []
+            for i, chart_config in enumerate(chart_configs):
+                chart_result = self._create_dashboard_chart(
+                    None, doctype, chart_config, filters  # Pass None for dashboard_id initially
+                )
+                if chart_result["success"]:
+                    created_charts.append(chart_result["chart_name"])
+                    chart_links.append({
+                        "chart": chart_result["chart_id"],
+                        "width": "Half"
+                    })
+            
+            # Only create dashboard if we have at least one chart (required field constraint)
+            if not chart_links:
+                return {
+                    "success": False,
+                    "error": "No valid charts could be created for dashboard",
+                    "fallback_required": True
+                }
+            
+            # Create Dashboard document with charts already populated
             dashboard_doc = frappe.get_doc({
                 "doctype": "Dashboard",
                 "dashboard_name": dashboard_name,
                 "module": "Custom",
                 "is_standard": 0,
-                "charts": []  # Required field
+                "charts": chart_links  # Populate with actual chart links
             })
             dashboard_doc.insert()
-            
-            # Create dashboard charts
-            created_charts = []
-            for i, chart_config in enumerate(chart_configs):
-                chart_result = self._create_dashboard_chart(
-                    dashboard_doc.name, doctype, chart_config, filters
-                )
-                if chart_result["success"]:
-                    created_charts.append(chart_result["chart_name"])
-                    # Link chart to dashboard
-                    dashboard_doc.append("charts", {
-                        "chart": chart_result["chart_id"],
-                        "width": "Half"
-                    })
-            
-            # Save dashboard with charts
-            if created_charts:
-                dashboard_doc.save()
             
             # Setup sharing
             self._setup_dashboard_sharing(dashboard_doc.name, share_with)
@@ -265,33 +269,36 @@ class DashboardManager(BaseTool):
                                mobile_optimized: bool) -> Dict[str, Any]:
         """Fallback dashboard creation using core Frappe Dashboard"""
         try:
-            # Create Dashboard document
+            # Create dashboard charts first (before dashboard creation)
+            created_charts = []
+            chart_links = []
+            for i, chart_config in enumerate(chart_configs):
+                chart_result = self._create_dashboard_chart(
+                    None, doctype, chart_config, filters  # Pass None for dashboard_id initially
+                )
+                if chart_result["success"]:
+                    created_charts.append(chart_result["chart_name"])
+                    chart_links.append({
+                        "chart": chart_result["chart_id"],
+                        "width": "Half"
+                    })
+            
+            # Only create dashboard if we have at least one chart (required field constraint)
+            if not chart_links:
+                return {
+                    "success": False,
+                    "error": "No valid charts could be created for dashboard"
+                }
+            
+            # Create Dashboard document with charts already populated
             dashboard_doc = frappe.get_doc({
                 "doctype": "Dashboard",
                 "dashboard_name": dashboard_name,
                 "module": "Custom",
                 "is_standard": 0,
-                "charts": []  # Required field
+                "charts": chart_links  # Populate with actual chart links
             })
             dashboard_doc.insert()
-            
-            # Create dashboard charts
-            created_charts = []
-            for i, chart_config in enumerate(chart_configs):
-                chart_result = self._create_dashboard_chart(
-                    dashboard_doc.name, doctype, chart_config, filters
-                )
-                if chart_result["success"]:
-                    created_charts.append(chart_result["chart_name"])
-                    # Link chart to dashboard
-                    dashboard_doc.append("charts", {
-                        "chart": chart_result["chart_id"],
-                        "width": "Half"
-                    })
-            
-            # Save dashboard with charts
-            if created_charts:
-                dashboard_doc.save()
             
             # Setup permissions
             self._setup_dashboard_sharing(dashboard_doc.name, share_with)
@@ -327,7 +334,9 @@ class DashboardManager(BaseTool):
                              chart_config: Dict, global_filters: Dict) -> Dict[str, Any]:
         """Create dashboard chart"""
         try:
-            chart_name = f"{chart_config['title']} - {dashboard_id}"
+            # Handle case where dashboard_id is None (creating charts before dashboard)
+            suffix = dashboard_id if dashboard_id else "Chart"
+            chart_name = f"{chart_config['title']} - {suffix}"
             
             # Map chart types
             chart_type_map = {
