@@ -23,11 +23,11 @@ class AnalyzeFrappeData(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "analyze_frappe_data"
+        self.name = "analyze_business_data"
         self.description = self._get_dynamic_description()
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {
@@ -64,22 +64,17 @@ class AnalyzeFrappeData(BaseTool):
     
     def _get_dynamic_description(self) -> str:
         """Generate description based on current streaming settings"""
-        base_description = """Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType. Perfect for understanding sales patterns, customer behavior, and operational metrics.
-
-🔄 **Progress Streaming Enabled**: This tool provides real-time progress updates during execution."""
+        base_description = """Perform statistical analysis on Frappe business data. Calculate averages, trends, correlations, and insights from any DocType."""
         
         try:
             from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
-            
             streaming_manager = get_streaming_manager()
             streaming_suffix = streaming_manager.get_tool_description_suffix(self.name)
-            
             return base_description + streaming_suffix
             
         except Exception as e:
-            # Fallback to basic description if streaming manager fails
             frappe.logger("analyze_frappe_data").warning(f"Failed to load streaming configuration: {str(e)}")
-            return base_description + "\n\n💡 **ARTIFACT STREAMING**: Consider using artifacts for complex analysis results."
+            return base_description
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Perform data analysis on Frappe data"""

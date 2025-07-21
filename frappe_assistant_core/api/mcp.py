@@ -101,7 +101,7 @@ def _handle_initialize(params: Dict[str, Any]) -> Dict[str, Any]:
     
     # Return server capabilities
     return {
-        "protocolVersion": "2024-11-05",
+        "protocolVersion": "2025-06-18",
         "capabilities": {
             "tools": {
                 "listChanged": True

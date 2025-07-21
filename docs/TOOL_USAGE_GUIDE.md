@@ -14,7 +14,7 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 **Plugin:** `core` (always enabled)  
 **Primary Use Cases:** CRUD operations on business documents
 
-#### `document_list` - 🔍 Primary Discovery Tool ✅ FIXED
+#### `list_documents` - 🔍 Primary Discovery Tool ✅ FIXED
 - **When to use:** User asks about finding, searching, or listing any records
 - **Key patterns:** "show me", "find", "list", "how many", "search for"
 - **Recent Fix:** Now correctly returns documents instead of 0 records
@@ -25,11 +25,11 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
   - Set appropriate limits: 5-10 for previews, 50+ for comprehensive analysis
   - Tool now returns both `documents` and `results` keys for compatibility
 
-#### `document_get` - 📋 Detailed Record Retrieval
+#### `get_document` - 📋 Detailed Record Retrieval
 - **When to use:** User wants details about a specific document they know the ID/name of
 - **Key patterns:** "details about SINV-00001", "show me customer CUST-00001"
 
-#### `document_create` - ✨ Record Creation
+#### `create_document` - ✨ Record Creation
 - **When to use:** User wants to add new records
 - **Key patterns:** "create a new", "add a customer", "make an invoice"
 - **Best practices:**
@@ -37,7 +37,7 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
   - Include all mandatory fields in the data object
   - Use proper field names and data types
 
-#### `document_update` - ✏️ Record Modification  
+#### `update_document` - ✏️ Record Modification  
 - **When to use:** User wants to modify existing records
 - **Key patterns:** "update", "change", "modify", "edit"
 - **Best practices:**
@@ -52,7 +52,7 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 - **When to use:** User asks for reports, analytics, or when you need to find available reports
 - **Key patterns:** "reports", "analytics", "financial data", "sales analysis"
 
-#### `report_execute` - 📈 Report Execution ✅ ENHANCED
+#### `generate_report` - 📈 Report Execution ✅ ENHANCED
 - **When to use:** User wants to run business reports for insights
 - **Key patterns:** "run the", "execute", "show me the [report name]"
 - **Recent Enhancements:** Improved error handling and debugging information
@@ -70,7 +70,7 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 **Plugin:** `data_science` (optional - enable through settings)  
 **Primary Use Cases:** Statistical analysis and chart creation
 
-#### `analyze_frappe_data` - 📈 Statistical Analysis
+#### `analyze_business_data` - 📈 Statistical Analysis
 - **When to use:** User asks for insights, trends, statistical summaries
 - **Key patterns:** "analyze", "trends", "average", "correlation", "insights"
 - **Analysis types:**
@@ -95,7 +95,7 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
   - `"histogram"`: Distributions (invoice amounts, customer counts)
   - `"box"`: Statistical analysis (outliers, quartiles)
 
-#### `execute_python_code` - 🐍 Custom Analysis
+#### `run_python_code` - 🐍 Custom Analysis
 - **When to use:** Complex calculations, custom business logic, advanced analysis
 - **Available libraries:** frappe, pandas, numpy, datetime
 - **Best practices:**
@@ -111,19 +111,19 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 ## Common Usage Patterns
 
 ### 🔍 Data Exploration Workflow
-1. `document_list` → Discover available data
-2. `analyze_frappe_data` → Get statistical insights
+1. `list_documents` → Discover available data
+2. `analyze_business_data` → Get statistical insights
 3. `create_visualization` → Create charts for visual analysis
 
 ### 📊 Business Intelligence Workflow
 1. `report_list` → Find relevant reports
-2. `report_execute` → Get report data
+2. `generate_report` → Get report data
 3. `create_visualization` → Visualize report results
 
 ### 🏗️ Document Management Workflow
-1. `document_list` → Find existing records
-2. `document_get` → Get detailed information
-3. `document_update` / `document_create` → Modify or create records
+1. `list_documents` → Find existing records
+2. `get_document` → Get detailed information
+3. `update_document` / `create_document` → Modify or create records
 
 ## Field Name Guidelines
 
@@ -173,7 +173,7 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 
 ## Error Handling & Debugging
 
-### When document_list returns 0 records:
+### When list_documents returns 0 records:
 - Enable debug mode: `"debug": true`
 - Check filters for typos
 - Verify DocType name exists
@@ -210,16 +210,16 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 
 ### "Show me sales analysis"
 1. `report_list` (filter by "Sales")
-2. `report_execute` ("Sales Analytics")
+2. `generate_report` ("Sales Analytics")
 3. `create_visualization` (bar chart of sales by customer)
 
 ### "Find unpaid invoices"
-1. `document_list` ("Sales Invoice", filters: {"outstanding_amount": [">", 0]})
-2. `analyze_frappe_data` (summary of outstanding amounts)
+1. `list_documents` ("Sales Invoice", filters: {"outstanding_amount": [">", 0]})
+2. `analyze_business_data` (summary of outstanding amounts)
 
 ### "Create a customer dashboard"
-1. `document_list` (Customer data)
-2. `execute_python_code` (calculate customer metrics)
+1. `list_documents` (Customer data)
+2. `run_python_code` (calculate customer metrics)
 3. `create_visualization` (multiple charts for different metrics)
 
 ## 🔧 Recent Fixes & Improvements

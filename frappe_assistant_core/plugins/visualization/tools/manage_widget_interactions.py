@@ -24,11 +24,11 @@ class ManageWidgetInteractions(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "manage_widget_interactions"
+        self.name = "link_dashboard_widgets"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {

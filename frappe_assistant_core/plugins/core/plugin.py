@@ -29,25 +29,20 @@ class CorePlugin(BasePlugin):
         These correspond to files in the core/tools directory.
         """
         return [
-            'document_create',
-            'document_get', 
-            'document_update',
-            'document_list',
-            'document_delete',
-            'search_global',
-            'search_doctype', 
-            'search_link',
-            'metadata_doctype',
-            'metadata_list_doctypes',
-            'metadata_doctype_fields',
-            'metadata_permissions',
-            'metadata_workflow',
-            'report_execute',
-            'report_list',
-            'report_details',
-            'workflow_action',
-            'workflow_list', 
-            'workflow_status'
+            # Individual document tools
+            'create_document',
+            'get_document', 
+            'update_document',
+            'list_documents',
+            'delete_document',
+            'submit_document',
+            # Consolidated tool classes
+            'search_documents',
+            'get_doctype_info', 
+            'generate_report',
+            'run_workflow',
+            # Individual report details tool
+            'get_report_data'
         ]
     
     def validate_environment(self):

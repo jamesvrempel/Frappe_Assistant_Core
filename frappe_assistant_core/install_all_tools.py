@@ -58,7 +58,7 @@ def register_all_tools():
                 tool_doc.enabled = 1
                 tool_doc.category = category
                 tool_doc.source_plugin = source_plugin
-                tool_doc.input_schema = json.dumps(tool_info["inputSchema"], indent=2)
+                tool_doc.inputSchema = json.dumps(tool_info["inputSchema"], indent=2)
                 
                 # Set appropriate permissions based on category
                 permissions = _get_permissions_for_category(category)

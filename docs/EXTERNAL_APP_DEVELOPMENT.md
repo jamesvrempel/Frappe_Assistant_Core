@@ -61,27 +61,27 @@ from frappe_assistant_core.core.base_tool import BaseTool
 class SalesAnalyzer(BaseTool):
     """
     Tool for analyzing sales data and generating business insights.
-    
+
     This tool provides comprehensive sales analysis including:
     - Revenue trends and patterns
     - Customer segmentation analysis
     - Product performance metrics
     - Sales forecasting
     """
-    
+
     def __init__(self):
         super().__init__()
         self.name = "sales_analyzer"
         self.description = self._get_description()
         self.category = "Sales & Analytics"
         self.source_app = "your_app"  # Replace with your actual app name
-        
+
         # Declare dependencies (optional)
         self.dependencies = ["pandas", "numpy"]
-        
+
         # Set permission requirements (optional)
         self.requires_permission = "Sales Order"  # User needs Sales Order access
-        
+
         # Define default configuration
         self.default_config = {
             "default_period": "monthly",
@@ -90,9 +90,9 @@ class SalesAnalyzer(BaseTool):
             "cache_results": True,
             "export_formats": ["json", "excel", "pdf"]
         }
-        
+
         # Define input schema for validation
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "analysis_type": {
@@ -110,7 +110,7 @@ class SalesAnalyzer(BaseTool):
                         },
                         "to_date": {
                             "type": "string",
-                            "format": "date", 
+                            "format": "date",
                             "description": "End date for analysis (YYYY-MM-DD)"
                         }
                     },
@@ -141,7 +141,7 @@ class SalesAnalyzer(BaseTool):
             },
             "required": ["analysis_type", "date_range"]
         }
-    
+
     def _get_description(self) -> str:
         """Get rich formatted tool description"""
         return """Analyze sales data and generate comprehensive business insights.
@@ -166,28 +166,28 @@ class SalesAnalyzer(BaseTool):
 • JSON data for API integration
 • Excel reports with charts and tables
 • PDF executive summaries with visualizations"""
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the sales analysis"""
         analysis_type = arguments.get("analysis_type")
         date_range = arguments.get("date_range", {})
         filters = arguments.get("filters", {})
         options = arguments.get("options", {})
-        
+
         # Get effective configuration
         config = self.get_config()
-        
+
         try:
             # Validate date range
             from_date = date_range.get("from_date")
             to_date = date_range.get("to_date")
-            
+
             if not from_date or not to_date:
                 return {
                     "success": False,
                     "error": "Both from_date and to_date are required"
                 }
-            
+
             # Route to specific analysis method
             if analysis_type == "revenue":
                 result = self._analyze_revenue(from_date, to_date, filters, options, config)
@@ -202,11 +202,11 @@ class SalesAnalyzer(BaseTool):
                     "success": False,
                     "error": f"Unknown analysis type: {analysis_type}"
                 }
-            
+
             # Format output based on requested format
             output_format = options.get("format", "json")
             formatted_result = self._format_output(result, output_format, options)
-            
+
             return {
                 "success": True,
                 "analysis_type": analysis_type,
@@ -214,27 +214,27 @@ class SalesAnalyzer(BaseTool):
                 "filters_applied": filters,
                 "result": formatted_result
             }
-            
+
         except Exception as e:
             frappe.log_error(
                 title=_("Sales Analysis Error"),
                 message=f"Error in sales analysis: {str(e)}"
             )
-            
+
             return {
                 "success": False,
                 "error": str(e)
             }
-    
-    def _analyze_revenue(self, from_date: str, to_date: str, filters: Dict, 
+
+    def _analyze_revenue(self, from_date: str, to_date: str, filters: Dict,
                         options: Dict, config: Dict) -> Dict[str, Any]:
         """Analyze revenue trends and patterns"""
         # Build the base query
         conditions = self._build_conditions(filters)
-        
+
         # Execute revenue analysis query
         revenue_data = frappe.db.sql(f"""
-            SELECT 
+            SELECT
                 DATE(posting_date) as date,
                 SUM(base_grand_total) as revenue,
                 COUNT(*) as order_count,
@@ -246,12 +246,12 @@ class SalesAnalyzer(BaseTool):
             GROUP BY DATE(posting_date)
             ORDER BY posting_date
         """, (from_date, to_date), as_dict=True)
-        
+
         # Calculate summary metrics
         total_revenue = sum(row['revenue'] for row in revenue_data)
         total_orders = sum(row['order_count'] for row in revenue_data)
         avg_daily_revenue = total_revenue / len(revenue_data) if revenue_data else 0
-        
+
         return {
             "summary": {
                 "total_revenue": total_revenue,
@@ -262,14 +262,14 @@ class SalesAnalyzer(BaseTool):
             "daily_data": revenue_data,
             "period": f"{from_date} to {to_date}"
         }
-    
+
     def _analyze_customers(self, from_date: str, to_date: str, filters: Dict,
                           options: Dict, config: Dict) -> Dict[str, Any]:
         """Analyze customer behavior and segmentation"""
         conditions = self._build_conditions(filters)
-        
+
         customer_data = frappe.db.sql(f"""
-            SELECT 
+            SELECT
                 customer,
                 customer_name,
                 SUM(base_grand_total) as total_revenue,
@@ -285,17 +285,17 @@ class SalesAnalyzer(BaseTool):
             ORDER BY total_revenue DESC
             LIMIT %s
         """, (from_date, to_date, config.get("max_records", 1000)), as_dict=True)
-        
+
         # Customer segmentation
         if customer_data:
             revenue_values = [c['total_revenue'] for c in customer_data]
             revenue_values.sort(reverse=True)
-            
+
             # Simple segmentation (top 20%, middle 60%, bottom 20%)
             total_customers = len(customer_data)
             top_20_idx = int(total_customers * 0.2)
             top_80_idx = int(total_customers * 0.8)
-            
+
             segments = {
                 "high_value": customer_data[:top_20_idx],
                 "medium_value": customer_data[top_20_idx:top_80_idx],
@@ -303,7 +303,7 @@ class SalesAnalyzer(BaseTool):
             }
         else:
             segments = {"high_value": [], "medium_value": [], "low_value": []}
-        
+
         return {
             "total_customers": len(customer_data),
             "segments": {
@@ -323,14 +323,14 @@ class SalesAnalyzer(BaseTool):
             "top_customers": customer_data[:10],
             "period": f"{from_date} to {to_date}"
         }
-    
+
     def _analyze_products(self, from_date: str, to_date: str, filters: Dict,
                          options: Dict, config: Dict) -> Dict[str, Any]:
         """Analyze product performance and profitability"""
         conditions = self._build_conditions(filters)
-        
+
         product_data = frappe.db.sql(f"""
-            SELECT 
+            SELECT
                 soi.item_code,
                 soi.item_name,
                 soi.item_group,
@@ -347,16 +347,16 @@ class SalesAnalyzer(BaseTool):
             ORDER BY total_revenue DESC
             LIMIT %s
         """, (from_date, to_date, config.get("max_records", 1000)), as_dict=True)
-        
+
         # Calculate totals for percentage calculations
         total_revenue = sum(item['total_revenue'] for item in product_data)
         total_quantity = sum(item['total_quantity'] for item in product_data)
-        
+
         # Add percentage calculations
         for item in product_data:
             item['revenue_percentage'] = (item['total_revenue'] / total_revenue * 100) if total_revenue else 0
             item['quantity_percentage'] = (item['total_quantity'] / total_quantity * 100) if total_quantity else 0
-        
+
         return {
             "total_products": len(product_data),
             "total_revenue": total_revenue,
@@ -365,16 +365,16 @@ class SalesAnalyzer(BaseTool):
             "product_summary": product_data,
             "period": f"{from_date} to {to_date}"
         }
-    
+
     def _generate_forecast(self, from_date: str, to_date: str, filters: Dict,
                           options: Dict, config: Dict) -> Dict[str, Any]:
         """Generate sales forecast based on historical data"""
         # This is a simplified forecast - in production you might use more sophisticated models
         conditions = self._build_conditions(filters)
-        
+
         # Get historical monthly data for trend analysis
         historical_data = frappe.db.sql(f"""
-            SELECT 
+            SELECT
                 YEAR(posting_date) as year,
                 MONTH(posting_date) as month,
                 SUM(base_grand_total) as revenue,
@@ -386,12 +386,12 @@ class SalesAnalyzer(BaseTool):
             GROUP BY YEAR(posting_date), MONTH(posting_date)
             ORDER BY year, month
         """, (from_date, to_date), as_dict=True)
-        
+
         if len(historical_data) >= 3:  # Need at least 3 months for basic trend
             # Simple linear trend calculation
             revenues = [row['revenue'] for row in historical_data]
             months = list(range(len(revenues)))
-            
+
             # Calculate simple trend (linear regression would be better)
             if len(revenues) >= 2:
                 recent_avg = sum(revenues[-3:]) / 3  # Last 3 months average
@@ -400,10 +400,10 @@ class SalesAnalyzer(BaseTool):
             else:
                 growth_rate = 0
                 recent_avg = revenues[-1] if revenues else 0
-            
+
             # Project next 3 months
             next_month_forecast = recent_avg * (1 + growth_rate / 100)
-            
+
             forecast_data = {
                 "historical_trend": historical_data,
                 "growth_rate_percent": round(growth_rate, 2),
@@ -415,24 +415,24 @@ class SalesAnalyzer(BaseTool):
                 "error": "Insufficient historical data for forecasting (minimum 3 months required)",
                 "historical_data_points": len(historical_data)
             }
-        
+
         return forecast_data
-    
+
     def _build_conditions(self, filters: Dict) -> str:
         """Build SQL WHERE conditions from filters"""
         conditions = []
-        
+
         if filters.get("customer_group"):
             conditions.append(f"customer_group = '{filters['customer_group']}'")
-        
+
         if filters.get("territory"):
             conditions.append(f"territory = '{filters['territory']}'")
-        
+
         if filters.get("sales_person"):
             conditions.append(f"EXISTS (SELECT 1 FROM `tabSales Team` st WHERE st.parent = name AND st.sales_person = '{filters['sales_person']}')")
-        
+
         return "AND " + " AND ".join(conditions) if conditions else ""
-    
+
     def _format_output(self, result: Dict, output_format: str, options: Dict) -> Any:
         """Format the analysis result based on requested output format"""
         if output_format == "json":
@@ -443,7 +443,7 @@ class SalesAnalyzer(BaseTool):
             return self._create_pdf_report(result, options)
         else:
             return result
-    
+
     def _create_excel_report(self, result: Dict, options: Dict) -> Dict[str, str]:
         """Create Excel report from analysis result"""
         # In a real implementation, you would use openpyxl or xlsxwriter
@@ -453,13 +453,13 @@ class SalesAnalyzer(BaseTool):
             "message": "Excel report generation would be implemented here",
             "data": result
         }
-    
+
     def _create_pdf_report(self, result: Dict, options: Dict) -> Dict[str, str]:
         """Create PDF report from analysis result"""
         # In a real implementation, you would use reportlab or weasyprint
         # to create an actual PDF file and return the file path/URL
         return {
-            "format": "pdf", 
+            "format": "pdf",
             "message": "PDF report generation would be implemented here",
             "data": result
         }
@@ -490,7 +490,7 @@ assistant_tools = [
 assistant_tool_configs = {
     "sales_analyzer": {
         "max_records": 5000,  # Override default of 10000
-        "default_period": "quarterly",  # Override default of "monthly" 
+        "default_period": "quarterly",  # Override default of "monthly"
         "cache_results": True,
         "export_formats": ["json", "excel"]  # Remove PDF if not needed
     }
@@ -503,13 +503,13 @@ In your `sites/your_site/site_config.json`, you can override configurations:
 
 ```json
 {
-    "assistant_tools": {
-        "sales_analyzer": {
-            "max_records": 15000,
-            "include_cancelled": true,
-            "cache_results": false
-        }
+  "assistant_tools": {
+    "sales_analyzer": {
+      "max_records": 15000,
+      "include_cancelled": true,
+      "cache_results": false
     }
+  }
 }
 ```
 
@@ -526,30 +526,30 @@ from frappe_assistant_core.core.tool_registry import get_tool_registry
 
 class TestSalesAnalyzer(unittest.TestCase):
     """Test the sales analyzer tool"""
-    
+
     def setUp(self):
         """Set up test environment"""
         self.registry = get_tool_registry()
         self.tool_name = "sales_analyzer"
-    
+
     def test_tool_discovery(self):
         """Test that the tool is discovered correctly"""
         tools = self.registry.get_all_tools()
         self.assertIn(self.tool_name, tools)
-        
+
         tool = self.registry.get_tool(self.tool_name)
         self.assertIsNotNone(tool)
         self.assertEqual(tool.source_app, "your_app")
         self.assertEqual(tool.category, "Sales & Analytics")
-    
+
     def test_tool_execution_revenue_analysis(self):
         """Test revenue analysis execution"""
         tool = self.registry.get_tool(self.tool_name)
-        
+
         # Test with valid date range
         from_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
         to_date = datetime.now().strftime("%Y-%m-%d")
-        
+
         result = tool.execute({
             "analysis_type": "revenue",
             "date_range": {
@@ -557,15 +557,15 @@ class TestSalesAnalyzer(unittest.TestCase):
                 "to_date": to_date
             }
         })
-        
+
         self.assertTrue(result.get("success"))
         self.assertIn("result", result)
         self.assertIn("summary", result["result"])
-    
+
     def test_tool_execution_invalid_date(self):
         """Test tool handles invalid date gracefully"""
         tool = self.registry.get_tool(self.tool_name)
-        
+
         result = tool.execute({
             "analysis_type": "revenue",
             "date_range": {
@@ -573,15 +573,15 @@ class TestSalesAnalyzer(unittest.TestCase):
                 "to_date": "2024-01-01"
             }
         })
-        
+
         self.assertFalse(result.get("success"))
         self.assertIn("error", result)
-    
+
     def test_configuration_hierarchy(self):
         """Test configuration hierarchy works"""
         tool = self.registry.get_tool(self.tool_name)
         config = tool.get_config()
-        
+
         # Should include all configuration levels
         self.assertIn("max_records", config)
         self.assertIn("default_period", config)
@@ -628,7 +628,7 @@ class MyTool(BaseTool):
         super().__init__()
         self.dependencies = [
             "pandas",           # Required for data processing
-            "numpy",            # Required for calculations  
+            "numpy",            # Required for calculations
             "matplotlib",       # Optional for charts
             "your_custom_lib"   # Your custom modules
         ]
@@ -644,14 +644,14 @@ class MyTool(BaseTool):
         super().__init__()
         # Require specific DocType permission
         self.requires_permission = "Sales Order"
-        
+
         # Or check custom permissions in execute method
-    
+
     def execute(self, arguments):
         # Custom permission check
         if not frappe.has_permission("Customer", "read"):
             return {"success": False, "error": "Insufficient permissions"}
-        
+
         # Tool logic...
 ```
 
@@ -678,11 +678,11 @@ assistant_tools = [
 def get_assistant_tools():
     """Dynamically determine which tools to load"""
     tools = ["your_app.assistant_tools.sales_analyzer.SalesAnalyzer"]
-    
+
     # Conditionally add tools based on app settings
     if frappe.db.get_single_value("Your App Settings", "enable_advanced_analytics"):
         tools.append("your_app.assistant_tools.advanced_analytics.AdvancedAnalytics")
-    
+
     return tools
 
 assistant_tools = get_assistant_tools
@@ -778,17 +778,20 @@ bench console
 ### Common Issues
 
 1. **Tool Not Discovered**
+
    - Check hooks.py syntax
    - Verify import paths are correct
    - Ensure `__init__.py` files exist
    - Check for Python syntax errors in tool files
 
 2. **Permission Errors**
+
    - Verify user has required DocType permissions
    - Check `requires_permission` setting
    - Test with System Manager role
 
 3. **Import Errors**
+
    - Check all dependencies are installed
    - Verify import paths in tool files
    - Check for circular imports

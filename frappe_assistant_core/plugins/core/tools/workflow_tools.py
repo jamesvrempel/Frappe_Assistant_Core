@@ -9,7 +9,7 @@ class WorkflowTools:
         """Return list of workflow-related assistant tools"""
         return [
             {
-                "name": "start_workflow",
+                "name": "run_workflow",
                 "description": "Start a workflow for a specific document",
                 "inputSchema": {
                     "type": "object",
@@ -112,7 +112,7 @@ class WorkflowTools:
     def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> str:
         """Execute a workflow tool by name"""
         try:
-            if tool_name == "start_workflow":
+            if tool_name == "run_workflow":
                 result = WorkflowTools.start_workflow(
                     arguments.get("doctype"),
                     arguments.get("name"),

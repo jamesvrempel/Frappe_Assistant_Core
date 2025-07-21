@@ -20,7 +20,7 @@ class MigrationTool(BaseTool):
         self.description = "Migrate from old create_visualization tool to new dashboard system"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "migration_type": {

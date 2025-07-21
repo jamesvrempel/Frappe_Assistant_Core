@@ -28,7 +28,7 @@ class ExportDashboard(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {
@@ -86,35 +86,7 @@ class ExportDashboard(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Export dashboards in professional formats with customization and scheduling capabilities.
-
-📎 **EXPORT FORMATS:**
-• PDF Reports - Professional presentation format
-• Excel Workbooks - Data analysis and manipulation
-• PowerPoint Slides - Executive presentations
-• PNG Images - High-quality dashboard screenshots
-• CSV Data - Raw data for further analysis
-• JSON Format - Structured data export
-
-📝 **PROFESSIONAL FORMATTING:**
-• Corporate Templates - Business-ready layouts
-• Page Layout Control - Portrait/landscape, sizes
-• Header/Footer - Company branding and metadata
-• Chart Arrangement - Optimal spacing and sizing
-• Logo Integration - Company branding inclusion
-
-📅 **SCHEDULED EXPORTS:**
-• Automated Reports - Daily, weekly, monthly delivery
-• Email Distribution - Automatic recipient delivery
-• Custom Scheduling - Specific dates and times
-• Report Subscriptions - User-managed preferences
-
-⚙️ **ADVANCED OPTIONS:**
-• Filter Application - Export with specific data filters
-• Data Inclusion - Choose chart only or chart + data
-• Bulk Export - Multiple dashboards at once
-• Custom Watermarks - Security and ownership marking
-• Quality Settings - Resolution and compression control"""
+        return """Export dashboards in multiple formats (PDF, Excel, PowerPoint, PNG, CSV, JSON) with professional formatting, company branding, and automated scheduling for regular report delivery."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Export dashboard"""

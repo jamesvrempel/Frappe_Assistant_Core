@@ -24,11 +24,11 @@ class ListUserDashboards(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "list_user_dashboards"
+        self.name = "show_my_dashboards"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "search_term": {
@@ -61,32 +61,7 @@ class ListUserDashboards(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """List and search through user's available dashboards with comprehensive filtering options.
-
-📋 **DASHBOARD LISTING:**
-• Personal Dashboards - Created by current user
-• Shared Dashboards - Shared with user or role
-• Public Dashboards - Available to all users
-• Template Dashboards - Business-ready templates
-
-🔍 **SEARCH & FILTER:**
-• Text Search - Find dashboards by name/description
-• Owner Filter - Show only own dashboards
-• Type Filter - Insights vs Frappe Dashboard
-• Access Filter - Personal vs shared dashboards
-
-📊 **DASHBOARD INFO:**
-• Creation Date - When dashboard was created
-• Last Modified - Recent update information
-• Chart Count - Number of visualizations
-• Sharing Status - Who has access
-• Performance - Load time and data freshness
-
-⚡ **QUICK ACTIONS:**
-• View Dashboard - Direct access link
-• Clone Dashboard - Create copy for editing
-• Share Dashboard - Manage permissions
-• Export Dashboard - Download in various formats"""
+        return """List and search user's available dashboards with filtering by owner, type, and access level. Shows creation dates, chart counts, sharing status, and provides quick actions."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """List user dashboards"""

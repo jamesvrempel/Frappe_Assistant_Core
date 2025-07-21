@@ -21,11 +21,11 @@ class DocumentSubmit(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "document_submit"
+        self.name = "submit_document"
         self.description = "Submit a draft document after validation. Only works with documents in draft state (docstatus=0). Use when users want to finalize a document."
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

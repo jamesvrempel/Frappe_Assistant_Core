@@ -21,11 +21,11 @@ class ReportDetails(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "report_details"
+        self.name = "get_report_data"
         self.description = "Get detailed information about a specific report including filters, columns, and configuration. Use when users need to understand a report's structure before running it."
         self.requires_permission = None  # Permission checked per report
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "report_name": {

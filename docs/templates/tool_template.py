@@ -1,267 +1,439 @@
 """
-[Tool Category] Tools Template
-Template for creating new tool categories in Frappe Assistant Core
+Tool Template for Frappe Assistant Core
+Template for creating new tools using the clean architecture
 
 Instructions:
-1. Replace [ToolCategory] with your tool category name (e.g., "Analytics", "Reporting")
-2. Replace [tool_category] with lowercase version (e.g., "analytics", "reporting") 
-3. Implement the helper functions at the bottom
-4. Update the MCP schema in get_tools() method
-5. Add proper error handling and validation
-6. Create corresponding test file using test_template.py
+1. Replace [ToolName] with your tool name (e.g., "SalesAnalyzer", "InventoryManager")
+2. Replace [tool_name] with lowercase underscore version (e.g., "sales_analyzer", "inventory_manager")
+3. Replace [Tool Category] with your tool category (e.g., "Sales & Analytics", "Inventory Management")
+4. Replace [your_app] with your app name if creating external app tool
+5. Implement the execute() method with your business logic
+6. Update the input schema and configuration as needed
+7. Create corresponding test file using test_template.py
+
+For External App Tools (Recommended):
+- Place in: your_app/assistant_tools/[tool_name].py
+- Register in: your_app/hooks.py
+
+For Internal Plugin Tools:
+- Place in: frappe_assistant_core/plugins/[plugin_name]/tools/[tool_name].py
+- Register in: plugin.py get_tools() method
 """
 
 import frappe
-import json
-from typing import Dict, Any, List, Optional
-from frappe_assistant_core.utils.permissions import check_user_permission
-from frappe_assistant_core.utils.response_builder import build_response
-from frappe_assistant_core.utils.validation import validate_doctype_access
-from frappe_assistant_core.utils.enhanced_error_handling import handle_tool_error
+from frappe import _
+from typing import Dict, Any, Optional, List
+from frappe_assistant_core.core.base_tool import BaseTool
 
-class [ToolCategory]Tools:
-    """[Tool category] operations for Frappe Assistant Core"""
+
+class [ToolName](BaseTool):
+    """
+    [Brief description of what this tool does]
     
-    @staticmethod
-    def get_tools() -> List[Dict[str, Any]]:
-        """Get available [tool category] tools with MCP schema"""
-        return [
-            {
-                "name": "[tool_category]_operation_1",
-                "description": "Brief description of what this tool does",
-                "inputSchema": {
+    Provides capabilities for:
+    - [Main capability 1]
+    - [Main capability 2]
+    - [Main capability 3]
+    
+    Example usage:
+    {
+        "operation": "analyze",
+        "doctype": "Sales Order",
+        "filters": {"status": "Submitted"},
+        "options": {"include_details": true}
+    }
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "[tool_name]"
+        self.description = self._get_description()
+        self.category = "[Tool Category]"
+        
+        # Set source app - use "frappe_assistant_core" for internal plugins
+        # or your app name for external app tools
+        self.source_app = "[your_app]"  # e.g., "your_app" or "frappe_assistant_core"
+        
+        # Optional: Declare dependencies for automatic validation
+        self.dependencies = [
+            # "pandas",    # Example: for data processing
+            # "requests",  # Example: for API calls
+        ]
+        
+        # Optional: Set permission requirements
+        # Use None for no specific permission, or specify a DocType
+        self.requires_permission = None  # or "Sales Order", "Customer", etc.
+        
+        # Tool-specific default configuration
+        self.default_config = {
+            "max_records": 1000,
+            "timeout": 30,
+            "cache_results": True,
+            "default_filters": {},
+            "output_format": "json"
+        }
+        
+        # Define input schema for validation
+        self.inputSchema = {
+            "type": "object",
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "enum": ["analyze", "process", "export"],
+                    "description": "Type of operation to perform"
+                },
+                "doctype": {
+                    "type": "string",
+                    "description": "Name of the DocType to operate on"
+                },
+                "filters": {
+                    "type": "object",
+                    "description": "Filter criteria for the operation",
+                    "default": {}
+                },
+                "options": {
                     "type": "object",
                     "properties": {
-                        "doctype": {
-                            "type": "string",
-                            "description": "Name of the DocType to operate on"
+                        "include_details": {
+                            "type": "boolean",
+                            "default": False,
+                            "description": "Include detailed information in results"
                         },
-                        "name": {
+                        "output_format": {
                             "type": "string",
-                            "description": "Name/ID of the specific document"
-                        },
-                        "optional_param": {
-                            "type": "string",
-                            "description": "Optional parameter description",
-                            "optional": True
-                        }
-                    },
-                    "required": ["doctype", "name"]
-                }
-            },
-            {
-                "name": "[tool_category]_operation_2",
-                "description": "Description of second tool operation",
-                "inputSchema": {
-                    "type": "object",
-                    "properties": {
-                        "doctype": {
-                            "type": "string",
-                            "description": "DocType name for the operation"
-                        },
-                        "filters": {
-                            "type": "object",
-                            "description": "Filter criteria for the operation",
-                            "default": {}
+                            "enum": ["json", "csv", "excel"],
+                            "default": "json",
+                            "description": "Format for output data"
                         },
                         "limit": {
                             "type": "integer",
-                            "description": "Maximum number of records to return",
-                            "default": 20
+                            "minimum": 1,
+                            "maximum": 5000,
+                            "default": 100,
+                            "description": "Maximum number of records to process"
                         }
-                    },
-                    "required": ["doctype"]
+                    }
                 }
-            }
-        ]
+            },
+            "required": ["operation", "doctype"]
+        }
     
-    @staticmethod  
-    def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a specific tool by name"""
-        if tool_name == "[tool_category]_operation_1":
-            return [ToolCategory]Tools.operation_1(**arguments)
-        elif tool_name == "[tool_category]_operation_2":
-            return [ToolCategory]Tools.operation_2(**arguments)
-        else:
-            raise Exception(f"Unknown tool: {tool_name}")
-    
-    @staticmethod
-    def operation_1(doctype: str, name: str, optional_param: Optional[str] = None) -> Dict[str, Any]:
-        """
-        [Description of what this operation does]
-        
-        Args:
-            doctype (str): Name of the DocType
-            name (str): Name/ID of the document
-            optional_param (str, optional): Description of optional parameter
-            
-        Returns:
-            Dict[str, Any]: Response with operation results
-        """
-        try:
-            # Validate DocType exists
-            if not frappe.db.exists("DocType", doctype):
-                return {"success": False, "error": f"DocType '{doctype}' does not exist"}
-            
-            # Permission check
-            if not frappe.has_permission(doctype, "read"):
-                return {"success": False, "error": f"No read permission for {doctype}"}
-            
-            # Input validation
-            if not name or not name.strip():
-                return {"success": False, "error": "name is required and cannot be empty"}
-            
-            # Check if document exists
-            if not frappe.db.exists(doctype, name):
-                return {"success": False, "error": f"Document {name} does not exist in {doctype}"}
-            
-            # Main operation logic - replace with actual implementation
-            result = perform_operation_1_logic(doctype, name, optional_param)
-            
-            # IMPORTANT: This response structure is verified by tests
-            # Always return: success, doctype, name, data (NOT "document")
-            return {
-                "success": True,
-                "doctype": doctype,
-                "name": name,
-                "data": result,  # Use "data" key, NOT "document"
-                "optional_param_used": optional_param
-            }
-            
-        except Exception as e:
-            frappe.log_error(f"Error in operation_1: {str(e)}")
-            return {"success": False, "error": str(e)}
-    
-    @staticmethod
-    def operation_2(doctype: str, filters: Optional[Dict] = None, limit: int = 20) -> Dict[str, Any]:
-        """
-        [Description of what this operation does]
-        
-        Args:
-            doctype (str): Name of the DocType
-            filters (dict, optional): Filter criteria
-            limit (int): Maximum number of records to return
-            
-        Returns:
-            Dict[str, Any]: Response with operation results
-        """
-        try:
-            # Validate DocType exists
-            if not frappe.db.exists("DocType", doctype):
-                return {"success": False, "error": f"DocType '{doctype}' does not exist"}
-            
-            # Permission check
-            if not frappe.has_permission(doctype, "read"):
-                return {"success": False, "error": f"No read permission for {doctype}"}
-            
-            # Validate limit
-            if limit <= 0 or limit > 1000:
-                return {"success": False, "error": "Limit must be between 1 and 1000"}
-            
-            # Main operation logic - replace with actual implementation
-            results = perform_operation_2_logic(doctype, filters or {}, limit)
-            
-            # IMPORTANT: This response structure is verified by tests
-            # Always return: success, doctype, results, filters_applied, limit_used, total_count
-            return {
-                "success": True,
-                "doctype": doctype,
-                "results": results,  # Use "results" for list operations
-                "filters_applied": filters or {},
-                "limit_used": limit,
-                "total_count": len(results) if isinstance(results, list) else 1
-            }
-            
-        except Exception as e:
-            frappe.log_error(f"Error in operation_2: {str(e)}")
-            return {"success": False, "error": str(e)}
-    
+    def _get_description(self) -> str:
+        """Get rich formatted tool description"""
+        return """[Detailed description of what the tool does]
 
-# Helper functions - implement these based on your tool's requirements
-def perform_operation_1_logic(doctype: str, name: str, optional_param: Optional[str] = None):
+🚀 **OPERATIONS:**
+• Analyze - [Description of analyze operation]
+• Process - [Description of process operation]
+• Export - [Description of export operation]
+
+📊 **FEATURES:**
+• [Feature 1] - [Description]
+• [Feature 2] - [Description]
+• [Feature 3] - [Description]
+
+⚙️ **CONFIGURATION:**
+• Configurable limits and timeouts
+• Multiple output formats supported
+• Flexible filtering options"""
+    
+    def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the tool operation"""
+        operation = arguments.get("operation")
+        doctype = arguments.get("doctype")
+        filters = arguments.get("filters", {})
+        options = arguments.get("options", {})
+        
+        # Get effective configuration (site > app > tool defaults)
+        config = self.get_config()
+        
+        try:
+            # Validate DocType exists
+            if not frappe.db.exists("DocType", doctype):
+                return {
+                    "success": False,
+                    "error": f"DocType '{doctype}' does not exist"
+                }
+            
+            # Check permissions
+            if not frappe.has_permission(doctype, "read"):
+                return {
+                    "success": False,
+                    "error": f"No read permission for {doctype}"
+                }
+            
+            # Route to specific operation
+            if operation == "analyze":
+                result = self._analyze_data(doctype, filters, options, config)
+            elif operation == "process":
+                result = self._process_data(doctype, filters, options, config)
+            elif operation == "export":
+                result = self._export_data(doctype, filters, options, config)
+            else:
+                return {
+                    "success": False,
+                    "error": f"Unknown operation: {operation}"
+                }
+            
+            return {
+                "success": True,
+                "operation": operation,
+                "doctype": doctype,
+                "filters_applied": filters,
+                "result": result
+            }
+            
+        except Exception as e:
+            frappe.log_error(
+                title=_("[ToolName] Error"),
+                message=f"Error in {self.name}: {str(e)}"
+            )
+            
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    def _analyze_data(self, doctype: str, filters: Dict, options: Dict, config: Dict) -> Dict[str, Any]:
+        """
+        Analyze data based on the provided criteria
+        
+        Args:
+            doctype: The DocType to analyze
+            filters: Query filters
+            options: Operation options
+            config: Effective configuration
+            
+        Returns:
+            Analysis results
+        """
+        # Get configuration values
+        max_records = config.get("max_records", 1000)
+        limit = min(options.get("limit", 100), max_records)
+        include_details = options.get("include_details", False)
+        
+        # Build query filters
+        query_filters = {**config.get("default_filters", {}), **filters}
+        
+        # Execute query
+        documents = frappe.get_all(
+            doctype,
+            filters=query_filters,
+            limit=limit,
+            order_by="creation desc"
+        )
+        
+        # Perform analysis
+        analysis_result = {
+            "total_records": len(documents),
+            "summary": {
+                "analyzed_count": len(documents),
+                "filters_applied": query_filters,
+                "analysis_timestamp": frappe.utils.now()
+            }
+        }
+        
+        if include_details:
+            analysis_result["details"] = [
+                {
+                    "name": doc.name,
+                    "analyzed": True,
+                    # Add your analysis logic here
+                }
+                for doc in documents
+            ]
+        
+        # TODO: Implement your specific analysis logic here
+        # Examples:
+        # - Calculate statistics (sum, average, count)
+        # - Identify patterns or trends
+        # - Generate insights
+        # - Create summary reports
+        
+        return analysis_result
+    
+    def _process_data(self, doctype: str, filters: Dict, options: Dict, config: Dict) -> Dict[str, Any]:
+        """
+        Process data based on the provided criteria
+        
+        Args:
+            doctype: The DocType to process
+            filters: Query filters
+            options: Operation options
+            config: Effective configuration
+            
+        Returns:
+            Processing results
+        """
+        # Get configuration values
+        max_records = config.get("max_records", 1000)
+        limit = min(options.get("limit", 100), max_records)
+        
+        # Build query filters
+        query_filters = {**config.get("default_filters", {}), **filters}
+        
+        # Execute query
+        documents = frappe.get_all(
+            doctype,
+            filters=query_filters,
+            limit=limit,
+            order_by="creation desc"
+        )
+        
+        # Process documents
+        processed_count = 0
+        errors = []
+        
+        for doc in documents:
+            try:
+                # TODO: Implement your specific processing logic here
+                # Examples:
+                # - Update document fields
+                # - Create related documents
+                # - Send notifications
+                # - Perform calculations
+                # - Validate data
+                
+                processed_count += 1
+                
+            except Exception as e:
+                errors.append({
+                    "document": doc.name,
+                    "error": str(e)
+                })
+        
+        return {
+            "processed_count": processed_count,
+            "total_documents": len(documents),
+            "errors": errors,
+            "processing_timestamp": frappe.utils.now()
+        }
+    
+    def _export_data(self, doctype: str, filters: Dict, options: Dict, config: Dict) -> Dict[str, Any]:
+        """
+        Export data based on the provided criteria
+        
+        Args:
+            doctype: The DocType to export
+            filters: Query filters
+            options: Operation options
+            config: Effective configuration
+            
+        Returns:
+            Export results
+        """
+        # Get configuration values
+        max_records = config.get("max_records", 1000)
+        limit = min(options.get("limit", 100), max_records)
+        output_format = options.get("output_format", config.get("output_format", "json"))
+        
+        # Build query filters
+        query_filters = {**config.get("default_filters", {}), **filters}
+        
+        # Execute query
+        documents = frappe.get_all(
+            doctype,
+            filters=query_filters,
+            limit=limit,
+            order_by="creation desc"
+        )
+        
+        # Format data for export
+        export_data = []
+        for doc in documents:
+            # Get full document data if needed
+            full_doc = frappe.get_doc(doctype, doc.name)
+            export_data.append({
+                "name": doc.name,
+                "data": full_doc.as_dict(),
+                "export_timestamp": frappe.utils.now()
+            })
+        
+        # Handle different export formats
+        if output_format == "json":
+            result = {
+                "format": "json",
+                "data": export_data
+            }
+        elif output_format == "csv":
+            result = {
+                "format": "csv",
+                "message": "CSV export would be implemented here",
+                "data": export_data
+            }
+        elif output_format == "excel":
+            result = {
+                "format": "excel", 
+                "message": "Excel export would be implemented here",
+                "data": export_data
+            }
+        else:
+            result = {
+                "format": "json",
+                "data": export_data
+            }
+        
+        return {
+            "export_format": output_format,
+            "exported_count": len(export_data),
+            "result": result,
+            "export_timestamp": frappe.utils.now()
+        }
+
+
+# Helper functions for complex operations
+def perform_advanced_analysis(data: List[Dict], analysis_type: str) -> Dict[str, Any]:
     """
-    Implement the actual logic for operation 1
+    Perform advanced analysis on the provided data
     
     Args:
-        doctype (str): DocType name
-        name (str): Document name
-        optional_param (str, optional): Optional parameter
+        data: List of data records to analyze
+        analysis_type: Type of analysis to perform
         
     Returns:
-        Any: Result of the operation
+        Analysis results
     """
-    # TODO: Implement actual operation logic
-    # Example:
-    doc = frappe.get_doc(doctype, name)
-    
-    # Perform your operation here
-    # This could be data analysis, calculations, transformations, etc.
+    # TODO: Implement advanced analysis logic
+    # Examples:
+    # - Statistical analysis
+    # - Trend detection
+    # - Pattern recognition
+    # - Correlation analysis
     
     return {
-        "processed": True,
-        "document_data": doc.as_dict(),
-        "additional_info": "Operation completed"
+        "analysis_type": analysis_type,
+        "data_points": len(data),
+        "results": {
+            "summary": "Analysis completed",
+            "insights": []
+        }
     }
 
-def perform_operation_2_logic(doctype: str, filters: Optional[Dict] = None, limit: int = 20):
-    """
-    Implement the actual logic for operation 2
-    
-    Args:
-        doctype (str): DocType name
-        filters (dict, optional): Filter criteria
-        limit (int): Maximum records to return
-        
-    Returns:
-        List: Result of the operation
-    """
-    # TODO: Implement actual operation logic
-    # Example:
-    
-    # Build query filters
-    query_filters = filters or {}
-    
-    # Get documents using frappe.get_all
-    # NOTE: frappe.get_all returns objects with dot notation access (obj.field_name)
-    # NOT dictionaries - this is important for testing mock patterns
-    documents = frappe.get_all(
-        doctype,
-        filters=query_filters,
-        limit=limit,
-        order_by="creation desc"
-    )
-    
-    # Process documents if needed
-    processed_results = []
-    for doc in documents:
-        # NOTE: Use dot notation to access doc fields (doc.name, doc.field)
-        # because frappe.get_all returns objects, not dictionaries
-        processed_results.append({
-            "name": doc.name,  # Use dot notation, NOT doc.get("name")
-            "processed_data": doc,
-            "processing_timestamp": frappe.utils.now()
-        })
-    
-    return processed_results
 
-# Additional helper functions as needed
-def validate_[tool_category]_specific_permission(operation: str) -> bool:
+def validate_custom_permissions(operation: str, doctype: str) -> bool:
     """
-    Validate [tool category] specific permissions
+    Validate custom permissions for the tool
     
     Args:
-        operation (str): The operation being performed
+        operation: The operation being performed
+        doctype: The DocType being accessed
         
     Returns:
-        bool: True if user has permission, False otherwise
+        True if user has permission, False otherwise
     """
-    # TODO: Implement permission logic specific to your tool category
-    # Example:
+    # TODO: Implement custom permission logic
+    # Examples:
+    # - Check user roles
+    # - Validate operation-specific permissions
+    # - Check custom permission rules
+    
     user_roles = frappe.get_roles()
     
+    # Define role requirements for different operations
     required_roles = {
-        "operation_1": ["System Manager", "[ToolCategory] User"],
-        "operation_2": ["System Manager", "[ToolCategory] Manager"]
+        "analyze": ["System Manager", "Analytics User"],
+        "process": ["System Manager", "Data Processor"],
+        "export": ["System Manager", "Data Exporter"]
     }
     
     if operation not in required_roles:
@@ -269,19 +441,69 @@ def validate_[tool_category]_specific_permission(operation: str) -> bool:
     
     return any(role in user_roles for role in required_roles[operation])
 
-def get_[tool_category]_settings() -> Dict[str, Any]:
+
+def get_custom_configuration() -> Dict[str, Any]:
     """
-    Get [tool category] specific settings
+    Get custom configuration for the tool
     
     Returns:
-        Dict[str, Any]: Configuration settings for the tool category
+        Configuration dictionary
     """
-    # TODO: Implement settings retrieval
-    # This could read from Frappe settings, custom DocTypes, or configuration files
+    # TODO: Implement configuration retrieval
+    # This could read from:
+    # - Frappe settings
+    # - Custom DocTypes
+    # - Configuration files
+    # - Environment variables
     
     return {
-        "enabled": True,
-        "max_records": 1000,
-        "cache_enabled": True,
-        "cache_timeout": 300
+        "feature_enabled": True,
+        "advanced_mode": False,
+        "custom_settings": {}
     }
+
+
+# Export the tool class for discovery
+# For external apps: This enables the tool to be discovered via hooks
+# For internal plugins: The plugin.py file will reference this class
+__all__ = ["[ToolName]"]
+
+
+# Usage Examples (for documentation):
+"""
+External App Registration (in your_app/hooks.py):
+
+assistant_tools = [
+    "your_app.assistant_tools.[tool_name].[ToolName]"
+]
+
+assistant_tool_configs = {
+    "[tool_name]": {
+        "max_records": 5000,
+        "timeout": 60,
+        "default_filters": {"status": "Active"}
+    }
+}
+
+Internal Plugin Registration (in plugin.py):
+
+class YourPlugin(BasePlugin):
+    def get_tools(self):
+        return ["[tool_name]"]
+
+Example API Call:
+
+{
+    "tool": "[tool_name]",
+    "arguments": {
+        "operation": "analyze",
+        "doctype": "Sales Order",
+        "filters": {"status": "Submitted"},
+        "options": {
+            "include_details": true,
+            "output_format": "json",
+            "limit": 100
+        }
+    }
+}
+"""

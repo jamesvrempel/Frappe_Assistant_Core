@@ -30,7 +30,7 @@ class InteractiveWidgets(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "widget_type": {
@@ -628,7 +628,7 @@ class ManageWidgetInteractions(BaseTool):
         self.description = "Configure and manage interactions between dashboard widgets"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {

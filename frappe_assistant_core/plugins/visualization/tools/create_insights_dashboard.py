@@ -26,11 +26,11 @@ class CreateInsightsDashboard(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "create_insights_dashboard"
+        self.name = "create_dashboard"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {
@@ -96,36 +96,7 @@ class CreateInsightsDashboard(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create comprehensive business dashboards in Frappe Insights app with professional charts, KPI cards, and interactive widgets.
-
-🎯 **DASHBOARD CREATION:**
-• Insights App Integration - Primary dashboard platform
-• Frappe Dashboard Fallback - Ensures compatibility
-• Multi-chart Dashboards - Combine multiple visualizations
-• Template-based Creation - Use business-specific templates
-
-📊 **CHART TYPES SUPPORTED:**
-• Bar/Line Charts - Trends and comparisons
-• Pie Charts - Proportions and distributions  
-• KPI Cards - Key metrics with trend indicators
-• Gauge Charts - Progress and performance meters
-• Data Tables - Interactive data grids
-• Funnel Charts - Conversion analysis
-• Heatmaps - Correlation visualization
-
-🔧 **FEATURES:**
-• Auto-refresh - Real-time data updates
-• Mobile Optimization - Responsive design
-• Sharing & Permissions - Team collaboration
-• Professional Layout - Grid-based arrangement
-• Export Capabilities - PDF, Excel, PNG formats
-
-💡 **BUSINESS READY:**
-• Sales Dashboard - Revenue, customers, performance
-• Financial Dashboard - P&L, cash flow, budgets
-• Inventory Dashboard - Stock levels, movements
-• HR Dashboard - Employee metrics, performance
-• Executive Dashboard - High-level KPIs"""
+        return """Create comprehensive business dashboards with multiple charts, KPI cards, and interactive widgets. Supports Insights app integration with Frappe Dashboard fallback."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create comprehensive dashboard"""

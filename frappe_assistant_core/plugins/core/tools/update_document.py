@@ -21,11 +21,11 @@ class DocumentUpdate(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "document_update"
+        self.name = "update_document"
         self.description = "Update/modify an existing Frappe document. Use when users want to change field values in an existing record. Always fetch the document first to understand current values."
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

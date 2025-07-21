@@ -9,6 +9,7 @@ The Frappe Assistant Core uses a plugin-based architecture where tools are organ
 ### Core Endpoints
 
 #### Initialize
+
 ```
 POST /api/method/frappe_assistant_core.api.mcp.handle_mcp_request
 ```
@@ -16,12 +17,13 @@ POST /api/method/frappe_assistant_core.api.mcp.handle_mcp_request
 Initializes MCP connection and returns server capabilities.
 
 **Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
   "method": "initialize",
   "params": {
-    "protocolVersion": "2024-11-05",
+    "protocolVersion": "2025-06-18",
     "capabilities": {}
   },
   "id": 1
@@ -29,11 +31,12 @@ Initializes MCP connection and returns server capabilities.
 ```
 
 **Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
   "result": {
-    "protocolVersion": "2024-11-05",
+    "protocolVersion": "2025-06-18",
     "capabilities": {
       "tools": {
         "listChanged": true
@@ -49,6 +52,7 @@ Initializes MCP connection and returns server capabilities.
 ```
 
 #### List Tools
+
 ```
 POST /api/method/frappe_assistant_core.api.mcp.handle_mcp_request
 ```
@@ -56,6 +60,7 @@ POST /api/method/frappe_assistant_core.api.mcp.handle_mcp_request
 Returns list of available tools for current user.
 
 **Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -66,19 +71,20 @@ Returns list of available tools for current user.
 ```
 
 **Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
   "result": {
     "tools": [
       {
-        "name": "document_create",
+        "name": "create_document",
         "description": "Create a new Frappe document",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "doctype": {"type": "string"},
-            "data": {"type": "object"}
+            "doctype": { "type": "string" },
+            "data": { "type": "object" }
           },
           "required": ["doctype", "data"]
         }
@@ -90,6 +96,7 @@ Returns list of available tools for current user.
 ```
 
 #### Execute Tool
+
 ```
 POST /api/method/frappe_assistant_core.api.mcp.handle_mcp_request
 ```
@@ -97,12 +104,13 @@ POST /api/method/frappe_assistant_core.api.mcp.handle_mcp_request
 Executes a specific tool with provided arguments.
 
 **Request:**
+
 ```json
 {
   "jsonrpc": "2.0",
   "method": "tools/call",
   "params": {
-    "name": "document_create",
+    "name": "create_document",
     "arguments": {
       "doctype": "Customer",
       "data": {
@@ -115,6 +123,7 @@ Executes a specific tool with provided arguments.
 ```
 
 **Response:**
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -135,6 +144,7 @@ Executes a specific tool with provided arguments.
 ### Plugin Management
 
 #### Get Discovered Plugins
+
 ```
 GET /api/method/frappe_assistant_core.api.plugin_api.get_discovered_plugins
 ```
@@ -142,6 +152,7 @@ GET /api/method/frappe_assistant_core.api.plugin_api.get_discovered_plugins
 Returns all discovered plugins with their status.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -158,6 +169,7 @@ Returns all discovered plugins with their status.
 ```
 
 #### Refresh Plugins
+
 ```
 POST /api/method/frappe_assistant_core.api.plugin_api.refresh_plugins
 ```
@@ -165,6 +177,7 @@ POST /api/method/frappe_assistant_core.api.plugin_api.refresh_plugins
 Refreshes plugin discovery.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -174,6 +187,7 @@ Refreshes plugin discovery.
 ```
 
 #### Get Available Tools
+
 ```
 GET /api/method/frappe_assistant_core.api.plugin_api.get_available_tools
 ```
@@ -181,6 +195,7 @@ GET /api/method/frappe_assistant_core.api.plugin_api.get_available_tools
 Returns all available tools with statistics.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -199,15 +214,18 @@ Returns all available tools with statistics.
 
 #### Document Tools
 
-#### document_create
+#### create_document
+
 Creates a new Frappe document.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `data` (object, required): Document field data
 - `submit` (boolean, optional): Whether to submit after creation
 
 **Example:**
+
 ```json
 {
   "doctype": "Customer",
@@ -219,62 +237,76 @@ Creates a new Frappe document.
 }
 ```
 
-#### document_get
+#### get_document
+
 Retrieves a specific document.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `name` (string, required): Document ID
 - `fields` (array, optional): Specific fields to retrieve
 
-#### document_update
+#### update_document
+
 Updates an existing document.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `name` (string, required): Document ID
 - `data` (object, required): Fields to update
 
-#### document_list
+#### list_documents
+
 Lists documents with filters.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `filters` (object, optional): Filter conditions
 - `fields` (array, optional): Fields to retrieve
 - `limit` (integer, optional): Maximum records (default: 20)
 
-#### document_delete
+#### delete_document
+
 Deletes a document.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `name` (string, required): Document ID
 - `force` (boolean, optional): Force delete
 
 #### Search Tools
 
-#### search_global
+#### search_documents
+
 Searches across all accessible DocTypes.
 
 **Parameters:**
+
 - `query` (string, required): Search query
 - `limit` (integer, optional): Results per DocType
 - `doctypes` (array, optional): Specific DocTypes to search
 
 #### search_doctype
+
 Searches within a specific DocType.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType to search
 - `query` (string, required): Search query
 - `fields` (array, optional): Fields to search in
 - `limit` (integer, optional): Maximum results
 
 #### search_link
+
 Searches for link field options.
 
 **Parameters:**
+
 - `doctype` (string, required): Target DocType
 - `query` (string, optional): Filter query
 - `filters` (object, optional): Additional filters
@@ -282,79 +314,97 @@ Searches for link field options.
 
 #### Metadata Tools
 
-#### metadata_doctype
+#### get_doctype_info
+
 Gets DocType metadata and structure.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `include_fields` (boolean, optional): Include field definitions
 - `include_permissions` (boolean, optional): Include permissions
 - `include_links` (boolean, optional): Include linked DocTypes
 
 #### metadata_list_doctypes
+
 Lists all available DocTypes.
 
 **Parameters:**
+
 - `module` (string, optional): Filter by module
 - `is_submittable` (boolean, optional): Filter by submittable
 - `include_custom` (boolean, optional): Include custom DocTypes
 
-#### metadata_doctype_fields
+#### get_doctype_info_fields
+
 Gets detailed field information.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType name
 - `fieldtype` (string, optional): Filter by field type
 - `required_only` (boolean, optional): Show only required fields
 
 #### Report Tools
 
-#### report_execute
+#### generate_report
+
 Executes a Frappe report.
 
 **Parameters:**
+
 - `report_name` (string, required): Report name
 - `filters` (object, optional): Report filters
 - `format` (string, optional): Output format
 - `limit` (integer, optional): Maximum rows
 
 #### report_list
+
 Lists available reports.
 
 **Parameters:**
+
 - `module` (string, optional): Filter by module
 - `report_type` (string, optional): Filter by type
 - `reference_doctype` (string, optional): Filter by DocType
 
-#### report_details
+#### get_report_data
+
 Gets detailed report information.
 
 **Parameters:**
+
 - `report_name` (string, required): Report name
 - `include_query` (boolean, optional): Include SQL query
 
 #### Workflow Tools
 
 #### workflow_action
+
 Performs workflow action on document.
 
 **Parameters:**
+
 - `doctype` (string, required): Document type
 - `docname` (string, required): Document ID
 - `action` (string, required): Workflow action
 - `comment` (string, optional): Action comment
 
 #### workflow_status
+
 Checks workflow status of document.
 
 **Parameters:**
+
 - `doctype` (string, required): Document type
 - `docname` (string, required): Document ID
 
 #### workflow_list
+
 Lists documents in workflow queues.
 
 **Parameters:**
+
 - `doctype` (string, optional): Filter by DocType
 - `workflow_state` (string, optional): Filter by state
 - `assigned_to_me` (boolean, optional): Only assigned items
@@ -362,19 +412,23 @@ Lists documents in workflow queues.
 
 ### Data Science Plugin Tools
 
-#### execute_python_code
+#### run_python_code
+
 Executes Python code safely.
 
 **Parameters:**
+
 - `code` (string, required): Python code
 - `timeout` (integer, optional): Execution timeout
 - `capture_output` (boolean, optional): Capture print output
 - `return_variables` (array, optional): Variables to return
 
-#### analyze_frappe_data
+#### analyze_business_data
+
 Performs statistical analysis on DocType data.
 
 **Parameters:**
+
 - `doctype` (string, required): DocType to analyze
 - `analysis_type` (string, required): Type of analysis
 - `fields` (array, optional): Fields to analyze
@@ -382,18 +436,22 @@ Performs statistical analysis on DocType data.
 - `limit` (integer, optional): Maximum records
 
 #### query_and_analyze
+
 Executes SQL queries and analyzes results.
 
 **Parameters:**
+
 - `query` (string, required): SQL query (SELECT only)
 - `analysis_type` (string, optional): Analysis type
 - `parameters` (object, optional): Query parameters
 - `limit` (integer, optional): Row limit
 
 #### create_visualization
+
 Creates charts from data.
 
 **Parameters:**
+
 - `data_source` (object, required): Data source configuration
 - `chart_config` (object, required): Chart configuration
 - `output_format` (string, optional): Output format
@@ -402,6 +460,7 @@ Creates charts from data.
 ## Error Handling
 
 ### Standard Error Response
+
 ```json
 {
   "jsonrpc": "2.0",
@@ -418,6 +477,7 @@ Creates charts from data.
 ```
 
 ### Common Error Codes
+
 - `-32700`: Parse error (Invalid JSON)
 - `-32600`: Invalid request
 - `-32601`: Method not found
@@ -425,6 +485,7 @@ Creates charts from data.
 - `-32603`: Internal error
 
 ### Frappe-Specific Errors
+
 - `PermissionError`: Insufficient permissions
 - `ValidationError`: Invalid input data
 - `DoesNotExistError`: Resource not found
@@ -433,11 +494,13 @@ Creates charts from data.
 ## Authentication
 
 ### API Key Authentication
+
 ```http
 Authorization: token api_key:api_secret
 ```
 
 ### Session Authentication
+
 Standard Frappe session cookies for web requests.
 
 ## Rate Limiting
@@ -449,6 +512,7 @@ Standard Frappe session cookies for web requests.
 ## Response Formats
 
 ### Success Response
+
 ```json
 {
   "success": true,
@@ -461,6 +525,7 @@ Standard Frappe session cookies for web requests.
 ```
 
 ### Error Response
+
 ```json
 {
   "success": false,
@@ -472,6 +537,7 @@ Standard Frappe session cookies for web requests.
 ## Pagination
 
 For list endpoints:
+
 ```json
 {
   "limit": 20,
@@ -483,6 +549,7 @@ For list endpoints:
 ## Filtering
 
 Standard Frappe filters format:
+
 ```json
 {
   "filters": {
@@ -495,6 +562,7 @@ Standard Frappe filters format:
 ## Field Selection
 
 Specify fields to retrieve:
+
 ```json
 {
   "fields": ["name", "customer_name", "creation"]

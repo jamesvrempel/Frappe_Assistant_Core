@@ -64,7 +64,7 @@ class assistantProtocolHandler:
         return {
             "jsonrpc": "2.0",
             "result": {
-                "protocolVersion": "2024-11-05",
+                "protocolVersion": "2025-06-18",
                 "capabilities": {
                     "tools": {
                         "listChanged": True
@@ -261,17 +261,17 @@ class assistantProtocolHandler:
         registry_entries = frappe.get_all(
             "Assistant Tool Registry",
             filters={"enabled": 1},
-            fields=["tool_name", "tool_description", "input_schema", "required_permissions", "execution_timeout"]
+            fields=["tool_name", "tool_description", "inputSchema", "required_permissions", "execution_timeout"]
         )
         
         for entry in registry_entries:
             try:
-                input_schema = json.loads(entry.input_schema or "{}")
+                inputSchema = json.loads(entry.inputSchema or "{}")
                 required_permissions = json.loads(entry.required_permissions or "[]")
                 
                 tools[entry.tool_name] = {
                     "description": entry.tool_description,
-                    "inputSchema": input_schema,
+                    "inputSchema": inputSchema,
                     "required_permissions": required_permissions,
                     "execution_timeout": entry.execution_timeout or 30
                 }

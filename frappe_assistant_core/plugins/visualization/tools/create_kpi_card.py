@@ -28,7 +28,7 @@ class CreateKpiCard(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "title": {
@@ -95,32 +95,7 @@ class CreateKpiCard(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create professional KPI cards with trend analysis, alerts, and beautiful formatting.
-
-📊 **KPI METRICS:**
-• Revenue Metrics - Sales, profit, growth rates
-• Performance Indicators - Efficiency, quality, productivity
-• Operational Metrics - Volume, capacity, utilization
-• Customer Metrics - Satisfaction, retention, acquisition
-
-📈 **TREND ANALYSIS:**
-• Period Comparisons - Month, quarter, year over year
-• Trend Indicators - Up/down arrows with percentages
-• Progress Tracking - Target vs actual performance
-• Historical Context - Show recent performance patterns
-
-⚠️ **SMART ALERTS:**
-• Threshold Monitoring - Warning and critical levels
-• Color Coding - Visual status indicators
-• Performance Bands - Green/yellow/red zones
-• Exception Highlighting - Flag unusual values
-
-🎨 **PROFESSIONAL DESIGN:**
-• Executive Ready - Corporate dashboard styling
-• Mobile Optimized - Perfect on all devices
-• Icon Integration - Meaningful visual symbols
-• Number Formatting - Currency, percentages, units
-• Compact Layout - Maximum information density"""
+        return """Create professional KPI cards with trend analysis, period comparisons, and alert thresholds. Supports various formatting types (currency, percentage) and customizable styling options."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create KPI card"""

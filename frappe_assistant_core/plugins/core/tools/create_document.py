@@ -22,11 +22,11 @@ class DocumentCreate(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "document_create"
+        self.name = "create_document"
         self.description = "Create a new Frappe document (e.g., Customer, Sales Invoice, Item, etc.). Use this when users want to add new records to the system. Always check required fields for the doctype first."
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

@@ -28,7 +28,7 @@ class CreateChart(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "chart_type": {
@@ -98,37 +98,7 @@ class CreateChart(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create stunning individual charts with advanced visualization capabilities and modern styling.
-
-📊 **15+ CHART TYPES:**
-• Bar/Column Charts - Comparisons and rankings
-• Line/Area Charts - Trends and time series
-• Pie/Donut Charts - Proportions and percentages
-• Gauge/KPI Cards - Metrics and performance indicators
-• Funnel Charts - Conversion and process analysis
-• Heatmaps - Correlation and density visualization
-• Scatter Plots - Relationship analysis
-• Waterfall Charts - Sequential value changes
-• Treemaps - Hierarchical data visualization
-
-🎨 **STYLING & THEMES:**
-• Professional Themes - Corporate-ready designs
-• Color Schemes - Brand-consistent palettes
-• Animation Effects - Smooth transitions
-• Grid Customization - Perfect alignment
-• Legend Control - Optimal space usage
-
-⚡ **INTERACTIVE FEATURES:**
-• Drill-Down - Click to explore details
-• Zoom & Pan - Navigate large datasets
-• Smart Tooltips - Rich hover information
-• Click Actions - Custom interactivity
-
-🔍 **DATA ANALYSIS:**
-• Advanced Aggregation - Sum, average, count, min/max
-• Smart Filtering - Dynamic data selection
-• Time Intelligence - Automatic date handling
-• Statistical Functions - Calculated metrics"""
+        return """Create professional charts from Frappe data with 15+ chart types including bar, line, pie, gauge, funnel, and KPI cards. Supports advanced styling and interactive features."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create chart"""

@@ -32,7 +32,7 @@ class TemplateBuilder(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "template_type": {
@@ -79,71 +79,7 @@ class TemplateBuilder(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create professional business dashboards from pre-built templates optimized for specific business functions and use cases.
-
-🎯 **TEMPLATE TYPES:**
-
-📊 **SALES TEMPLATE** - Complete sales performance analytics
-• Revenue trends and forecasting
-• Top customers and territory analysis
-• Sales funnel conversion tracking
-• Monthly target achievement gauges
-• Recent high-value transactions
-• Sales rep performance metrics
-
-💰 **FINANCIAL TEMPLATE** - Comprehensive financial dashboard
-• Revenue vs expenses analysis
-• Net profit and cash flow tracking
-• Budget vs actual performance
-• Key financial ratios (ROA, Debt-to-Equity)
-• Accounts receivable/payable metrics
-• Expense breakdown and analysis
-
-📦 **INVENTORY TEMPLATE** - Complete inventory management
-• Stock levels and movement trends
-• Low stock alerts and recommendations
-• Warehouse utilization analysis
-• ABC analysis for optimal inventory
-• Seasonal stock patterns
-• Stockout risk assessment
-
-👥 **HR TEMPLATE** - Workforce analytics dashboard
-• Employee headcount and demographics
-• Attendance patterns and trends
-• Performance tracking and ratings
-• Recruitment funnel analysis
-• Training completion rates
-• Leave trend analysis
-
-🏢 **EXECUTIVE TEMPLATE** - High-level business metrics
-• Key performance indicators (KPIs)
-• Revenue and profit trends
-• Market share analysis
-• Business unit performance
-• Strategic metric tracking
-• Board-ready presentations
-
-🔧 **FEATURES:**
-• One-click deployment - Instant dashboard creation
-• Mobile optimized - Responsive design for all devices
-• Auto-refresh - Real-time data updates
-• Smart permissions - Role-based access control
-• Export ready - PDF, Excel, PowerPoint formats
-• Customizable - Modify colors, filters, and layouts
-
-⚡ **SMART CAPABILITIES:**
-• Auto-detects available data sources
-• Intelligent field mapping
-• Validates data compatibility
-• Suggests optimal time periods
-• Configures appropriate chart types
-
-💡 **CUSTOMIZATION OPTIONS:**
-• Override default doctypes
-• Add/remove specific charts
-• Modify filters and time periods
-• Customize sharing permissions
-• Brand with company colors"""
+        return """Create professional business dashboards from pre-built templates for sales, financial, inventory, HR, and executive analytics. Features smart data mapping, one-click deployment, and extensive customization options."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create dashboard from template"""
@@ -488,7 +424,7 @@ class ListDashboardTemplates(BaseTool):
         self.description = "List all available dashboard templates with descriptions and features"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "category": {

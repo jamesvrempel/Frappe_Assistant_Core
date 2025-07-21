@@ -12,7 +12,7 @@ class MetadataTools:
         """Return list of metadata-related assistant tools"""
         return [
             {
-                "name": "metadata_doctype",
+                "name": "get_doctype_info",
                 "description": "Get DocType metadata and field information",
                 "inputSchema": {
                     "type": "object",
@@ -61,7 +61,7 @@ class MetadataTools:
     @staticmethod
     def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a metadata tool with given arguments"""
-        if tool_name == "metadata_doctype":
+        if tool_name == "get_doctype_info":
             return MetadataTools.get_doctype_metadata(**arguments)
         elif tool_name == "metadata_list_doctypes":
             return MetadataTools.list_doctypes(**arguments)

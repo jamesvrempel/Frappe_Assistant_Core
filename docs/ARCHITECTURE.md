@@ -63,12 +63,14 @@ Frappe Assistant Core is built on a modular plugin architecture that separates c
 The Model Context Protocol (MCP) layer handles communication between AI assistants and the Frappe system.
 
 **Key Components:**
+
 - **Protocol Handlers**: Process MCP requests and responses
 - **Request Validation**: Ensure proper protocol compliance
 - **Response Formatting**: Convert internal responses to MCP format
 - **Error Handling**: Standardized error responses
 
 **Implementation:**
+
 - Located in `api/` directory
 - Uses Frappe's `@frappe.whitelist()` decorators
 - Implements JSON-RPC 2.0 specification
@@ -79,6 +81,7 @@ The Model Context Protocol (MCP) layer handles communication between AI assistan
 The tool registry manages discovery, registration, and execution of all available tools through a clean plugin architecture with support for external app tools.
 
 **Architecture:**
+
 ```python
 ToolRegistry
 ├── Plugin Manager Integration
@@ -100,6 +103,7 @@ ToolRegistry
 ```
 
 **Features:**
+
 - **Multi-Source Discovery**: Tools from plugins and external apps
 - **Clean Architecture**: Thread-safe plugin management
 - **Runtime Management**: Enable/disable plugins through web interface
@@ -115,7 +119,7 @@ BaseTool (Abstract)
 ├── Metadata Management
 │   ├── name: str
 │   ├── description: str
-│   ├── input_schema: Dict
+│   ├── inputSchema: Dict
 │   └── requires_permission: Optional[str]
 ├── Validation System
 │   ├── validate_arguments()
@@ -132,6 +136,7 @@ BaseTool (Abstract)
 ```
 
 **Benefits:**
+
 - **Consistent Interface**: All tools follow same patterns
 - **Built-in Validation**: Automatic argument and permission checking
 - **Error Handling**: Standardized error capture and reporting
@@ -142,6 +147,7 @@ BaseTool (Abstract)
 The plugin system enables modular functionality that can be enabled/disabled as needed, with clean architecture and thread-safe operations.
 
 **Plugin Architecture:**
+
 ```python
 BasePlugin (Abstract)
 ├── Plugin Information
@@ -164,6 +170,7 @@ BasePlugin (Abstract)
 ```
 
 **Plugin Manager (Clean Architecture):**
+
 - **Thread-Safe Discovery**: Safe plugin directory scanning with proper locking
 - **State Persistence**: Plugin states persist across system restarts
 - **Atomic Operations**: Plugin enable/disable with rollback on failure
@@ -176,6 +183,7 @@ BasePlugin (Abstract)
 The system supports two primary methods for tool development:
 
 #### **Method 1: External App Tools (Recommended)**
+
 Tools can be developed in any Frappe app using the hooks system:
 
 ```python
@@ -195,12 +203,14 @@ assistant_tool_configs = {
 ```
 
 **Benefits:**
+
 - No modification needed to frappe_assistant_core
 - Tools stay with your business logic
 - Easy maintenance and deployment
 - Support for app-specific configurations
 
 #### **Method 2: Internal Plugin Tools**
+
 Tools developed within frappe_assistant_core plugins for core functionality.
 
 ### 6. Current Plugin Implementations
@@ -208,24 +218,29 @@ Tools developed within frappe_assistant_core plugins for core functionality.
 The system currently includes several production-ready plugins:
 
 #### **Core Plugin** (`plugins/core/`) - Always Enabled
+
 Essential functionality that's always available:
 
 1. **Document Tools** (`plugins/core/tools/document_*.py`)
+
    - Create, read, update, delete operations
    - List and bulk operations
    - Transaction support
 
 2. **Search Tools** (`plugins/core/tools/search_*.py`)
+
    - Global search across all DocTypes
    - DocType-specific search
    - Link field search and filtering
 
 3. **Metadata Tools** (`plugins/core/tools/metadata_*.py`)
+
    - DocType structure exploration
    - Field information and validation
    - System metadata access
 
 4. **Report Tools** (`plugins/core/tools/report_*.py`)
+
    - Report execution and management
    - Parameter handling
    - Result formatting
@@ -236,19 +251,23 @@ Essential functionality that's always available:
    - Approval queue management
 
 #### **Data Science Plugin** (`plugins/data_science/`) - Optional
+
 Advanced analytics and visualization capabilities:
 
-1. **Python Execution** (`execute_python_code.py`)
+1. **Python Execution** (`run_python_code.py`)
+
    - Safe Python code execution with Frappe context
    - Pandas DataFrame integration
    - Custom business logic execution
 
-2. **Data Analysis** (`analyze_frappe_data.py`)
+2. **Data Analysis** (`analyze_business_data.py`)
+
    - Statistical analysis of business data
    - Trend analysis and correlations
    - Automated insights generation
 
 3. **Query Analytics** (`query_and_analyze.py`)
+
    - Custom SQL query execution
    - Advanced data analysis on query results
    - Business intelligence insights
@@ -262,13 +281,17 @@ Advanced analytics and visualization capabilities:
 **Environment Validation:** Automatic dependency checking on plugin load
 
 #### **WebSocket Plugin** (`plugins/websocket/`) - Optional
+
 Real-time communication capabilities:
+
 - Live data streaming
 - Real-time notifications
 - Interactive dashboard updates
 
 #### **Batch Processing Plugin** (`plugins/batch_processing/`) - Optional
+
 Background and bulk operations:
+
 - Large dataset processing
 - Background task management
 - Bulk operation optimization
@@ -336,10 +359,11 @@ Frappe Assistant Core implements a **comprehensive multi-layer security framewor
 ### 1. Multi-Layer Security Framework
 
 #### **Security Layers Overview**
+
 ```
 Layer 1: Role-Based Tool Access Control
     ↓
-Layer 2: DocType Access Restrictions  
+Layer 2: DocType Access Restrictions
     ↓
 Layer 3: Frappe Permission Integration
     ↓
@@ -353,12 +377,14 @@ Layer 6: Audit Trail & Monitoring
 #### **Core Security Components**
 
 **1. Role-Based Access Control**
+
 - **System Manager**: Full access to all 21 tools including dangerous operations
 - **Assistant Admin**: 16 tools excluding code execution and direct database queries
-- **Assistant User**: 14 basic tools for standard business operations  
+- **Assistant User**: 14 basic tools for standard business operations
 - **Default**: 14 basic tools for any other Frappe user roles
 
 **2. DocType Access Matrix**
+
 ```python
 RESTRICTED_DOCTYPES = {
     "Assistant User": [
@@ -370,6 +396,7 @@ RESTRICTED_DOCTYPES = {
 ```
 
 **3. Sensitive Field Protection**
+
 ```python
 SENSITIVE_FIELDS = {
     "all_doctypes": ["password", "api_key", "secret_key", "private_key", ...],
@@ -382,26 +409,28 @@ SENSITIVE_FIELDS = {
 ### 2. Permission Validation System
 
 #### **Document Access Validation Flow**
+
 ```python
 def validate_document_access(user, doctype, name, perm_type="read"):
     # 1. Check role-based DocType accessibility
     if not is_doctype_accessible(doctype, user_role):
         return access_denied
-    
-    # 2. Frappe DocType-level permissions  
+
+    # 2. Frappe DocType-level permissions
     if not frappe.has_permission(doctype, perm_type, user=user):
         return permission_denied
-    
+
     # 3. Document-specific permissions (row-level security)
     if name and not frappe.has_permission(doctype, perm_type, doc=name, user=user):
         return document_access_denied
-    
+
     # 4. Submitted document state validation
     if perm_type in ["write", "delete"] and doc.docstatus == 1:
         return submitted_document_protection
 ```
 
 #### **Row-Level Security Implementation**
+
 - **Company-Based Filtering**: Automatic enforcement through Frappe's permission system
 - **User-Scoped Data**: Users can only access their own audit logs and connection logs
 - **Permission Query Conditions**: Custom query filters for enhanced security
@@ -410,17 +439,19 @@ def validate_document_access(user, doctype, name, perm_type="read"):
 ### 3. Input Validation & Data Protection
 
 #### **JSON Schema Validation**
+
 - **Tool Arguments**: All tool inputs validated against JSON schemas
 - **Type Checking**: Automatic type validation and conversion
 - **Sanitization**: Input sanitization for security
 - **Error Handling**: Secure error messages without data leakage
 
 #### **Sensitive Data Filtering**
+
 ```python
 def filter_sensitive_fields(doc_dict, doctype, user_role):
     if user_role == "System Manager":
         return doc_dict  # Full access for System Managers
-    
+
     # Replace sensitive values with "***RESTRICTED***"
     for field in get_sensitive_fields(doctype):
         if field in doc_dict:
@@ -430,13 +461,15 @@ def filter_sensitive_fields(doc_dict, doctype, user_role):
 ### 4. SQL Security & Query Protection
 
 #### **Query Security Controls**
+
 - **Query Restrictions**: Only SELECT statements allowed in query tools
-- **Parameterization**: All queries use parameterized statements  
+- **Parameterization**: All queries use parameterized statements
 - **Permission Checks**: Database access requires appropriate permissions
 - **Timeout Protection**: Query timeouts prevent resource exhaustion
 - **Result Filtering**: Query results filtered through permission system
 
 #### **Safe Execution Environment**
+
 - **Sandboxed Python**: Safe code execution with restricted imports
 - **Context Isolation**: User context preserved throughout execution
 - **Resource Limits**: Memory and execution time limits
@@ -445,6 +478,7 @@ def filter_sensitive_fields(doc_dict, doctype, user_role):
 ### 5. Comprehensive Audit Trail
 
 #### **Security Event Logging**
+
 ```python
 def audit_log_tool_access(user, tool_name, arguments, result):
     audit_log = {
@@ -459,6 +493,7 @@ def audit_log_tool_access(user, tool_name, arguments, result):
 ```
 
 #### **Audit Features**
+
 - **Complete Tool Logging**: Every tool execution logged with full context
 - **Success/Failure Tracking**: Both successful and failed operations recorded
 - **IP Address Tracking**: Security monitoring with source IP logging
@@ -468,12 +503,14 @@ def audit_log_tool_access(user, tool_name, arguments, result):
 ### 6. Administrative Protection
 
 #### **Special Safeguards**
+
 - **Administrator Account Protection**: Hardcoded protection preventing non-admin access
 - **Submitted Document Protection**: Prevents modification of submitted documents
 - **System Settings Restriction**: Complete access restriction to system configuration
 - **Role Management Security**: Permission and role management restricted to admins
 
 #### **Security Best Practices**
+
 - **Defense in Depth**: Multiple security layers with redundant checking
 - **Principle of Least Privilege**: Minimal access rights for each role
 - **Fail-Safe Defaults**: Restrictive permissions by default
@@ -482,12 +519,14 @@ def audit_log_tool_access(user, tool_name, arguments, result):
 ### 7. Integration with Frappe Security
 
 #### **Native Permission System Integration**
+
 - **frappe.has_permission()**: Deep integration with Frappe's permission engine
-- **Permission Query Conditions**: Custom query filters for row-level security  
+- **Permission Query Conditions**: Custom query filters for row-level security
 - **User Permissions**: Automatic enforcement of user-specific data restrictions
 - **Company-Based Filtering**: Seamless multi-company security support
 
 #### **Built-in Security Features**
+
 - **Session Management**: Leverages Frappe's session handling
 - **IP Restriction**: Integration with Frappe's IP-based access control
 - **Two-Factor Authentication**: Compatible with Frappe's 2FA system
@@ -496,12 +535,14 @@ def audit_log_tool_access(user, tool_name, arguments, result):
 ### 8. Security Monitoring & Analytics
 
 #### **Real-time Security Monitoring**
+
 - **Permission Denial Tracking**: Monitor failed access attempts
 - **Tool Usage Patterns**: Analyze tool usage across different roles
 - **Sensitive Data Access**: Monitor access to sensitive DocTypes and fields
 - **Security Incident Detection**: Automated detection of suspicious activities
 
 #### **Security Metrics**
+
 - **Access Control Effectiveness**: Permission denial rates and patterns
 - **User Activity Analysis**: Behavioral analysis for anomaly detection
 - **Role Distribution**: Understanding of role-based tool usage
@@ -572,10 +613,10 @@ class MyPlugin(BasePlugin):
             'dependencies': ['pandas', 'numpy'],  # Optional
             'requires_restart': False
         }
-    
+
     def get_tools(self):
         return ['my_tool', 'another_tool']
-    
+
     def validate_environment(self):
         # Check if dependencies are available
         return True, None  # True if valid, error message if not

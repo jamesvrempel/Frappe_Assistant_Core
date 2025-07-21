@@ -22,11 +22,11 @@ class DocumentList(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "document_list"
+        self.name = "list_documents"
         self.description = "Search and list Frappe documents with optional filtering. Use this when users want to find records, get lists of documents, or search for data. This is the primary tool for data exploration and discovery."
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

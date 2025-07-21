@@ -24,11 +24,11 @@ class MigrateVisualization(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "migrate_visualization"
+        self.name = "migrate_old_charts"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "migration_type": {

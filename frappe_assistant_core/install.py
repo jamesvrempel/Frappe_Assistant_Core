@@ -147,7 +147,7 @@ def register_basic_tools():
                     "enabled": 1,
                     "category": category,
                     "source_plugin": source_plugin,
-                    "input_schema": json.dumps(tool["inputSchema"]),
+                    "inputSchema": json.dumps(tool["inputSchema"]),
                     "required_permissions": json.dumps(required_permissions),
                     "execution_timeout": 30
                 })

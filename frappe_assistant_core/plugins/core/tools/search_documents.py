@@ -1,6 +1,6 @@
 """
-Search DocType Tool for Core Plugin.
-Search within a specific DocType with permission-aware results.
+Search Documents Tool for Core Plugin.
+Global search across all accessible documents.
 """
 
 import frappe
@@ -9,29 +9,25 @@ from typing import Dict, Any
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
-class SearchDoctype(BaseTool):
+class SearchDocuments(BaseTool):
     """
-    Tool for searching within a specific DocType.
+    Tool for global search across all accessible documents.
     
     Provides capabilities for:
-    - Targeted search within specific DocTypes
+    - Global search across common DocTypes
     - Permission-aware results
-    - Searchable field identification
+    - Structured result formatting
     """
     
     def __init__(self):
         super().__init__()
-        self.name = "search_doctype"
-        self.description = "Search within a specific DocType"
+        self.name = "search_documents"
+        self.description = "Global search across all accessible documents"
         self.requires_permission = None  # Permission checked dynamically per DocType
         
         self.inputSchema = {
             "type": "object",
             "properties": {
-                "doctype": {
-                    "type": "string",
-                    "description": "DocType to search in"
-                },
                 "query": {
                     "type": "string",
                     "description": "Search query"
@@ -42,26 +38,25 @@ class SearchDoctype(BaseTool):
                     "description": "Maximum results"
                 }
             },
-            "required": ["doctype", "query"]
+            "required": ["query"]
         }
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute DocType search"""
+        """Execute global search"""
         try:
             # Import the search implementation
             from .search_tools import SearchTools
             
             # Execute search using existing implementation
-            return SearchTools.search_doctype(
-                doctype=arguments.get("doctype"),
+            return SearchTools.global_search(
                 query=arguments.get("query"),
                 limit=arguments.get("limit", 20)
             )
             
         except Exception as e:
             frappe.log_error(
-                title=_("Search DocType Error"),
-                message=f"Error searching DocType: {str(e)}"
+                title=_("Search Documents Error"),
+                message=f"Error searching documents: {str(e)}"
             )
             
             return {
@@ -71,4 +66,4 @@ class SearchDoctype(BaseTool):
 
 
 # Make sure class name matches file name for discovery
-search_doctype = SearchDoctype
+search_documents = SearchDocuments

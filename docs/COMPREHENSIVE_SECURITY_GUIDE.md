@@ -26,7 +26,7 @@ This document provides a complete security reference for Frappe Assistant Core, 
 ### 1. **Arbitrary Code Execution - NOW SECURE**
 
 #### **Previous Vulnerability**: 
-The `execute_python_code` tool allowed arbitrary Python code execution with full system access.
+The `run_python_code` tool allowed arbitrary Python code execution with full system access.
 
 **Attack Scenario Previously Possible**:
 ```python
@@ -116,7 +116,7 @@ if not check_assistant_permission(frappe.session.user):
     return access_denied()
 
 # 4. Tool-Specific Role Validation
-if tool_name in ["execute_python_code", "query_and_analyze"]:
+if tool_name in ["run_python_code", "query_and_analyze"]:
     if "System Manager" not in frappe.get_roles(user):
         return permission_denied()
 
@@ -142,7 +142,7 @@ All Tools      All Safe Tools   Safe Tools Only
 ### Access Control Implementation
 ```python
 @staticmethod
-def execute_python_code(code: str, data_query: Dict = None, imports: List[str] = None):
+def run_python_code(code: str, data_query: Dict = None, imports: List[str] = None):
     # SECURITY: Role validation
     user_roles = frappe.get_roles(frappe.session.user)
     if "System Manager" not in user_roles:
@@ -430,8 +430,8 @@ ORDER BY total_revenue DESC, collection_rate DESC;
 ### For Assistant Users
 1. **Use Appropriate Tools**:
    ```python
-   # Use document_list instead of requesting Python code
-   invoices = document_list(
+   # Use list_documents instead of requesting Python code
+   invoices = list_documents(
        doctype="Sales Invoice",
        filters={"status": "Paid"},
        fields=["name", "grand_total", "customer"]
@@ -440,8 +440,8 @@ ORDER BY total_revenue DESC, collection_rate DESC;
 
 2. **Request Analysis**:
    ```python
-   # Use analyze_frappe_data for statistical analysis
-   analysis = analyze_frappe_data(
+   # Use analyze_business_data for statistical analysis
+   analysis = analyze_business_data(
        doctype="Sales Invoice",
        analysis_type="summary",
        numerical_fields=["grand_total"]
@@ -485,7 +485,7 @@ def log_code_execution(user, code, result):
     frappe.get_doc({
         "doctype": "Assistant Audit Log",
         "user": user,
-        "tool_name": "execute_python_code",
+        "tool_name": "run_python_code",
         "action_details": {
             "code_snippet": code[:200] + "..." if len(code) > 200 else code,
             "execution_status": result.get("success"),
@@ -504,7 +504,7 @@ def security_dashboard():
         "failed_authentications": frappe.db.count('Assistant Connection Log', 
                                                  {'status': 'Failed'}),
         "code_executions_today": frappe.db.count('Assistant Audit Log',
-                                                {'tool_name': 'execute_python_code',
+                                                {'tool_name': 'run_python_code',
                                                  'creation': ['>=', today()]}),
         "permission_violations": frappe.db.count('Assistant Audit Log',
                                                {'status': 'Permission Denied',

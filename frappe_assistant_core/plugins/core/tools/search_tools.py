@@ -13,7 +13,7 @@ class SearchTools:
         """Return list of search-related assistant tools"""
         return [
             {
-                "name": "search_global",
+                "name": "search_documents",
                 "description": "Global search across all accessible documents",
                 "inputSchema": {
                     "type": "object",
@@ -55,7 +55,7 @@ class SearchTools:
     @staticmethod
     def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a search tool with given arguments"""
-        if tool_name == "search_global":
+        if tool_name == "search_documents":
             return SearchTools.global_search(**arguments)
         elif tool_name == "search_doctype":
             return SearchTools.search_doctype(**arguments)

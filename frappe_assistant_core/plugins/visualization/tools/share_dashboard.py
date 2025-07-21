@@ -28,7 +28,7 @@ class ShareDashboard(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {
@@ -82,37 +82,7 @@ class ShareDashboard(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Comprehensive dashboard sharing with granular permissions and security controls.
-
-👥 **SHARING OPTIONS:**
-• User Sharing - Share with specific individuals
-• Role Sharing - Share with user roles/groups
-• Team Sharing - Department or project-based access
-• Public Links - Generate shareable URLs
-
-🔒 **PERMISSION LEVELS:**
-• Read Access - View dashboard and data
-• Write Access - Modify charts and filters
-• Admin Access - Full dashboard management
-• Custom Permissions - Granular feature control
-
-🌐 **PUBLIC ACCESS:**
-• Anonymous Links - No login required
-• Authenticated Links - Login required
-• Domain Restrictions - Limit access by email domain
-• Expiry Controls - Time-limited access
-
-🔔 **NOTIFICATIONS:**
-• Share Notifications - Email alerts to new users
-• Custom Messages - Personalized sharing notes
-• Usage Instructions - Help for new dashboard users
-• Access Confirmations - Track who accepts access
-
-🔍 **AUDIT & TRACKING:**
-• Access Logs - Who viewed when
-• Permission Changes - History of access modifications
-• Usage Analytics - Dashboard engagement metrics
-• Security Alerts - Unusual access patterns"""
+        return """Share dashboards with users, roles, or public access. Configure granular permissions (read/write/admin), create public links with expiry controls, and track access logs."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Share dashboard"""

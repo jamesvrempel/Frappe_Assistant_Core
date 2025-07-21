@@ -9,6 +9,7 @@ This document provides comprehensive templates and examples for creating tools i
 ### Two Ways to Create Tools
 
 1. **External App Tools** (Recommended for custom apps)
+
    - Tools in any Frappe app using hooks
    - Auto-discovered via `assistant_tools` hooks
    - No need to modify frappe_assistant_core
@@ -37,13 +38,13 @@ from frappe_assistant_core.core.base_tool import BaseTool
 class MyCustomTool(BaseTool):
     """
     Custom tool from external app demonstrating the architecture.
-    
+
     Provides capabilities for:
     - Custom business logic
     - Integration with app-specific DocTypes
     - App-specific configurations
     """
-    
+
     def __init__(self):
         super().__init__()
         self.name = "my_custom_tool"
@@ -52,15 +53,15 @@ class MyCustomTool(BaseTool):
         self.source_app = "your_app_name"  # Set your app name
         self.dependencies = ["pandas"]  # Optional dependencies
         self.requires_permission = None  # Or specific DocType/permission
-        
+
         # Tool-specific default configuration
         self.default_config = {
             "max_records": 1000,
             "timeout": 30,
             "enable_caching": True
         }
-        
-        self.input_schema = {
+
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "operation_type": {
@@ -83,14 +84,14 @@ class MyCustomTool(BaseTool):
             },
             "required": ["operation_type"]
         }
-    
+
     def _get_description(self) -> str:
         """Get tool description with rich formatting"""
         return """Perform custom business operations with advanced features.
 
 🚀 **OPERATIONS:**
 • Create - Create new business records
-• Update - Modify existing records  
+• Update - Modify existing records
 • Analyze - Generate business insights
 
 ⚙️ **FEATURES:**
@@ -103,16 +104,16 @@ class MyCustomTool(BaseTool):
 • Configurable batch sizes and timeouts
 • App-level and site-level overrides
 • Performance monitoring and alerts"""
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the custom tool operation"""
         operation_type = arguments.get("operation_type")
         data = arguments.get("data", {})
         options = arguments.get("options", {})
-        
+
         # Get effective configuration (site > app > tool defaults)
         config = self.get_config()
-        
+
         try:
             if operation_type == "create":
                 return self._handle_create(data, options, config)
@@ -125,22 +126,22 @@ class MyCustomTool(BaseTool):
                     "success": False,
                     "error": f"Unknown operation type: {operation_type}"
                 }
-                
+
         except Exception as e:
             frappe.log_error(
                 title=_("Custom Tool Error"),
                 message=f"Error in {self.name}: {str(e)}"
             )
-            
+
             return {
                 "success": False,
                 "error": str(e)
             }
-    
+
     def _handle_create(self, data: Dict, options: Dict, config: Dict) -> Dict[str, Any]:
         """Handle create operation"""
         batch_size = options.get("batch_size", config.get("max_records", 100))
-        
+
         # Your custom create logic here
         result = {
             "operation": "create",
@@ -148,12 +149,12 @@ class MyCustomTool(BaseTool):
             "batch_size": batch_size,
             "config_used": config
         }
-        
+
         return {
             "success": True,
             "result": result
         }
-    
+
     def _handle_update(self, data: Dict, options: Dict, config: Dict) -> Dict[str, Any]:
         """Handle update operation"""
         # Your custom update logic here
@@ -161,7 +162,7 @@ class MyCustomTool(BaseTool):
             "success": True,
             "result": {"operation": "update", "data": data}
         }
-    
+
     def _handle_analyze(self, data: Dict, options: Dict, config: Dict) -> Dict[str, Any]:
         """Handle analyze operation"""
         # Your custom analysis logic here
@@ -245,37 +246,37 @@ from frappe_assistant_core.core.tool_registry import get_tool_registry
 
 class TestMyCustomTool(unittest.TestCase):
     """Test custom tool functionality"""
-    
+
     def setUp(self):
         """Set up test environment"""
         self.registry = get_tool_registry()
-    
+
     def test_tool_discovery(self):
         """Test tool is discovered correctly"""
         tools = self.registry.get_all_tools()
         self.assertIn("my_custom_tool", tools)
-        
+
         tool = tools["my_custom_tool"]
         self.assertEqual(tool.source_app, "your_app_name")
         self.assertEqual(tool.category, "Custom Business")
-    
+
     def test_tool_execution(self):
         """Test tool execution"""
         tool = self.registry.get_tool("my_custom_tool")
-        
+
         result = tool._safe_execute({
             "operation_type": "create",
             "data": {"test": "data"}
         })
-        
+
         self.assertTrue(result.get("success"))
         self.assertIn("result", result)
-    
+
     def test_configuration_hierarchy(self):
         """Test configuration hierarchy"""
         tool = self.registry.get_tool("my_custom_tool")
         config = tool.get_config()
-        
+
         # Should include defaults and any overrides
         self.assertIn("max_records", config)
         self.assertIn("timeout", config)
@@ -292,7 +293,7 @@ if __name__ == "__main__":
 ```
 frappe_assistant_core/plugins/my_plugin/
 ├── __init__.py                 # Plugin package
-├── plugin.py                   # Plugin definition  
+├── plugin.py                   # Plugin definition
 └── tools/                      # Individual tool files
     ├── __init__.py
     ├── tool_one.py             # Tool implementation
@@ -317,7 +318,7 @@ class MyPlugin(BasePlugin):
     """
     Plugin for specialized functionality within frappe_assistant_core
     """
-    
+
     def get_info(self) -> Dict[str, Any]:
         """Get plugin information"""
         return {
@@ -330,26 +331,26 @@ class MyPlugin(BasePlugin):
             "dependencies": ["pandas", "numpy"],
             "requires_restart": False
         }
-    
+
     def get_tools(self) -> List[str]:
         """Return list of tool names provided by this plugin"""
         return [
             "tool_one",
             "tool_two"
         ]
-    
+
     def validate_environment(self) -> Tuple[bool, str]:
         """Validate plugin can run in current environment"""
         try:
             # Check dependencies
             import pandas
             import numpy
-            
+
             return True, None
-            
+
         except ImportError as e:
             return False, f"Missing dependency: {str(e)}"
-    
+
     def get_capabilities(self) -> Dict[str, Any]:
         """Get plugin capabilities"""
         return {
@@ -363,11 +364,11 @@ class MyPlugin(BasePlugin):
                 "webhooks": False
             }
         }
-    
+
     def on_enable(self):
         """Called when plugin is enabled"""
         frappe.logger("my_plugin").info("My Plugin enabled")
-    
+
     def on_disable(self):
         """Called when plugin is disabled"""
         frappe.logger("my_plugin").info("My Plugin disabled")
@@ -391,15 +392,15 @@ class ToolOne(BaseTool):
     """
     Example tool within an internal plugin
     """
-    
+
     def __init__(self):
         super().__init__()
         self.name = "tool_one"
         self.description = "Example tool within internal plugin"
         self.category = "My Plugin"
         self.source_app = "frappe_assistant_core"
-        
-        self.input_schema = {
+
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "action": {
@@ -414,12 +415,12 @@ class ToolOne(BaseTool):
             },
             "required": ["action"]
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the tool"""
         action = arguments.get("action")
         data = arguments.get("data", {})
-        
+
         if action == "process":
             return {"success": True, "result": f"Processed {len(data)} items"}
         elif action == "validate":
@@ -443,7 +444,7 @@ class AdvancedTool(BaseTool):
     def __init__(self):
         super().__init__()
         # ... other initialization ...
-        
+
         self.default_config = {
             "api_endpoint": "https://api.example.com",
             "timeout": 30,
@@ -451,15 +452,15 @@ class AdvancedTool(BaseTool):
             "enable_cache": True,
             "batch_size": 100
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         # Get effective configuration
         config = self.get_config()
-        
+
         # Use configuration
         api_endpoint = config.get("api_endpoint")
         timeout = config.get("timeout", 30)
-        
+
         # Tool logic using configuration...
 ```
 
@@ -470,18 +471,18 @@ class DependentTool(BaseTool):
     def __init__(self):
         super().__init__()
         # ... other initialization ...
-        
+
         self.dependencies = [
             "pandas",
-            "requests", 
+            "requests",
             "your_custom_module"
         ]
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         # Dependencies are automatically validated before execution
         import pandas as pd
         import requests
-        
+
         # Tool logic...
 ```
 
@@ -497,10 +498,10 @@ class AuditedTool(BaseTool):
         # - Sanitized arguments (sensitive data removed)
         # - Source app tracking
         # - User identification
-        
+
         # Your tool logic here
         result = self.perform_operation(arguments)
-        
+
         return {
             "success": True,
             "result": result
@@ -546,7 +547,7 @@ class TestExternalTool(unittest.TestCase):
         registry = get_tool_registry()
         tools = registry.get_tools_by_app("your_app_name")
         self.assertIn("my_custom_tool", tools)
-    
+
     def test_configuration(self):
         tool = registry.get_tool("my_custom_tool")
         config = tool.get_config()
@@ -591,31 +592,31 @@ class TestExternalTool(unittest.TestCase):
 class WellDocumentedTool(BaseTool):
     """
     Brief description of what the tool does.
-    
+
     Longer description explaining:
     - Main use cases
     - Key features
     - Integration points
-    
+
     Configuration Options:
         api_key: API key for external service
         timeout: Request timeout in seconds
         batch_size: Number of items to process at once
-    
+
     Dependencies:
         - requests: For API calls
         - pandas: For data processing
-    
+
     Examples:
         Basic usage:
         {
             "action": "process",
             "data": {"items": [1, 2, 3]}
         }
-        
+
         With options:
         {
-            "action": "process", 
+            "action": "process",
             "data": {"items": [1, 2, 3]},
             "options": {"batch_size": 50}
         }
@@ -625,6 +626,7 @@ class WellDocumentedTool(BaseTool):
 ## Quick Start Checklist
 
 ### For External App Tools:
+
 1. ✅ Create tool file in `your_app/assistant_tools/`
 2. ✅ Inherit from BaseTool
 3. ✅ Add to `assistant_tools` in hooks.py
@@ -633,6 +635,7 @@ class WellDocumentedTool(BaseTool):
 6. ✅ Run `bench migrate` to refresh cache
 
 ### For Internal Plugin Tools:
+
 1. ✅ Create plugin directory structure
 2. ✅ Implement plugin.py with BasePlugin
 3. ✅ Create individual tool files
@@ -640,6 +643,7 @@ class WellDocumentedTool(BaseTool):
 5. ✅ Test plugin and tool discovery
 
 ### For All Tools:
+
 1. ✅ Add comprehensive documentation
 2. ✅ Implement proper error handling
 3. ✅ Add unit and integration tests
@@ -649,7 +653,7 @@ class WellDocumentedTool(BaseTool):
 ## Support and Resources
 
 - **BaseTool**: `/core/base_tool.py`
-- **Tool Registry**: `/core/tool_registry.py` 
+- **Tool Registry**: `/core/tool_registry.py`
 - **Plugin Manager**: `/utils/plugin_manager.py`
 
 The architecture provides powerful capabilities while maintaining backward compatibility. Choose the external app method for maximum flexibility and the internal plugin method for core functionality integration.

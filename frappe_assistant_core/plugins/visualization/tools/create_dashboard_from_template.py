@@ -24,11 +24,11 @@ class CreateDashboardFromTemplate(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "create_dashboard_from_template"
+        self.name = "build_dashboard_from_template"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "template_name": {
@@ -71,33 +71,7 @@ class CreateDashboardFromTemplate(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create professional business dashboards using pre-built industry templates with minimal setup.
-
-🎨 **BUSINESS TEMPLATES:**
-• Sales Dashboard - Revenue, pipeline, customer metrics
-• Financial Dashboard - P&L, cash flow, budget analysis
-• Inventory Dashboard - Stock levels, movements, ABC analysis
-• HR Dashboard - Employee metrics, attendance, performance
-• Executive Dashboard - High-level KPIs and strategic metrics
-
-🔧 **TEMPLATE FEATURES:**
-• Industry Best Practices - Proven dashboard layouts
-• Smart Data Mapping - Auto-connects to your data
-• Professional Design - Corporate-ready styling
-• Mobile Optimized - Responsive across devices
-
-⚙️ **CUSTOMIZATION OPTIONS:**
-• Company Branding - Apply your colors and logos
-• Field Mapping - Connect to your specific fields
-• Date Ranges - Set default time periods
-• Currency Settings - Localize for your region
-• Additional Metrics - Add custom KPIs
-
-🚀 **INSTANT DEPLOYMENT:**
-• One-Click Setup - Dashboard ready in seconds
-• Sample Data - Preview with demo data
-• Auto-Configuration - Smart defaults for quick start
-• Validation Checks - Ensures data compatibility"""
+        return """Create professional business dashboards using pre-built industry templates (sales, financial, inventory, HR, executive). Features automatic data mapping, customizable branding, and instant deployment."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create dashboard from template"""

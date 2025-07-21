@@ -21,11 +21,11 @@ class DocumentDelete(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "document_delete"
+        self.name = "delete_document"
         self.description = "Delete an existing Frappe document. Use when users want to remove a record from the system. Always check for dependencies before deletion."
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

@@ -28,7 +28,7 @@ class CreateInteractiveWidget(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "widget_type": {
@@ -89,39 +89,7 @@ class CreateInteractiveWidget(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create dynamic interactive widgets that enhance dashboard user experience with real-time capabilities.
-
-🔄 **INTERACTIVE WIDGETS:**
-• Drill-Down Charts - Click to explore deeper levels
-• Filter Controls - Dynamic dashboard filtering
-• Dynamic Tables - Sortable, searchable data grids
-• Real-Time Metrics - Live updating KPIs
-• Alert Widgets - Threshold-based notifications
-• Action Buttons - Trigger workflows or actions
-
-⚡ **REAL-TIME FEATURES:**
-• Auto-Refresh - Automatic data updates
-• Live Monitoring - Real-time metric tracking
-• Threshold Alerts - Instant notifications
-• Status Indicators - Visual health monitoring
-
-🔗 **CROSS-WIDGET INTERACTIONS:**
-• Filter Propagation - One widget filters others
-• Selection Linking - Coordinate multiple views
-• Data Synchronization - Maintain consistency
-• Event Broadcasting - Widget-to-widget communication
-
-🎨 **CUSTOMIZATION:**
-• Flexible Sizing - Responsive widget dimensions
-• Position Control - Exact placement on dashboard
-• Theme Integration - Match dashboard styling
-• Animation Effects - Smooth transitions and updates
-
-🔍 **DRILL-DOWN CAPABILITIES:**
-• Multi-Level Exploration - Navigate data hierarchies
-• Breadcrumb Navigation - Track exploration path
-• Context Preservation - Maintain filter state
-• Quick Return - Easy navigation back to overview"""
+        return """Create interactive dashboard widgets with drill-down, real-time updates, filter controls, and cross-widget interactions."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create interactive widget"""

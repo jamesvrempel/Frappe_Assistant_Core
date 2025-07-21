@@ -1,5 +1,5 @@
 """
-Enhanced base class for all MCP tools with configuration and dependency management.
+Base class for all MCP tools with configuration and dependency management.
 """
 
 import frappe
@@ -12,12 +12,12 @@ import time
 
 class BaseTool(ABC):
     """
-    Enhanced base class for all Frappe Assistant Core tools.
+    Base class for all Frappe Assistant Core tools.
     
     Attributes:
         name: Tool identifier used in MCP protocol
         description: Human-readable description
-        input_schema: JSON schema for tool inputs
+        inputSchema: JSON schema for tool inputs
         requires_permission: DocType permission required
         category: Tool category for organization
         source_app: App that provides this tool
@@ -28,7 +28,7 @@ class BaseTool(ABC):
     def __init__(self):
         self.name: str = ""
         self.description: str = ""
-        self.input_schema: Dict[str, Any] = {}
+        self.inputSchema: Dict[str, Any] = {}
         self.requires_permission: Optional[str] = None
         self.category: str = "Custom"
         self.source_app: str = "frappe_assistant_core"
@@ -65,8 +65,8 @@ class BaseTool(ABC):
             frappe.ValidationError: If validation fails
         """
         # Implement JSON schema validation
-        required_fields = self.input_schema.get("required", [])
-        properties = self.input_schema.get("properties", {})
+        required_fields = self.inputSchema.get("required", [])
+        properties = self.inputSchema.get("properties", {})
         
         # Check required fields
         for field in required_fields:
@@ -122,7 +122,7 @@ class BaseTool(ABC):
         return {
             "name": self.name,
             "description": self.description,
-            "inputSchema": self.input_schema
+            "inputSchema": self.inputSchema
         }
     
     def _safe_execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -250,7 +250,7 @@ class BaseTool(ABC):
             "category": self.category,
             "requires_permission": self.requires_permission,
             "dependencies": self.dependencies,
-            "input_schema": self.input_schema,
+            "inputSchema": self.inputSchema,
             "default_config": self.default_config
         }
     

@@ -30,7 +30,7 @@ class DataExplorer(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {
@@ -72,58 +72,7 @@ class DataExplorer(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Analyze data sources and provide AI-powered recommendations for optimal visualizations and dashboards.
-
-🧠 **INTELLIGENT ANALYSIS:**
-
-📊 **DATA STRUCTURE ANALYSIS:**
-• Field Type Detection - Automatic categorization of data types
-• Distribution Analysis - Understanding data patterns and ranges
-• Quality Assessment - Identifying missing values and outliers
-• Cardinality Analysis - Understanding unique value counts
-• Temporal Patterns - Detecting time-based data structures
-
-🎯 **SMART RECOMMENDATIONS:**
-• Optimal Chart Types - Best visualization for each data combination
-• Dashboard Templates - Matching business scenarios to templates
-• Field Mapping - Intelligent X/Y axis and grouping suggestions
-• Time Period Selection - Optimal date ranges for analysis
-• Aggregation Methods - Best summarization approaches
-
-🔍 **PATTERN DETECTION:**
-• Trend Analysis - Identifying growth, decline, and seasonal patterns
-• Correlation Discovery - Finding relationships between variables
-• Anomaly Detection - Spotting unusual data points and outliers
-• Clustering Analysis - Grouping similar data patterns
-• Distribution Insights - Understanding data spread and skewness
-
-📈 **VISUALIZATION INTELLIGENCE:**
-• Chart Type Optimization - Matching data characteristics to chart types
-• Color Scheme Recommendations - Professional and accessible palettes
-• Layout Suggestions - Optimal arrangement for dashboard components
-• Interactive Features - Recommendations for user engagement
-• Performance Optimization - Efficient data handling suggestions
-
-🎨 **BUSINESS CONTEXT AWARENESS:**
-• Industry Best Practices - Domain-specific visualization standards
-• KPI Identification - Key metrics for business functions
-• Benchmark Analysis - Comparison opportunities and targets
-• Drill-down Opportunities - Hierarchical analysis suggestions
-• Alert Threshold Recommendations - Actionable insight triggers
-
-⚡ **AUTOMATED INSIGHTS:**
-• Statistical Summary - Key descriptive statistics
-• Data Quality Score - Overall data fitness assessment
-• Completeness Analysis - Missing data impact evaluation
-• Relationship Mapping - Connected data source identification
-• Template Matching - Best-fit dashboard template recommendations
-
-💡 **USE CASES:**
-• New dashboard planning and design
-• Data exploration and discovery sessions
-• Optimization of existing visualizations  
-• Business intelligence strategy development
-• Self-service analytics enablement"""
+        return """Analyze data sources and provide AI-powered recommendations for optimal visualizations. Performs field type detection, pattern analysis, and suggests appropriate chart types and dashboard templates based on data characteristics."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze data and suggest visualizations"""

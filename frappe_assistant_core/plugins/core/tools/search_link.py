@@ -1,178 +1,73 @@
 """
 Search Link Tool for Core Plugin.
-Searches for link field values across DocTypes.
+Search for link field options with filtering.
 """
 
 import frappe
 from frappe import _
-from typing import Dict, Any, List
+from typing import Dict, Any
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
 class SearchLink(BaseTool):
     """
-    Tool for searching link field values across DocTypes.
+    Tool for searching link field options.
     
     Provides capabilities for:
-    - Finding valid link values for Link fields
-    - Searching for references to a document
-    - Link validation
+    - Link field value search
+    - Filter-based search
+    - Permission-aware results
     """
     
     def __init__(self):
         super().__init__()
         self.name = "search_link"
-        self.description = "Search for valid link field values or find references to a document. Use when users need to find valid options for Link fields or see where a document is referenced."
+        self.description = "Search for link field options"
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
-                "target_doctype": {
+                "doctype": {
                     "type": "string",
-                    "description": "The DocType to search for link values (e.g., 'Customer', 'Item', 'User')"
+                    "description": "Target DocType for link"
                 },
-                "search_text": {
+                "query": {
                     "type": "string",
-                    "description": "Text to search for in the target DocType"
+                    "description": "Search query"
                 },
-                "reference_doctype": {
-                    "type": "string",
-                    "description": "DocType to search for references in (optional)"
-                },
-                "reference_name": {
-                    "type": "string",
-                    "description": "Document name to find references to (optional)"
-                },
-                "limit": {
-                    "type": "integer",
-                    "default": 20,
-                    "description": "Maximum number of results to return"
+                "filters": {
+                    "type": "object",
+                    "default": {},
+                    "description": "Additional filters"
                 }
             },
-            "required": ["target_doctype"]
+            "required": ["doctype", "query"]
         }
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Search for link field values or references"""
-        target_doctype = arguments.get("target_doctype")
-        search_text = arguments.get("search_text")
-        reference_doctype = arguments.get("reference_doctype")
-        reference_name = arguments.get("reference_name")
-        limit = arguments.get("limit", 20)
-        
-        # Check if target DocType exists
-        if not frappe.db.exists("DocType", target_doctype):
-            return {
-                "success": False,
-                "error": f"DocType '{target_doctype}' not found"
-            }
-        
-        # Check permission for target DocType
-        if not frappe.has_permission(target_doctype, "read"):
-            return {
-                "success": False,
-                "error": f"Insufficient permissions to search {target_doctype} documents"
-            }
-        
+        """Execute link search"""
         try:
-            results = []
+            # Import the search implementation
+            from .search_tools import SearchTools
             
-            if reference_doctype and reference_name:
-                # Find references to a specific document
-                results = self._find_references(reference_doctype, reference_name, limit)
-            else:
-                # Search for link values
-                results = self._search_link_values(target_doctype, search_text, limit)
-            
-            return {
-                "success": True,
-                "target_doctype": target_doctype,
-                "search_text": search_text,
-                "reference_doctype": reference_doctype,
-                "reference_name": reference_name,
-                "results": results,
-                "count": len(results)
-            }
+            # Execute search using existing implementation
+            return SearchTools.search_link(
+                doctype=arguments.get("doctype"),
+                query=arguments.get("query"),
+                filters=arguments.get("filters", {})
+            )
             
         except Exception as e:
             frappe.log_error(
-                title=_("Link Search Error"),
-                message=f"Error searching links: {str(e)}"
+                title=_("Search Link Error"),
+                message=f"Error searching link options: {str(e)}"
             )
             
             return {
                 "success": False,
-                "error": str(e),
-                "target_doctype": target_doctype
+                "error": str(e)
             }
-    
-    def _search_link_values(self, doctype: str, search_text: str, limit: int) -> List[Dict]:
-        """Search for valid link values in a DocType"""
-        try:
-            filters = {}
-            if search_text:
-                # Try to search in name and title fields
-                filters = {
-                    "name": ["like", f"%{search_text}%"]
-                }
-            
-            results = frappe.get_all(
-                doctype,
-                filters=filters,
-                fields=["name", "title", "creation", "modified"],
-                limit=limit,
-                order_by="modified desc"
-            )
-            
-            return results
-            
-        except Exception:
-            return []
-    
-    def _find_references(self, doctype: str, name: str, limit: int) -> List[Dict]:
-        """Find references to a specific document"""
-        try:
-            # Get all DocTypes that have Link fields pointing to this DocType
-            references = []
-            
-            # Use frappe's built-in method to find references
-            ref_docs = frappe.get_all(
-                "DocType",
-                fields=["name"],
-                filters={"istable": 0}
-            )
-            
-            for ref_doc in ref_docs[:10]:  # Limit to avoid performance issues
-                try:
-                    meta = frappe.get_meta(ref_doc.name)
-                    
-                    for field in meta.fields:
-                        if field.fieldtype == "Link" and field.options == doctype:
-                            # Search for references in this field
-                            refs = frappe.get_all(
-                                ref_doc.name,
-                                filters={field.fieldname: name},
-                                fields=["name", "creation", "modified"],
-                                limit=5
-                            )
-                            
-                            for ref in refs:
-                                references.append({
-                                    "doctype": ref_doc.name,
-                                    "name": ref.name,
-                                    "field": field.fieldname,
-                                    "creation": ref.creation,
-                                    "modified": ref.modified
-                                })
-                                
-                except Exception:
-                    continue
-            
-            return references[:limit]
-            
-        except Exception:
-            return []
 
 
 # Make sure class name matches file name for discovery

@@ -25,11 +25,11 @@ class ExecutePythonCode(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "execute_python_code"
+        self.name = "run_python_code"
         self.description = self._get_dynamic_description()
         self.requires_permission = None  # Available to all users
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "code": {
@@ -69,97 +69,17 @@ class ExecutePythonCode(BaseTool):
     
     def _get_dynamic_description(self) -> str:
         """Generate description based on current streaming settings"""
-        base_description = """Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework and extensive library ecosystem.
-
-🔐 **SECURITY:** Requires System Manager role. Executes in secure sandbox environment.
-
-⚠️ **IMPORTANT:** Do NOT use `import` statements. All libraries (frappe, pd, np, plt, sns) are pre-loaded and ready to use.
-
-📚 **AVAILABLE LIBRARIES & MODULES:**
-
-**Core Data Science (Pre-loaded):**
-• pandas (as 'pd') - DataFrames, data manipulation, analysis
-• numpy (as 'np') - Arrays, mathematical operations, linear algebra  
-• matplotlib (as 'plt') - Plotting and visualization
-• seaborn (as 'sns') - Statistical data visualization
-
-**Standard Library (Pre-loaded):**
-• datetime, time, calendar - Date/time operations
-• math, statistics, decimal, fractions - Mathematical functions
-• random - Random number generation
-• json, csv - Data serialization
-• re - Regular expressions
-• collections, itertools, functools, operator - Advanced data structures
-• uuid, hashlib, base64 - Utilities
-• copy - Object copying
-• string, textwrap - String operations
-
-**Additional Libraries (Available via imports):**
-• pydantic, typing, dataclasses - Data validation & type hints
-• scipy, sklearn - Scientific computing & machine learning
-• sympy - Symbolic mathematics
-• networkx - Graph analysis
-• requests, urllib, http - Web requests
-• openpyxl, xlsxwriter - Excel file handling
-• plotly, bokeh, altair - Interactive visualizations
-
-**Built-in Functions Available:**
-• All standard: abs, sum, len, max, min, sorted, etc.
-• Type functions: int, float, str, bool, list, dict, set, tuple
-• Introspection: locals(), globals(), vars(), dir(), type(), isinstance()
-• Conversion: chr, ord, bin, hex, oct, format
-• Functional: map, filter, enumerate, zip, reversed
-• Object: hasattr, getattr, setattr, callable
-
-**Frappe API Access:**
-• frappe.get_all(doctype, **kwargs) - Query documents
-• frappe.get_doc(doctype, name) - Get single document  
-• frappe.get_value(doctype, filters, fieldname) - Get field value
-• frappe.session.user - Current user info
-
-**Example Usage:**
-```python
-# System information (frappe is pre-loaded, no import needed)
-print("=== System Information ===")
-print(f"Current user: {frappe.session.user}")
-print(f"Site URL: {frappe.utils.get_site_url()}")
-print(f"System timezone: {frappe.utils.get_system_timezone()}")
-
-# Data analysis with pandas (pd is pre-loaded)
-data = frappe.get_all("Sales Invoice", fields=["grand_total", "posting_date"])
-df = pd.DataFrame(data)
-monthly_sales = df.groupby(pd.to_datetime(df['posting_date']).dt.month)['grand_total'].sum()
-print(f"Monthly sales data: {monthly_sales}")
-
-# Visualization with matplotlib (plt is pre-loaded)
-plt.figure(figsize=(10, 6))
-monthly_sales.plot(kind='bar')
-plt.title('Monthly Sales Analysis')
-plt.show()
-
-# Advanced analysis with numpy (np is pre-loaded)
-arr = np.array([1, 2, 3, 4, 5])
-result = np.mean(arr)
-print(f"Mean calculated: {result}")
-
-# Introspection
-print("Available variables:", list(locals().keys()))
-```
-
-🔄 **Progress Streaming Enabled**: This tool provides real-time progress updates during execution."""
+        base_description = """Execute Python code safely with data science libraries (pandas, numpy, matplotlib, seaborn) and Frappe API access. Pre-loaded libraries ready to use without imports. Requires System Manager role."""
         
         try:
             from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
-            
             streaming_manager = get_streaming_manager()
             streaming_suffix = streaming_manager.get_tool_description_suffix(self.name)
-            
             return base_description + streaming_suffix
             
         except Exception as e:
-            # Fallback to basic description if streaming manager fails
             frappe.logger("execute_python_code").warning(f"Failed to load streaming configuration: {str(e)}")
-            return base_description + "\n\n💡 **ARTIFACT STREAMING**: Consider using artifacts for complex code execution results."
+            return base_description
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute Python code safely"""

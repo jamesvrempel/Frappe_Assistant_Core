@@ -14,10 +14,9 @@ class DataSciencePlugin(BasePlugin):
     Plugin for data science and analysis capabilities.
     
     Provides tools for:
-    - Python code execution
-    - Data analysis with pandas
-    - Visualization with matplotlib/seaborn/plotly
-    - Statistical analysis
+    - Python code execution with Frappe context
+    - Statistical data analysis with pandas/numpy
+    - Business intelligence and insights
     """
     
     def get_info(self) -> Dict[str, Any]:
@@ -25,7 +24,7 @@ class DataSciencePlugin(BasePlugin):
         return {
             'name': 'data_science',
             'display_name': 'Data Science & Analytics',
-            'description': 'Python code execution, data analysis, and visualization tools',
+            'description': 'Python code execution and statistical data analysis tools',
             'version': '1.0.0',
             'author': 'Frappe Assistant Core Team',
             'dependencies': [
@@ -37,10 +36,9 @@ class DataSciencePlugin(BasePlugin):
     def get_tools(self) -> List[str]:
         """Get list of tools provided by this plugin"""
         return [
-            'execute_python_code',
-            'analyze_frappe_data',
-            'query_and_analyze',
-            'create_visualization'
+            'run_python_code',
+            'analyze_business_data',
+            'run_database_query'
         ]
     
     def validate_environment(self) -> Tuple[bool, Optional[str]]:
@@ -76,8 +74,8 @@ class DataSciencePlugin(BasePlugin):
             "experimental": {
                 "data_analysis": True,
                 "python_execution": True,
-                "visualization": True,
-                "statistical_analysis": True
+                "statistical_analysis": True,
+                "business_intelligence": True
             },
             "data_formats": {
                 "pandas": True,
@@ -85,10 +83,11 @@ class DataSciencePlugin(BasePlugin):
                 "json": True,
                 "csv": True
             },
-            "visualization_types": {
-                "matplotlib": True,
-                "seaborn": True,
-                "plotly": True
+            "analysis_types": {
+                "statistical": True,
+                "correlation": True,
+                "aggregation": True,
+                "custom_calculations": True
             }
         }
     
@@ -129,3 +128,4 @@ class DataSciencePlugin(BasePlugin):
             self.logger.debug("Matplotlib cleanup completed")
         except Exception as e:
             self.logger.warning(f"Failed to cleanup matplotlib: {str(e)}")
+    

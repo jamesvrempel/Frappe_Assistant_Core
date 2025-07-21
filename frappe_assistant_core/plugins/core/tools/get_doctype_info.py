@@ -1,0 +1,63 @@
+"""
+Get DocType Info Tool for Core Plugin.
+Get DocType metadata and field information.
+"""
+
+import frappe
+from frappe import _
+from typing import Dict, Any
+from frappe_assistant_core.core.base_tool import BaseTool
+
+
+class GetDoctypeInfo(BaseTool):
+    """
+    Tool for getting DocType metadata and field information.
+    
+    Provides capabilities for:
+    - DocType metadata retrieval
+    - Field information and structure
+    - Permission and workflow details
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "get_doctype_info"
+        self.description = "Get DocType metadata and field information"
+        self.requires_permission = None  # Permission checked dynamically per DocType
+        
+        self.inputSchema = {
+            "type": "object",
+            "properties": {
+                "doctype": {
+                    "type": "string",
+                    "description": "DocType name"
+                }
+            },
+            "required": ["doctype"]
+        }
+    
+    def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute DocType info retrieval"""
+        try:
+            # Import the metadata implementation
+            from .metadata_tools import MetadataTools
+            
+            # Execute metadata retrieval using existing implementation
+            return MetadataTools.get_doctype_metadata(
+                doctype=arguments.get("doctype")
+            )
+            
+        except Exception as e:
+            frappe.log_error(
+                title=_("Get DocType Info Error"),
+                message=f"Error getting DocType info: {str(e)}"
+            )
+            
+            return {
+                "success": False,
+                "error": str(e)
+            }
+
+
+# Make sure class name matches file name for discovery
+get_doctype_info = GetDoctypeInfo

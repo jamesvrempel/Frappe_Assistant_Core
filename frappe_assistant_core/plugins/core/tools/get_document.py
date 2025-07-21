@@ -21,11 +21,11 @@ class DocumentGet(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "document_get"
+        self.name = "get_document"
         self.description = "Retrieve detailed information about a specific Frappe document. Use when users ask for details about a particular record they know the name/ID of."
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

@@ -32,7 +32,7 @@ class SharingManager(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {
@@ -492,7 +492,7 @@ class ExportDashboard(BaseTool):
         self.description = "Export dashboards to PDF, Excel, PNG, or PowerPoint formats for sharing and reporting"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {

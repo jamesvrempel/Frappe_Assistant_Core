@@ -38,32 +38,48 @@ Welcome to the comprehensive documentation for **Frappe Assistant Core** - the o
 
 ## 🔧 Available Tools
 
-### 📄 Document Management
-- `document_create` - Create new documents
-- `document_get` - Retrieve specific documents  
-- `document_update` - Update existing documents
-- `document_list` - List and search documents
+### 📄 Core Document Management (6 tools)
+- `create_document` - Create new documents
+- `get_document` - Retrieve specific documents  
+- `update_document` - Update existing documents
+- `list_documents` - List and search documents
+- `delete_document` - Delete documents
+- `submit_document` - Submit documents for approval
 
-### 📊 Reporting & Analytics
-- `report_execute` - Execute Frappe reports
-- `report_list` - List available reports
-- `report_columns` - Get report structure
-- `analyze_frappe_data` - Statistical analysis
+### 🔍 Search & Metadata (3 tools)
+- `search_documents` - Global search across all data
+- `get_doctype_info` - DocType schemas and fields
+- `run_workflow` - Execute document workflows
 
-### 🔍 Search & Discovery
-- `search_global` - Global search across all data
-- `search_doctype` - DocType-specific searching
-- `search_link` - Link field option searching
+### 📊 Reporting & Analytics (3 tools)
+- `generate_report` - Execute Frappe reports
+- `get_report_data` - Get detailed report information
+- `analyze_business_data` - Statistical analysis
 
-### ⚙️ Metadata & Configuration
-- `metadata_doctype` - DocType schemas and fields
-- `metadata_permissions` - Permission information
-- `metadata_workflow` - Workflow and state data
+### 💻 Advanced Data Tools (2 tools)
+- `run_python_code` - Custom Python code execution (System Manager only)
+- `run_database_query` - Custom SQL with analysis (System Manager only)
 
-### 🎨 Data Analysis & Visualization
-- `execute_python_code` - Custom Python code execution
-- `create_visualization` - Chart and graph generation
-- `query_and_analyze` - Custom SQL with analysis
+### 🎨 Visualization - Always Available (3 tools)
+- `create_chart` - Create individual charts
+- `create_kpi_card` - Create KPI cards with trends
+- `recommend_charts` - AI-powered chart suggestions
+
+### 📊 Dashboard Tools - Insights App Required (6 tools)
+- `create_dashboard` - Build comprehensive dashboards
+- `show_my_dashboards` - List user's dashboards
+- `copy_dashboard` - Clone existing dashboards
+- `build_dashboard_from_template` - Use business templates
+- `show_dashboard_templates` - Browse available templates
+- `share_dashboard` - Share dashboards with users
+
+**Additional Dashboard Features:**
+- `export_dashboard` - Export dashboards to PDF/Excel
+- `create_interactive_widget` - Build interactive components
+- `link_dashboard_widgets` - Connect widget interactions
+- `migrate_old_charts` - Migrate legacy visualizations
+
+**Note**: Dashboard tools require the Insights app to be installed. Without Insights, only basic chart tools are available.
 
 ## 🌟 Recent Major Improvements
 

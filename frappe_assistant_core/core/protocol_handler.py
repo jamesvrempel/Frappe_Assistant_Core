@@ -267,7 +267,7 @@ class MCPProtocolHandler:
         mcp_tool = {
             "name": tool.name,
             "description": tool.description,
-            "inputSchema": tool.input_schema
+            "inputSchema": tool.inputSchema
         }
         
         # Add optional metadata

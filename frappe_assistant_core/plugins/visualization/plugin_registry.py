@@ -39,34 +39,40 @@ class VisualizationPlugin(BasePlugin):
     
     def get_tools(self) -> List[str]:
         """Get list of tools provided by this plugin"""
-        return [
-            # Core dashboard management
-            'create_insights_dashboard',
-            'list_user_dashboards',
-            'clone_dashboard',
-            
-            # Template-based dashboard creation
-            'create_dashboard_from_template',
-            'list_dashboard_templates',
-            
-            # Individual chart creation
+        tools = [
+            # Individual chart creation (always available)
             'create_chart',
             'create_kpi_card',
             
-            # AI-powered data exploration
-            'suggest_visualizations',
-            
-            # Sharing and collaboration
-            'share_dashboard',
-            'export_dashboard',
-            
-            # Interactive components
-            'create_interactive_widget',
-            'manage_widget_interactions',
-            
-            # Migration and compatibility
-            'migrate_visualization'  # Tool to migrate from old system
+            # AI-powered data exploration (always available)
+            'recommend_charts',
         ]
+        
+        # Add Insights-specific tools only if Insights app is installed
+        if self._is_insights_installed():
+            tools.extend([
+                # Core dashboard management (Insights required)
+                'create_dashboard',
+                'show_my_dashboards',
+                'copy_dashboard',
+                
+                # Template-based dashboard creation (Insights required)
+                'build_dashboard_from_template',
+                'show_dashboard_templates',
+                
+                # Sharing and collaboration (Insights required)
+                'share_dashboard',
+                'export_dashboard',
+                
+                # Interactive components (Insights required)
+                'create_interactive_widget',
+                'link_dashboard_widgets',
+                
+                # Migration and compatibility (Insights required)
+                'migrate_old_charts'
+            ])
+        
+        return tools
     
     def validate_environment(self) -> Tuple[bool, Optional[str]]:
         """Validate that required dependencies are available"""
@@ -352,6 +358,16 @@ class VisualizationPlugin(BasePlugin):
                 }
             }
         ]
+    
+    def _is_insights_installed(self) -> bool:
+        """Check if Insights app is installed"""
+        try:
+            installed_apps = frappe.get_installed_apps()
+            return "insights" in installed_apps
+        except Exception as e:
+            self.logger.warning(f"Failed to check Insights installation: {str(e)}")
+            return False
+    
 
 
 class MigrationTool(BasePlugin):
@@ -363,7 +379,7 @@ class MigrationTool(BasePlugin):
         self.description = "Migrate from old create_visualization tool to new dashboard system"
         self.requires_permission = "System Manager"
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "migration_type": {

@@ -30,7 +30,7 @@ class DashboardManager(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically per DocType
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "dashboard_name": {
@@ -494,7 +494,7 @@ class ListUserDashboards(BaseTool):
         self.description = "List all dashboards accessible to the current user with filtering options"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "user": {
@@ -588,7 +588,7 @@ class CloneDashboard(BaseTool):
         self.description = "Duplicate an existing dashboard with optional modifications"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "source_dashboard": {

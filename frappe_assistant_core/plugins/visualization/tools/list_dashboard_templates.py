@@ -24,11 +24,11 @@ class ListDashboardTemplates(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "list_dashboard_templates"
+        self.name = "show_dashboard_templates"
         self.description = self._get_description()
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "category_filter": {

@@ -30,7 +30,7 @@ class ChartCreator(BaseTool):
         self.description = self._get_description()
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {
@@ -483,7 +483,7 @@ class CreateKPICard(BaseTool):
         self.description = "Create KPI metric cards with current values, trends, and target comparisons"
         self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {

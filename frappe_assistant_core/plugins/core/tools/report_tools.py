@@ -13,7 +13,7 @@ class ReportTools:
         """Return list of report-related assistant tools"""
         return [
             {
-                "name": "report_execute",
+                "name": "generate_report",
                 "description": "Execute a Frappe report to get business data and analytics. Use this for financial reports, sales analysis, inventory reports, etc. Always check available reports first using report_list if unsure of report names.",
                 "inputSchema": {
                     "type": "object",
@@ -74,7 +74,7 @@ class ReportTools:
     @staticmethod
     def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a report tool with given arguments"""
-        if tool_name == "report_execute":
+        if tool_name == "generate_report":
             return ReportTools.execute_report(**arguments)
         elif tool_name == "report_list":
             return ReportTools.list_reports(**arguments)

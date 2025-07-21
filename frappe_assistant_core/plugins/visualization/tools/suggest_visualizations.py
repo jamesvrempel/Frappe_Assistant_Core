@@ -24,11 +24,11 @@ class SuggestVisualizations(BaseTool):
     
     def __init__(self):
         super().__init__()
-        self.name = "suggest_visualizations"
+        self.name = "recommend_charts"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "doctype": {
@@ -71,32 +71,7 @@ class SuggestVisualizations(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """AI-powered visualization recommendations based on intelligent data analysis and user intent.
-
-🤖 **INTELLIGENT ANALYSIS:**
-• Data Pattern Recognition - Identifies trends, correlations, distributions
-• Field Type Detection - Numeric, categorical, temporal analysis
-• Statistical Profiling - Distribution analysis, outlier detection
-• Relationship Mapping - Cross-field correlation analysis
-
-📊 **SMART SUGGESTIONS:**
-• Chart Type Matching - Best visualization for data characteristics
-• User Intent Alignment - Recommendations based on stated goals
-• Best Practice Guidance - Industry-standard visualization choices
-• Complexity Scoring - Simple to advanced visualization options
-
-📈 **RECOMMENDATION TYPES:**
-• Trend Analysis - Time series and progression charts
-• Comparison Charts - Category and value comparisons
-• Distribution Plots - Data spread and frequency analysis
-• Correlation Views - Relationship and pattern visualization
-• Composition Charts - Part-to-whole relationships
-
-💡 **INTELLIGENT REASONING:**
-• Suggestion Explanations - Why each chart type is recommended
-• Data Suitability - How well data fits visualization type
-• Alternative Options - Multiple approaches for same goal
-• Implementation Tips - Best practices for chart creation"""
+        return """Generate AI-powered visualization recommendations by analyzing data patterns and user intent. Suggests optimal chart types with reasoning based on field types, data characteristics, and visualization best practices."""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Generate visualization suggestions"""
