@@ -178,9 +178,26 @@ class CreateVisualization(BaseTool):
             import pandas as pd
             import matplotlib.pyplot as plt
             import seaborn as sns
+            import json
+            
+            # Clean data before creating DataFrame
+            cleaned_data = []
+            for row in data:
+                clean_row = {}
+                for key, value in row.items():
+                    # Convert complex objects to strings
+                    if hasattr(value, '__dict__') or hasattr(value, '__array_struct__'):
+                        clean_row[key] = str(value)
+                    elif isinstance(value, (list, dict)):
+                        clean_row[key] = json.dumps(value) if value else ""
+                    elif value is None:
+                        clean_row[key] = ""
+                    else:
+                        clean_row[key] = value
+                cleaned_data.append(clean_row)
             
             # Convert to DataFrame
-            df = pd.DataFrame(data)
+            df = pd.DataFrame(cleaned_data)
             
             if df.empty:
                 return {"data": "", "display_hint": "No data to visualize"}

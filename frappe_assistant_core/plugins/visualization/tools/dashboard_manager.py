@@ -278,18 +278,30 @@ class DashboardManager(BaseTool):
                 "doctype": "Dashboard",
                 "dashboard_name": dashboard_name,
                 "module": "Custom",
-                "is_standard": 0
+                "is_standard": 0,
+                "charts": []  # Required field
             })
             dashboard_doc.insert()
             
             # Create dashboard charts
             created_charts = []
+            chart_docs = []
             for i, chart_config in enumerate(chart_configs):
                 chart_result = self._create_frappe_chart(
                     dashboard_doc.name, doctype, chart_config, filters, i
                 )
                 if chart_result["success"]:
                     created_charts.append(chart_result["chart_name"])
+                    chart_docs.append({
+                        "chart": chart_result["chart_id"],
+                        "width": "Half",
+                        "height": 300
+                    })
+            
+            # Update dashboard with chart references
+            if chart_docs:
+                dashboard_doc.charts = chart_docs
+                dashboard_doc.save()
             
             # Setup permissions
             self._setup_frappe_dashboard_permissions(dashboard_doc.name, share_with)

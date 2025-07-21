@@ -73,9 +73,21 @@ class CloneDashboard(BaseTool):
             # Import the actual dashboard manager
             from ..tools.dashboard_manager import CloneDashboard as CloneDashboardImpl
             
+            # Map parameters to match CloneDashboard expectations
+            clone_args = arguments.copy()
+            
+            # Map parameter names
+            if "source_dashboard_name" in clone_args:
+                clone_args["source_dashboard"] = clone_args["source_dashboard_name"]
+                del clone_args["source_dashboard_name"]
+            
+            if "new_dashboard_name" in clone_args:
+                clone_args["new_name"] = clone_args["new_dashboard_name"]
+                del clone_args["new_dashboard_name"]
+            
             # Create dashboard cloner and execute
             dashboard_cloner = CloneDashboardImpl()
-            return dashboard_cloner.execute(arguments)
+            return dashboard_cloner.execute(clone_args)
             
         except Exception as e:
             frappe.log_error(

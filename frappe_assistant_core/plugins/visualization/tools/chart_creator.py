@@ -448,6 +448,9 @@ class ChartCreator(BaseTool):
                 "chart_config": {
                     "chart_type": mapped_chart_type,
                     "title": title,
+                    "x_column": x_field,
+                    "y_column": y_field,
+                    "aggregation": aggregate,
                     **chart_options
                 },
                 "output_format": "base64" if export_format == "png" else export_format

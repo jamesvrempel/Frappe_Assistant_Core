@@ -117,9 +117,21 @@ class ManageWidgetInteractions(BaseTool):
             # Import the actual widget interaction manager
             from ..tools.interactive_widgets import ManageWidgetInteractions as ManageInteractionsImpl
             
+            # Map parameters to match expected structure
+            interaction_args = {
+                "dashboard_name": arguments.get("dashboard_name"),
+                "interaction_config": {
+                    "source_widget": arguments.get("source_widget"),
+                    "target_widgets": arguments.get("target_widgets", []),
+                    "interaction_type": arguments.get("interaction_type"),
+                    "trigger_event": arguments.get("interaction_rules", {}).get("trigger_events", ["click"])[0] if arguments.get("interaction_rules", {}).get("trigger_events") else "click",
+                    "data_mapping": arguments.get("interaction_rules", {}).get("filter_mapping", {})
+                }
+            }
+            
             # Create interaction manager and execute
             interaction_manager = ManageInteractionsImpl()
-            return interaction_manager.execute(arguments)
+            return interaction_manager.execute(interaction_args)
             
         except Exception as e:
             frappe.log_error(
