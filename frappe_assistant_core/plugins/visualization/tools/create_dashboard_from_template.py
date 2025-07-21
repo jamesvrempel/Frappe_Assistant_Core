@@ -79,9 +79,22 @@ class CreateDashboardFromTemplate(BaseTool):
             # Import the actual template builder
             from ..tools.template_builder import TemplateBuilder
             
+            # Map parameters to match TemplateBuilder expectations
+            template_builder_args = arguments.copy()
+            
+            # Map template_name to template_type
+            if "template_name" in template_builder_args:
+                template_builder_args["template_type"] = template_builder_args["template_name"]
+                del template_builder_args["template_name"]
+            
+            # Map primary_doctype to doctype_override
+            if "primary_doctype" in template_builder_args:
+                template_builder_args["doctype_override"] = template_builder_args["primary_doctype"]
+                del template_builder_args["primary_doctype"]
+            
             # Create template builder and execute
             template_builder = TemplateBuilder()
-            return template_builder.execute(arguments)
+            return template_builder.execute(template_builder_args)
             
         except Exception as e:
             frappe.log_error(

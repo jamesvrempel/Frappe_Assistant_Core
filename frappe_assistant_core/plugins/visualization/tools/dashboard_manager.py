@@ -217,12 +217,23 @@ class DashboardManager(BaseTool):
             
             # Create individual charts
             created_charts = []
+            chart_docs = []
             for chart_config in chart_configs:
                 chart_result = self._create_insights_chart(
                     dashboard_doc.name, doctype, chart_config, filters
                 )
                 if chart_result["success"]:
                     created_charts.append(chart_result["chart_name"])
+                    chart_docs.append({
+                        "chart": chart_result["chart_id"],
+                        "width": "Half",
+                        "height": 300
+                    })
+            
+            # Update dashboard with chart references
+            if chart_docs:
+                dashboard_doc.charts = chart_docs
+                dashboard_doc.save()
             
             # Setup sharing
             sharing_info = self._setup_dashboard_sharing(dashboard_doc.name, share_with)
@@ -326,6 +337,7 @@ class DashboardManager(BaseTool):
             "dashboard_name": dashboard_name,
             "module": "Insights",
             "is_standard": 0,
+            "charts": [],  # Required field - will be populated with actual charts later
             "dashboard_settings": json.dumps({
                 "auto_refresh": auto_refresh,
                 "refresh_interval": refresh_interval,

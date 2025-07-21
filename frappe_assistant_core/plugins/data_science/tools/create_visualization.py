@@ -285,6 +285,8 @@ class CreateVisualization(BaseTool):
     def _create_bar_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
         """Create bar chart"""
         import matplotlib.pyplot as plt
+        import pandas as pd
+        import numpy as np
         
         x_col = config.get("x_column") or df.columns[0]
         y_col = config.get("y_column") or df.columns[1] if len(df.columns) > 1 else df.columns[0]
@@ -298,10 +300,26 @@ class CreateVisualization(BaseTool):
         else:
             df_grouped = df
         
-        plt.bar(df_grouped[x_col], df_grouped[y_col])
-        plt.xlabel(x_col)
-        plt.ylabel(y_col)
-        plt.xticks(rotation=45)
+        # Convert data to safe types for plotting
+        try:
+            x_data = df_grouped[x_col].astype(str) if df_grouped[x_col].dtype == 'object' else df_grouped[x_col]
+            y_data = pd.to_numeric(df_grouped[y_col], errors='coerce').fillna(0)
+            
+            # Handle any remaining NaN or inf values
+            y_data = np.where(np.isfinite(y_data), y_data, 0)
+            
+            plt.bar(x_data, y_data)
+            plt.xlabel(x_col)
+            plt.ylabel(y_col)
+            plt.xticks(rotation=45)
+            
+        except Exception as e:
+            # Fallback: simple value counts if data conversion fails
+            value_counts = df_grouped[x_col].value_counts()
+            plt.bar(range(len(value_counts)), value_counts.values)
+            plt.xticks(range(len(value_counts)), value_counts.index, rotation=45)
+            plt.xlabel(x_col)
+            plt.ylabel("Count")
         
         return {"success": True}
     
@@ -322,13 +340,28 @@ class CreateVisualization(BaseTool):
     def _create_pie_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
         """Create pie chart"""
         import matplotlib.pyplot as plt
+        import pandas as pd
+        import numpy as np
         
         x_col = config.get("x_column") or df.columns[0]
         
         # Count occurrences
         value_counts = df[x_col].value_counts()
         
-        plt.pie(value_counts.values, labels=value_counts.index, autopct='%1.1f%%')
+        # Convert to safe types
+        labels = [str(label) for label in value_counts.index]
+        values = np.array(value_counts.values, dtype=float)
+        
+        # Filter out any zero or negative values
+        mask = values > 0
+        labels = [labels[i] for i in range(len(labels)) if mask[i]]
+        values = values[mask]
+        
+        if len(values) > 0:
+            plt.pie(values, labels=labels, autopct='%1.1f%%', startangle=90)
+        else:
+            # Empty pie chart fallback
+            plt.text(0.5, 0.5, 'No data to display', ha='center', va='center')
         
         return {"success": True}
     
