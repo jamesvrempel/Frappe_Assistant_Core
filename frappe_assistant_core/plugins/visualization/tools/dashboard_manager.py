@@ -542,14 +542,14 @@ class ListUserDashboards(BaseTool):
                 shared_docs = frappe.get_all("DocShare",
                     filters={
                         "user": user,
-                        "ref_doctype": "Dashboard",
+                        "share_doctype": "Dashboard",
                         "read": 1
                     },
-                    fields=["ref_docname"]
+                    fields=["share_name"]
                 )
                 
                 for shared_doc in shared_docs:
-                    dashboard = frappe.get_doc("Dashboard", shared_doc.ref_docname)
+                    dashboard = frappe.get_doc("Dashboard", shared_doc.share_name)
                     dashboards.append({
                         "name": dashboard.name,
                         "dashboard_name": dashboard.dashboard_name,

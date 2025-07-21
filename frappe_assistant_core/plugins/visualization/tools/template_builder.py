@@ -413,6 +413,66 @@ class TemplateBuilder(BaseTool):
             features.append("Export Capabilities")
         
         return features
+    
+    def list_available_templates(self, category_filter: str = "all", include_preview: bool = True, 
+                                check_compatibility: bool = True, sort_by: str = "popularity") -> List[Dict[str, Any]]:
+        """List all available dashboard templates"""
+        try:
+            templates = []
+            template_types = ["sales", "financial", "inventory", "hr", "executive"]
+            
+            if category_filter != "all":
+                template_types = [category_filter] if category_filter in template_types else []
+            
+            for template_type in template_types:
+                template_config = self._load_template(template_type)
+                
+                if template_config:
+                    template_info = {
+                        "template_type": template_type,
+                        "name": template_config["name"],
+                        "description": template_config["description"],
+                        "category": template_config.get("category", template_type.title()),
+                        "primary_doctype": template_config.get("doctype"),
+                        "chart_count": len(template_config.get("charts", [])),
+                        "tags": template_config.get("tags", []),
+                        "features": self._get_template_features(template_config)
+                    }
+                    
+                    if include_preview:
+                        template_info["preview_data"] = {
+                            "charts": [
+                                {
+                                    "title": chart.get("title"),
+                                    "type": chart.get("chart_type"),
+                                    "description": chart.get("description", "")
+                                }
+                                for chart in template_config.get("charts", [])[:3]  # First 3 charts
+                            ]
+                        }
+                    
+                    if check_compatibility:
+                        # Check if required doctypes exist
+                        doctype = template_config.get("doctype")
+                        if doctype and frappe.db.exists("DocType", doctype):
+                            template_info["compatibility_status"] = "compatible"
+                        else:
+                            template_info["compatibility_status"] = "incompatible"
+                            template_info["compatibility_note"] = f"Required DocType '{doctype}' not found"
+                    
+                    templates.append(template_info)
+            
+            # Sort templates
+            if sort_by == "popularity":
+                templates.sort(key=lambda x: x["chart_count"], reverse=True)
+            elif sort_by == "name":
+                templates.sort(key=lambda x: x["name"])
+            
+            return templates
+            
+        except Exception as e:
+            frappe.logger("template_builder").error(f"Failed to list templates: {str(e)}")
+            return []
 
 
 class ListDashboardTemplates(BaseTool):

@@ -107,7 +107,7 @@
    "fieldname": "plugin_status_html",
    "fieldtype": "HTML",
    "label": "Plugin Status",
-   "options": "<div id='plugin-status-container'>Loading plugin information...</div>"
+   "options": "<div id=\"plugin-status-container\">Loading plugin information...</div>"
   },
   {
    "collapsible": 1,
