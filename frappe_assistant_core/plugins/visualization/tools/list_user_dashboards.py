@@ -1,89 +1,111 @@
 """
-List User Dashboards Tool - Display available dashboards for user
+List User Dashboards Tool - List all dashboards accessible to current user
 
-Provides comprehensive listing of user's dashboards with filtering and
-search capabilities across Insights and Frappe Dashboard systems.
+List all dashboards accessible to the current user with filtering options.
 """
 
 import frappe
 from frappe import _
-from typing import Dict, Any
+from typing import Dict, Any, List
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
 class ListUserDashboards(BaseTool):
-    """
-    Tool for listing user's dashboards with search and filtering.
-    
-    Provides capabilities for:
-    - Listing dashboards from Insights app and Frappe Dashboard
-    - Search and filtering options
-    - Dashboard metadata and sharing info
-    - Quick access actions
-    """
+    """List all dashboards accessible to current user"""
     
     def __init__(self):
         super().__init__()
-        self.name = "show_my_dashboards"
-        self.description = self._get_description()
-        self.requires_permission = None  # Permission checked dynamically
+        self.name = "list_user_dashboards"
+        self.description = "List all dashboards accessible to the current user with filtering options"
+        self.requires_permission = None
         
         self.inputSchema = {
             "type": "object",
             "properties": {
-                "search_term": {
+                "user": {
                     "type": "string",
-                    "description": "Search term to filter dashboards by name"
+                    "description": "Specific user to list dashboards for (defaults to current user)"
                 },
-                "filter_by_owner": {
-                    "type": "boolean",
-                    "default": False,
-                    "description": "Show only dashboards owned by current user"
+                "dashboard_type": {
+                    "type": "string",
+                    "enum": ["insights", "frappe_dashboard", "all"],
+                    "default": "all",
+                    "description": "Type of dashboards to list"
                 },
                 "include_shared": {
                     "type": "boolean",
                     "default": True,
                     "description": "Include dashboards shared with user"
-                },
-                "dashboard_type": {
-                    "type": "string",
-                    "enum": ["all", "insights", "frappe_dashboard"],
-                    "default": "all",
-                    "description": "Type of dashboards to list"
-                },
-                "limit": {
-                    "type": "integer",
-                    "default": 20,
-                    "description": "Maximum number of dashboards to return"
                 }
             }
         }
     
-    def _get_description(self) -> str:
-        """Get tool description"""
-        return """List and search user's available dashboards with filtering by owner, type, and access level. Shows creation dates, chart counts, sharing status, and provides quick actions."""
-    
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """List user dashboards"""
+        """List accessible dashboards"""
         try:
-            # Import the actual dashboard manager
-            from ..tools.dashboard_manager import ListUserDashboards as ListDashboardsImpl
+            user = arguments.get("user", frappe.session.user)
+            dashboard_type = arguments.get("dashboard_type", "all")
+            include_shared = arguments.get("include_shared", True)
             
-            # Create dashboard lister and execute
-            dashboard_lister = ListDashboardsImpl()
-            return dashboard_lister.execute(arguments)
+            dashboards = []
             
-        except Exception as e:
-            frappe.log_error(
-                title=_("Dashboard Listing Error"),
-                message=f"Error listing dashboards: {str(e)}"
+            # Get user's own dashboards
+            own_dashboards = frappe.get_all("Dashboard",
+                filters={"owner": user},
+                fields=["name", "dashboard_name", "creation", "modified", "module"]
             )
             
+            for dashboard in own_dashboards:
+                dashboards.append({
+                    **dashboard,
+                    "access_type": "owner",
+                    "dashboard_type": "insights" if dashboard.module == "Insights" else "frappe_dashboard"
+                })
+            
+            # Get shared dashboards if requested
+            if include_shared:
+                shared_docs = frappe.get_all("DocShare",
+                    filters={
+                        "share_name": user,
+                        "share_doctype": "Dashboard",
+                        "read": 1
+                    },
+                    fields=["share_name", "everyone"]
+                )
+                
+                for shared in shared_docs:
+                    try:
+                        dashboard_doc = frappe.get_doc("Dashboard", shared.share_name)
+                        dashboards.append({
+                            "name": dashboard_doc.name,
+                            "dashboard_name": dashboard_doc.dashboard_name,
+                            "creation": dashboard_doc.creation,
+                            "modified": dashboard_doc.modified,
+                            "module": dashboard_doc.module,
+                            "access_type": "shared",
+                            "dashboard_type": "insights" if dashboard_doc.module == "Insights" else "frappe_dashboard"
+                        })
+                    except Exception:
+                        continue  # Skip if dashboard doesn't exist or no access
+            
+            # Filter by dashboard type if specified
+            if dashboard_type != "all":
+                dashboards = [d for d in dashboards if d["dashboard_type"] == dashboard_type]
+            
+            # Sort by modification date (newest first)
+            dashboards.sort(key=lambda x: x["modified"], reverse=True)
+            
+            return {
+                "success": True,
+                "dashboards": dashboards,
+                "total_count": len(dashboards),
+                "user": user,
+                "dashboard_type_filter": dashboard_type,
+                "includes_shared": include_shared
+            }
+            
+        except Exception as e:
             return {
                 "success": False,
                 "error": str(e)
             }
-
-
-# Make sure class name matches file name for discovery
-list_user_dashboards = ListUserDashboards

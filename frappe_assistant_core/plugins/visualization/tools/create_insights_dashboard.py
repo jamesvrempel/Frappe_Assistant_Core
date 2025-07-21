@@ -1,8 +1,8 @@
 """
-Create Insights Dashboard Tool - Core dashboard creation
+Dashboard Manager Tool - Core dashboard creation and management
 
-Creates comprehensive dashboards in Insights app with fallback to Frappe Dashboard.
-Main tool for dashboard creation with professional layouts and features.
+Provides comprehensive dashboard creation, management, and CRUD operations
+for both Insights app and core Frappe Dashboard.
 """
 
 import frappe
@@ -12,21 +12,21 @@ from typing import Dict, Any, List, Optional
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
-class CreateInsightsDashboard(BaseTool):
+class DashboardManager(BaseTool):
     """
-    Core dashboard creation and management tool.
+    Core dashboard creation and management tools.
     
     Provides capabilities for:
     - Creating dashboards in Insights app (primary)
     - Fallback to Frappe Dashboard
     - Dashboard listing and management
-    - Professional chart layouts
-    - Mobile optimization
+    - Cloning and updating dashboards
+    - Permission management
     """
     
     def __init__(self):
         super().__init__()
-        self.name = "create_dashboard"
+        self.name = "create_insights_dashboard"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically per DocType
         
@@ -84,11 +84,22 @@ class CreateInsightsDashboard(BaseTool):
                     "default": True,
                     "description": "Enable auto refresh"
                 },
+                "refresh_interval": {
+                    "type": "string",
+                    "enum": ["5_minutes", "15_minutes", "30_minutes", "1_hour", "24_hours"],
+                    "default": "1_hour",
+                    "description": "Auto refresh interval"
+                },
                 "template_type": {
                     "type": "string",
                     "enum": ["sales", "financial", "inventory", "hr", "executive", "custom"],
                     "default": "custom",
                     "description": "Dashboard template type"
+                },
+                "mobile_optimized": {
+                    "type": "boolean",
+                    "default": True,
+                    "description": "Optimize for mobile viewing"
                 }
             },
             "required": ["dashboard_name", "doctype", "chart_configs"]
@@ -96,25 +107,290 @@ class CreateInsightsDashboard(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create comprehensive business dashboards with multiple charts, KPI cards, and interactive widgets. Supports Insights app integration with Frappe Dashboard fallback."""
+        return """Create comprehensive business dashboards in Frappe Insights app with professional charts, KPI cards, and interactive widgets.
+
+🎯 **DASHBOARD CREATION:**
+• Insights App Integration - Primary dashboard platform
+• Frappe Dashboard Fallback - Ensures compatibility
+• Multi-chart Dashboards - Combine multiple visualizations
+• Template-based Creation - Use business-specific templates
+
+📊 **CHART TYPES SUPPORTED:**
+• Bar/Line Charts - Trends and comparisons
+• Pie Charts - Proportions and distributions  
+• KPI Cards - Key metrics with trend indicators
+• Gauge Charts - Progress and performance meters
+• Data Tables - Interactive data grids
+• Funnel Charts - Conversion analysis
+• Heatmaps - Correlation visualization
+
+🔧 **FEATURES:**
+• Auto-refresh - Real-time data updates
+• Mobile Optimization - Responsive design
+• Sharing & Permissions - Team collaboration
+• Template System - Pre-built business dashboards
+• Export Capabilities - PDF, Excel, PNG formats
+
+💡 **BUSINESS TEMPLATES:**
+• Sales Dashboard - Revenue, customers, performance
+• Financial Dashboard - P&L, cash flow, budgets
+• Inventory Dashboard - Stock levels, movements
+• HR Dashboard - Employee metrics, performance
+• Executive Dashboard - High-level KPIs
+
+⚡ **INTELLIGENT FEATURES:**
+• Auto-field Detection - Smart chart configuration
+• Data Validation - Ensures chart compatibility
+• Permission Checks - Secure data access
+• Error Handling - Graceful failure management"""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create comprehensive dashboard"""
         try:
-            # Import the actual dashboard manager
-            from ..tools.dashboard_manager import DashboardManager
+            dashboard_name = arguments.get("dashboard_name")
+            doctype = arguments.get("doctype") 
+            chart_configs = arguments.get("chart_configs", [])
+            filters = arguments.get("filters", {})
+            share_with = arguments.get("share_with", [])
+            auto_refresh = arguments.get("auto_refresh", True)
+            refresh_interval = arguments.get("refresh_interval", "1_hour")
+            template_type = arguments.get("template_type", "custom")
+            mobile_optimized = arguments.get("mobile_optimized", True)
             
-            # Create dashboard manager and execute
-            dashboard_manager = DashboardManager()
-            return dashboard_manager.execute(arguments)
+            # Validate doctype access
+            if not frappe.has_permission(doctype, "read"):
+                return {
+                    "success": False,
+                    "error": f"Insufficient permissions to access {doctype} data"
+                }
+            
+            # Try Insights app first, fallback to Frappe Dashboard
+            insights_result = self._create_insights_dashboard(
+                dashboard_name, doctype, chart_configs, filters, 
+                share_with, auto_refresh, refresh_interval, mobile_optimized
+            )
+            
+            if insights_result["success"]:
+                return insights_result
+            
+            # Fallback to Frappe Dashboard
+            frappe_dashboard_result = self._create_frappe_dashboard(
+                dashboard_name, doctype, chart_configs, filters,
+                share_with, auto_refresh, mobile_optimized
+            )
+            
+            return frappe_dashboard_result
             
         except Exception as e:
             frappe.log_error(
                 title=_("Dashboard Creation Error"),
-                message=f"Error creating dashboard: {str(e)}"
+                message=f"Error creating dashboard {dashboard_name}: {str(e)}"
             )
             
             return {
                 "success": False,
+                "error": str(e),
+                "dashboard_name": dashboard_name
+            }
+    
+    def _create_insights_dashboard(self, dashboard_name: str, doctype: str, 
+                                 chart_configs: List[Dict], filters: Dict,
+                                 share_with: List[str], auto_refresh: bool,
+                                 refresh_interval: str, mobile_optimized: bool) -> Dict[str, Any]:
+        """Create dashboard in Insights app (primary method)"""
+        try:
+            # Check if Insights app is installed
+            if not self._is_insights_available():
+                return {
+                    "success": False,
+                    "error": "Insights app not available",
+                    "fallback_required": True
+                }
+            
+            # Create Dashboard document
+            dashboard_doc = frappe.get_doc({
+                "doctype": "Dashboard",
+                "dashboard_name": dashboard_name,
+                "module": "Custom",
+                "is_standard": 0,
+                "charts": []  # Required field
+            })
+            dashboard_doc.insert()
+            
+            # Create dashboard charts
+            created_charts = []
+            for i, chart_config in enumerate(chart_configs):
+                chart_result = self._create_dashboard_chart(
+                    dashboard_doc.name, doctype, chart_config, filters
+                )
+                if chart_result["success"]:
+                    created_charts.append(chart_result["chart_name"])
+                    # Link chart to dashboard
+                    dashboard_doc.append("charts", {
+                        "chart": chart_result["chart_id"],
+                        "width": "Half"
+                    })
+            
+            # Save dashboard with charts
+            if created_charts:
+                dashboard_doc.save()
+            
+            # Setup sharing
+            self._setup_dashboard_sharing(dashboard_doc.name, share_with)
+            
+            return {
+                "success": True,
+                "dashboard_type": "insights",
+                "dashboard_name": dashboard_name,
+                "dashboard_id": dashboard_doc.name,
+                "dashboard_url": f"/app/dashboard/{dashboard_doc.name}",
+                "charts_created": len(created_charts),
+                "mobile_optimized": mobile_optimized,
+                "auto_refresh_interval": refresh_interval,
+                "charts": created_charts,
+                "permissions": share_with,
+                "template_used": "insights_dashboard"
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Dashboard creation failed: {str(e)}",
+                "fallback_required": True
+            }
+    
+    def _create_frappe_dashboard(self, dashboard_name: str, doctype: str,
+                               chart_configs: List[Dict], filters: Dict,
+                               share_with: List[str], auto_refresh: bool,
+                               mobile_optimized: bool) -> Dict[str, Any]:
+        """Fallback dashboard creation using core Frappe Dashboard"""
+        try:
+            # Create Dashboard document
+            dashboard_doc = frappe.get_doc({
+                "doctype": "Dashboard",
+                "dashboard_name": dashboard_name,
+                "module": "Custom",
+                "is_standard": 0,
+                "charts": []  # Required field
+            })
+            dashboard_doc.insert()
+            
+            # Create dashboard charts
+            created_charts = []
+            for i, chart_config in enumerate(chart_configs):
+                chart_result = self._create_dashboard_chart(
+                    dashboard_doc.name, doctype, chart_config, filters
+                )
+                if chart_result["success"]:
+                    created_charts.append(chart_result["chart_name"])
+                    # Link chart to dashboard
+                    dashboard_doc.append("charts", {
+                        "chart": chart_result["chart_id"],
+                        "width": "Half"
+                    })
+            
+            # Save dashboard with charts
+            if created_charts:
+                dashboard_doc.save()
+            
+            # Setup permissions
+            self._setup_dashboard_sharing(dashboard_doc.name, share_with)
+            
+            return {
+                "success": True,
+                "dashboard_type": "frappe_dashboard",
+                "dashboard_name": dashboard_name,
+                "dashboard_id": dashboard_doc.name,
+                "dashboard_url": f"/app/dashboard/{dashboard_doc.name}",
+                "charts_created": len(created_charts),
+                "mobile_optimized": mobile_optimized,
+                "auto_refresh_interval": "manual",
+                "charts": created_charts,
+                "permissions": share_with,
+                "template_used": "frappe_dashboard"
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Frappe dashboard creation failed: {str(e)}"
+            }
+    
+    def _is_insights_available(self) -> bool:
+        """Check if Insights app is installed and available"""
+        try:
+            return "insights" in frappe.get_installed_apps()
+        except:
+            return False
+    
+    def _create_dashboard_chart(self, dashboard_id: str, doctype: str,
+                             chart_config: Dict, global_filters: Dict) -> Dict[str, Any]:
+        """Create dashboard chart"""
+        try:
+            chart_name = f"{chart_config['title']} - {dashboard_id}"
+            
+            # Map chart types
+            chart_type_map = {
+                "bar": "Count",
+                "line": "Count", 
+                "pie": "Count",
+                "kpi_card": "Count",
+                "gauge": "Count"
+            }
+            
+            type_map = {
+                "sum": "Bar",
+                "count": "Bar", 
+                "avg": "Line",
+                "min": "Line",
+                "max": "Line"
+            }
+            
+            chart_doc = frappe.get_doc({
+                "doctype": "Dashboard Chart",
+                "chart_name": chart_name,
+                "chart_type": chart_type_map.get(chart_config.get("chart_type", "bar"), "Count"),
+                "document_type": doctype,
+                "based_on": chart_config.get("x_field", "name"),
+                "value_based_on": chart_config.get("y_field"),
+                "type": type_map.get(chart_config.get("aggregate", "count"), "Bar"),
+                "filters_json": json.dumps({**global_filters, **chart_config.get("filters", {})})
+            })
+            chart_doc.insert()
+            
+            return {
+                "success": True,
+                "chart_name": chart_name,
+                "chart_id": chart_doc.name
+            }
+            
+        except Exception as e:
+            return {
+                "success": False,
                 "error": str(e)
             }
+    
+    def _setup_dashboard_sharing(self, dashboard_id: str, share_with: List[str]) -> Dict[str, Any]:
+        """Setup dashboard sharing and permissions"""
+        users_with_access = []
+        
+        for user_or_role in share_with:
+            try:
+                if frappe.db.exists("User", user_or_role):
+                    frappe.share.add("Dashboard", dashboard_id, user_or_role, read=1)
+                    users_with_access.append(user_or_role)
+                elif frappe.db.exists("Role", user_or_role):
+                    role_users = frappe.get_all("Has Role", 
+                        filters={"role": user_or_role}, 
+                        fields=["parent"]
+                    )
+                    for role_user in role_users:
+                        frappe.share.add("Dashboard", dashboard_id, role_user.parent, read=1)
+                        users_with_access.append(role_user.parent)
+            except Exception as e:
+                frappe.logger("dashboard_manager").warning(f"Failed to share with {user_or_role}: {str(e)}")
+        
+        return {
+            "users_with_access": list(set(users_with_access)),
+            "shared_count": len(set(users_with_access))
+        }

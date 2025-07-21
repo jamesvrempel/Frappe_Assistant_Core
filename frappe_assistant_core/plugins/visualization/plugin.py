@@ -52,19 +52,12 @@ class VisualizationPlugin(BasePlugin):
             'create_chart',
             'create_kpi_card',
             
+            # Business Intelligence tools
+            'create_bi_dashboard',
+            'get_bi_recommendations',
+            
             # AI-powered data exploration
-            'suggest_visualizations',
-            
-            # Sharing and collaboration
-            'share_dashboard',
-            'export_dashboard',
-            
-            # Interactive components
-            'create_interactive_widget',
-            'manage_widget_interactions',
-            
-            # Migration and compatibility
-            'migrate_visualization'  # Tool to migrate from old system
+            'recommend_charts'
         ]
     
     def validate_environment(self) -> Tuple[bool, Optional[str]]:

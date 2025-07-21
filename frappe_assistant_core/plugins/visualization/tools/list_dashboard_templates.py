@@ -1,130 +1,134 @@
 """
-List Dashboard Templates Tool - Browse available business templates
+List Dashboard Templates Tool - List available dashboard templates
 
-Provides comprehensive listing of dashboard templates with previews
-and compatibility information.
+List all available dashboard templates with descriptions and features.
 """
 
 import frappe
 from frappe import _
-from typing import Dict, Any
+from typing import Dict, Any, List
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
 class ListDashboardTemplates(BaseTool):
-    """
-    Tool for browsing available dashboard templates.
-    
-    Provides capabilities for:
-    - Template catalog browsing
-    - Template preview and details
-    - Compatibility checking
-    - Usage recommendations
-    """
+    """List available dashboard templates"""
     
     def __init__(self):
         super().__init__()
-        self.name = "show_dashboard_templates"
-        self.description = self._get_description()
+        self.name = "list_dashboard_templates"
+        self.description = "List all available dashboard templates with descriptions and features"
         self.requires_permission = None
         
         self.inputSchema = {
             "type": "object",
             "properties": {
-                "category_filter": {
+                "template_category": {
                     "type": "string",
-                    "enum": ["all", "sales", "financial", "operations", "hr", "executive"],
+                    "enum": ["all", "business", "technical", "custom"],
                     "default": "all",
-                    "description": "Filter templates by business category"
+                    "description": "Filter templates by category"
                 },
-                "include_preview": {
+                "include_details": {
                     "type": "boolean",
-                    "default": True,
-                    "description": "Include template preview information"
-                },
-                "check_data_compatibility": {
-                    "type": "boolean",
-                    "default": True,
-                    "description": "Check if templates are compatible with current data"
-                },
-                "sort_by": {
-                    "type": "string",
-                    "enum": ["popularity", "name", "category", "compatibility"],
-                    "default": "popularity",
-                    "description": "Sort templates by specified criteria"
+                    "default": False,
+                    "description": "Include detailed template configuration"
                 }
             }
         }
     
-    def _get_description(self) -> str:
-        """Get tool description"""
-        return """Browse comprehensive catalog of business dashboard templates with previews and compatibility checking.
-
-📋 **TEMPLATE CATALOG:**
-• Sales Templates - Revenue, pipeline, customer analysis
-• Financial Templates - P&L, cash flow, financial ratios
-• Operations Templates - Inventory, supply chain, efficiency
-• HR Templates - Employee metrics, performance, attendance
-• Executive Templates - Strategic KPIs, high-level overview
-
-🔍 **TEMPLATE DETAILS:**
-• Preview Screenshots - Visual template samples
-• Required Data - DocTypes and fields needed
-• Chart Types - Visualizations included
-• Customization Level - How flexible the template is
-
-✅ **COMPATIBILITY CHECK:**
-• Data Availability - Check if required data exists
-• Permission Validation - Verify user access
-• System Requirements - Ensure app compatibility
-• Estimated Setup Time - Time to deploy template
-
-🏆 **RECOMMENDATIONS:**
-• Best Match - Templates suited to your data
-• Popular Choices - Most used templates
-• Industry Standards - Templates by business type
-• Quick Start - Templates for immediate use"""
-    
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """List available templates"""
+        """List dashboard templates"""
         try:
-            # Import the actual template builder
-            from ..tools.template_builder import TemplateBuilder
+            template_category = arguments.get("template_category", "all")
+            include_details = arguments.get("include_details", False)
             
-            # Create template builder and get templates
+            # Get template list from template builder
+            from .create_dashboard_from_template import TemplateBuilder
+            
             template_builder = TemplateBuilder()
+            templates = template_builder.list_available_templates()
             
-            # Get templates based on filters
-            category_filter = arguments.get("category_filter", "all")
-            include_preview = arguments.get("include_preview", True)
-            check_compatibility = arguments.get("check_data_compatibility", True)
-            sort_by = arguments.get("sort_by", "popularity")
+            # Add additional template information
+            for template in templates:
+                template["category"] = self._get_template_category(template["template_type"])
+                template["permissions_required"] = [template["primary_doctype"]]
+                template["features"] = self._get_template_features(template["template_type"])
+                
+                if include_details:
+                    # Load full template config
+                    template_config = template_builder._load_template(template["template_type"])
+                    if template_config:
+                        template["chart_details"] = template_config.get("charts", [])
+                        template["global_filters"] = template_config.get("global_filters", {})
             
-            templates = template_builder.list_available_templates(
-                category_filter=category_filter,
-                include_preview=include_preview,
-                check_compatibility=check_compatibility,
-                sort_by=sort_by
-            )
+            # Filter by category if specified
+            if template_category != "all":
+                templates = [t for t in templates if t["category"] == template_category]
             
             return {
                 "success": True,
                 "templates": templates,
                 "total_count": len(templates),
-                "categories_available": ["sales", "financial", "inventory", "hr", "executive"]
+                "category_filter": template_category,
+                "details_included": include_details,
+                "available_categories": ["business", "technical", "custom"]
             }
             
         except Exception as e:
-            frappe.log_error(
-                title=_("Template Listing Error"),
-                message=f"Error listing templates: {str(e)}"
-            )
-            
             return {
                 "success": False,
                 "error": str(e)
             }
-
-
-# Make sure class name matches file name for discovery
-list_dashboard_templates = ListDashboardTemplates
+    
+    def _get_template_category(self, template_type: str) -> str:
+        """Get template category"""
+        categories = {
+            "sales": "business",
+            "financial": "business", 
+            "inventory": "business",
+            "hr": "business",
+            "executive": "business",
+            "custom": "custom"
+        }
+        return categories.get(template_type, "business")
+    
+    def _get_template_features(self, template_type: str) -> List[str]:
+        """Get template features"""
+        features = {
+            "sales": [
+                "Revenue tracking",
+                "Customer analysis", 
+                "Territory performance",
+                "Monthly trend analysis",
+                "KPI cards"
+            ],
+            "financial": [
+                "P&L tracking",
+                "Cash flow analysis",
+                "Expense categorization",
+                "Budget vs actual",
+                "Financial KPIs"
+            ],
+            "inventory": [
+                "Stock level monitoring",
+                "Item movement tracking",
+                "Inventory valuation",
+                "Stock alerts",
+                "Warehouse analysis"
+            ],
+            "hr": [
+                "Employee metrics",
+                "Department analysis",
+                "Attendance tracking",
+                "Performance indicators",
+                "Headcount reporting"
+            ],
+            "executive": [
+                "High-level KPIs",
+                "Growth tracking",
+                "Executive summaries",
+                "Performance dashboards",
+                "Strategic metrics"
+            ]
+        }
+        return features.get(template_type, [])

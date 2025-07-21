@@ -46,6 +46,10 @@ class VisualizationPlugin(BasePlugin):
             
             # AI-powered data exploration (always available)
             'recommend_charts',
+            
+            # Business Intelligence tools (always available)
+            'create_bi_dashboard',
+            'get_bi_recommendations',
         ]
         
         # Add Insights-specific tools only if Insights app is installed
