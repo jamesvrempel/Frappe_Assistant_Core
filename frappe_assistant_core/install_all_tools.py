@@ -1,3 +1,20 @@
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Script to register ALL tools in the Assistant Tool Registry using plugin architecture
 """
@@ -58,7 +75,7 @@ def register_all_tools():
                 tool_doc.enabled = 1
                 tool_doc.category = category
                 tool_doc.source_plugin = source_plugin
-                tool_doc.input_schema = json.dumps(tool_info["inputSchema"], indent=2)
+                tool_doc.inputSchema = json.dumps(tool_info["inputSchema"], indent=2)
                 
                 # Set appropriate permissions based on category
                 permissions = _get_permissions_for_category(category)

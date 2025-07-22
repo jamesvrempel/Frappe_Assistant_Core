@@ -1,4 +1,19 @@
-
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import frappe
 from frappe import _
@@ -147,7 +162,7 @@ def register_basic_tools():
                     "enabled": 1,
                     "category": category,
                     "source_plugin": source_plugin,
-                    "input_schema": json.dumps(tool["inputSchema"]),
+                    "inputSchema": json.dumps(tool["inputSchema"]),
                     "required_permissions": json.dumps(required_permissions),
                     "execution_timeout": 30
                 })

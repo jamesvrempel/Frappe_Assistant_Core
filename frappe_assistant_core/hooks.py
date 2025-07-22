@@ -1,4 +1,19 @@
-
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from . import __version__ as app_version
 
@@ -9,7 +24,7 @@ app_description = "AI Assistant integration core for Frappe Framework"
 app_icon = "octicon octicon-server"
 app_color = "blue"
 app_email = "jypaulclinton@gmail.com"
-app_license = "MIT"
+app_license = "AGPL-3.0"
 app_version = app_version
 
 # Includes in <head>
@@ -71,13 +86,16 @@ jenv = {
 # ------------
 
 # before_install = "frappe_assistant_core.install.before_install"
-after_install = "frappe_assistant_core.install.after_install"
+after_install = [
+    "frappe_assistant_core.install.after_install",
+    "frappe_assistant_core.utils.migration_hooks.after_install"
+]
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "frappe_assistant_core.uninstall.before_uninstall"
-# after_uninstall = "frappe_assistant_core.uninstall.after_uninstall"
+after_uninstall = "frappe_assistant_core.utils.migration_hooks.after_uninstall"
 
 # Desk Notifications
 # ------------------
@@ -118,11 +136,6 @@ doc_events = {
     },
     "Assistant Core Settings": {
         "on_update": "frappe_assistant_core.utils.cache.invalidate_settings_cache"
-    },
-    "Assistant Tool Registry": {
-        "on_update": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache",
-        "after_insert": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache",
-        "on_trash": "frappe_assistant_core.utils.cache.invalidate_tool_registry_cache"
     },
     "Assistant Connection Log": {
         "after_insert": "frappe_assistant_core.utils.cache.invalidate_dashboard_cache"
@@ -234,4 +247,25 @@ standard_roles = [
 # -------
 
 app_startup = "frappe_assistant_core.startup.startup"
-after_migrate = "frappe_assistant_core.startup.startup"
+before_migrate = "frappe_assistant_core.utils.migration_hooks.before_migrate"
+after_migrate = [
+    "frappe_assistant_core.startup.startup",
+    "frappe_assistant_core.utils.migration_hooks.after_migrate"
+]
+
+# Enhanced Plugin Architecture
+# ----------------------------
+
+# Tool discovery from external apps via hooks
+assistant_tools = [
+    # Core tools are discovered automatically from plugins
+]
+
+# Tool configuration overrides
+assistant_tool_configs = {
+    # Example tool config:
+    # "document_create": {
+    #     "max_batch_size": 100,
+    #     "timeout": 30
+    # }
+}

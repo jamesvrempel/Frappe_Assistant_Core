@@ -1,4 +1,19 @@
-
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import frappe
 from typing import Dict, Any, List
@@ -12,7 +27,7 @@ class MetadataTools:
         """Return list of metadata-related assistant tools"""
         return [
             {
-                "name": "metadata_doctype",
+                "name": "get_doctype_info",
                 "description": "Get DocType metadata and field information",
                 "inputSchema": {
                     "type": "object",
@@ -61,7 +76,7 @@ class MetadataTools:
     @staticmethod
     def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a metadata tool with given arguments"""
-        if tool_name == "metadata_doctype":
+        if tool_name == "get_doctype_info":
             return MetadataTools.get_doctype_metadata(**arguments)
         elif tool_name == "metadata_list_doctypes":
             return MetadataTools.list_doctypes(**arguments)

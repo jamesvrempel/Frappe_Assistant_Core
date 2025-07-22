@@ -1,170 +1,120 @@
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
-Visualization Creation Tool for Data Science Plugin.
-Creates charts and visualizations from Frappe data.
+Create Visualization Tool for Data Science Plugin.
+Generates charts and visualizations using matplotlib, plotly, and other libraries.
 """
 
 import frappe
 from frappe import _
-import json
-import base64
 import io
-from typing import Dict, Any, List
+import base64
+import json
+from typing import Dict, Any, List, Optional
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
 class CreateVisualization(BaseTool):
     """
-    Tool for creating data visualizations from Frappe data.
+    Tool for creating data visualizations with scientific charting libraries.
     
     Provides capabilities for:
-    - Chart generation (bar, line, pie, scatter, etc.)
-    - Statistical plots (histograms, box plots)
-    - Dashboard-style visualizations
-    - Export to various formats
+    - Multiple chart types (bar, line, pie, scatter, histogram, etc.)
+    - Data processing and aggregation
+    - Export to various formats (PNG, SVG, HTML, JSON)
+    - Professional styling and theming
     """
     
     def __init__(self):
         super().__init__()
         self.name = "create_visualization"
-        self.description = """
-🚨 MANDATORY ARTIFACT STREAMING - REQUIRED FOR ALL ANALYSIS:
-
-⚠️ CRITICAL: This tool REQUIRES creating workspace artifacts BEFORE execution to prevent response limits.
-
-📋 REQUIRED WORKFLOW:
-1. CREATE workspace artifact FIRST (mandatory)
-2. Add sections: Executive Summary, Data Analysis, Findings, Recommendations
-3. Stream ALL analysis results to artifact sections
-4. Keep response minimal (only confirmation/summary)
-5. Build unlimited analysis depth via artifact streaming
-
-❌ WITHOUT ARTIFACTS: Tool will hit response limits and fail
-✅ WITH ARTIFACTS: Unlimited analysis depth and professional deliverables
-
-⚠️ DO NOT attempt analysis without creating artifacts first - conversation will hit limits.
-
-
-Create professional charts and visualizations from Frappe business data. Generate bar charts, line graphs, pie charts, scatter plots, histograms, box plots, and heatmaps with customizable styling and multiple output formats.
-
-📊 **VISUALIZATION TYPES:**
-• Bar Charts - Compare categories, show trends over time
-• Line Charts - Track changes, display time series data
-• Pie Charts - Show proportions and percentages
-• Scatter Plots - Explore relationships between variables
-• Histograms - Display data distribution patterns
-• Box Plots - Show statistical summaries and outliers
-• Heatmaps - Visualize correlations and patterns
-
-🎯 **DATA SOURCES:**
-• DocType Records - Query any Frappe document type
-• Custom SQL - Execute complex database queries (System Manager)
-• Direct Data - Use pre-processed data arrays
-
-💡 ARTIFACT TIP: Stream visualizations and analysis to artifacts for comprehensive reporting.
-
-🔄 **Progress Streaming Enabled**: This tool provides real-time progress updates during execution."""
-        self.requires_permission = None  # Permission checked dynamically per DocType
+        self.description = "Create data visualizations using matplotlib, plotly, and seaborn"
+        self.requires_permission = None
         
-        self.input_schema = {
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "data_source": {
                     "type": "object",
                     "properties": {
-                        "type": {
-                            "type": "string",
-                            "enum": ["doctype", "query", "data"],
-                            "description": "Source of data for visualization"
-                        },
-                        "doctype": {
-                            "type": "string",
-                            "description": "DocType name (if type is 'doctype')"
-                        },
-                        "query": {
-                            "type": "string",
-                            "description": "SQL query (if type is 'query')"
-                        },
-                        "data": {
-                            "type": "array",
-                            "description": "Direct data array (if type is 'data')"
-                        },
-                        "filters": {
-                            "type": "object",
-                            "description": "Filters for DocType data"
-                        },
-                        "fields": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Fields to include"
-                        }
+                        "type": {"type": "string", "enum": ["data", "query", "doctype"]},
+                        "data": {"type": "array", "description": "Raw data array"},
+                        "query": {"type": "string", "description": "SQL query"},
+                        "doctype": {"type": "string", "description": "DocType name"},
+                        "fields": {"type": "array", "description": "Fields to fetch"},
+                        "filters": {"type": "object", "description": "Filters to apply"}
                     },
-                    "required": ["type"]
+                    "required": ["type"],
+                    "description": "Data source configuration"
                 },
                 "chart_config": {
                     "type": "object",
                     "properties": {
                         "chart_type": {
                             "type": "string",
-                            "enum": ["bar", "line", "pie", "scatter", "histogram", "box", "heatmap"],
+                            "enum": ["bar", "line", "pie", "scatter", "histogram", "box", "heatmap", "area"],
                             "description": "Type of chart to create"
                         },
-                        "x_field": {
+                        "title": {"type": "string", "description": "Chart title"},
+                        "x_column": {"type": "string", "description": "X-axis column"},
+                        "y_column": {"type": "string", "description": "Y-axis column"},
+                        "color_column": {"type": "string", "description": "Column for color grouping"},
+                        "size_column": {"type": "string", "description": "Column for size (scatter plots)"},
+                        "aggregation": {
                             "type": "string",
-                            "description": "Field for X-axis"
-                        },
-                        "y_field": {
-                            "type": "string",
-                            "description": "Field for Y-axis"
-                        },
-                        "group_by": {
-                            "type": "string",
-                            "description": "Field to group data by"
-                        },
-                        "title": {
-                            "type": "string",
-                            "description": "Chart title"
-                        },
-                        "x_label": {
-                            "type": "string",
-                            "description": "X-axis label"
-                        },
-                        "y_label": {
-                            "type": "string",
-                            "description": "Y-axis label"
+                            "enum": ["sum", "count", "mean", "median", "min", "max"],
+                            "default": "sum",
+                            "description": "Aggregation method"
                         }
                     },
-                    "required": ["chart_type"]
+                    "required": ["chart_type", "title"],
+                    "description": "Chart configuration"
+                },
+                "styling": {
+                    "type": "object",
+                    "properties": {
+                        "theme": {"type": "string", "enum": ["default", "dark", "whitegrid", "darkgrid"]},
+                        "color_palette": {"type": "string", "enum": ["default", "viridis", "plasma", "cool", "warm"]},
+                        "figure_size": {"type": "array", "items": {"type": "number"}},
+                        "dpi": {"type": "integer", "default": 150}
+                    },
+                    "description": "Visual styling options"
                 },
                 "output_format": {
                     "type": "string",
-                    "enum": ["base64", "html", "json"],
+                    "enum": ["base64", "svg", "html", "json"],
                     "default": "base64",
-                    "description": "Output format for the visualization"
-                },
-                "limit": {
-                    "type": "integer",
-                    "default": 1000,
-                    "maximum": 5000,
-                    "description": "Maximum number of data points"
+                    "description": "Output format"
                 }
             },
             "required": ["data_source", "chart_config"]
         }
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
-        """Create visualization from data"""
-        data_source = arguments.get("data_source", {})
-        chart_config = arguments.get("chart_config", {})
-        output_format = arguments.get("output_format", "base64")
-        limit = arguments.get("limit", 1000)
-        
+        """Create visualization"""
         try:
-            # Check dependencies
-            self._check_dependencies()
+            data_source = arguments.get("data_source", {})
+            chart_config = arguments.get("chart_config", {})
+            styling = arguments.get("styling", {})
+            output_format = arguments.get("output_format", "base64")
             
-            # Get data from source
-            data = self._get_data_from_source(data_source, limit)
-            
+            # Get data
+            data = self._get_data(data_source)
             if not data:
                 return {
                     "success": False,
@@ -172,14 +122,16 @@ Create professional charts and visualizations from Frappe business data. Generat
                 }
             
             # Create visualization
-            chart_result = self._create_chart(data, chart_config, output_format)
+            chart_result = self._create_chart(data, chart_config, styling, output_format)
             
             return {
                 "success": True,
-                "data_points": len(data),
+                "visualization": chart_result["data"],
+                "format": output_format,
                 "chart_type": chart_config.get("chart_type"),
-                "output_format": output_format,
-                **chart_result
+                "title": chart_config.get("title"),
+                "data_points": len(data),
+                "display_hint": chart_result.get("display_hint")
             }
             
         except Exception as e:
@@ -193,454 +145,325 @@ Create professional charts and visualizations from Frappe business data. Generat
                 "error": str(e)
             }
     
-    def _check_dependencies(self):
-        """Check if required visualization libraries are available"""
+    def _get_data(self, data_source: Dict[str, Any]) -> List[Dict]:
+        """Get data from various sources"""
         try:
-            import matplotlib.pyplot as plt
-            import pandas as pd
-            import numpy as np
-        except ImportError:
-            frappe.throw(
-                _("Visualization dependencies not available. Please install matplotlib, pandas, and numpy."),
-                frappe.ValidationError
-            )
-    
-    def _get_data_from_source(self, data_source: Dict, limit: int) -> List[Dict]:
-        """Get data from specified source"""
-        source_type = data_source.get("type")
-        
-        if source_type == "doctype":
-            return self._get_doctype_data(data_source, limit)
-        elif source_type == "query":
-            return self._get_query_data(data_source, limit)
-        elif source_type == "data":
-            return data_source.get("data", [])[:limit]
-        else:
-            frappe.throw(_("Invalid data source type: {0}").format(source_type))
-    
-    def _get_doctype_data(self, data_source: Dict, limit: int) -> List[Dict]:
-        """Get data from DocType"""
-        doctype = data_source.get("doctype")
-        filters = data_source.get("filters", {})
-        fields = data_source.get("fields", ["name"])
-        
-        # Check permission
-        if not frappe.has_permission(doctype, "read"):
-            frappe.throw(
-                _("Insufficient permissions to read {0} data").format(doctype),
-                frappe.PermissionError
-            )
-        
-        # Use raw SQL to avoid frappe._dict objects that cause __array_struct__ issues
-        try:
-            # Build SQL query manually to get clean data
-            field_list = ", ".join([f"`{field}`" for field in fields])
-            table_name = f"tab{doctype}"
+            source_type = data_source.get("type")
             
-            # Build WHERE clause from filters
-            where_conditions = []
-            values = []
+            if source_type == "data":
+                return data_source.get("data", [])
             
-            for key, value in filters.items():
-                if isinstance(value, (list, tuple)):
-                    placeholders = ", ".join(["%s"] * len(value))
-                    where_conditions.append(f"`{key}` IN ({placeholders})")
-                    values.extend(value)
-                elif value is None:
-                    where_conditions.append(f"`{key}` IS NULL")
-                else:
-                    where_conditions.append(f"`{key}` = %s")
-                    values.append(value)
+            elif source_type == "query":
+                query = data_source.get("query")
+                if not query:
+                    return []
+                
+                result = frappe.db.sql(query, as_dict=True)
+                return result
             
-            where_clause = ""
-            if where_conditions:
-                where_clause = "WHERE " + " AND ".join(where_conditions)
+            elif source_type == "doctype":
+                doctype = data_source.get("doctype")
+                fields = data_source.get("fields", ["name"])
+                filters = data_source.get("filters", {})
+                limit = data_source.get("limit", 100)
+                
+                if not doctype:
+                    return []
+                
+                # Check permissions
+                if not frappe.has_permission(doctype, "read"):
+                    return []
+                
+                result = frappe.get_all(
+                    doctype,
+                    fields=fields,
+                    filters=filters,
+                    limit=limit
+                )
+                return result
             
-            query = f"""
-                SELECT {field_list}
-                FROM `{table_name}`
-                {where_clause}
-                ORDER BY creation DESC
-                LIMIT {limit}
-            """
-            
-            # Execute raw SQL to get clean data without frappe._dict objects
-            result = frappe.db.sql(query, values, as_dict=True)
-            
-            # Convert to plain Python dicts to avoid array interface issues
-            return [dict(row) for row in result]
-            
-        except Exception as e:
-            # Fallback to get_all with conversion if SQL approach fails
-            frappe.log_error(f"SQL visualization query failed: {str(e)}")
-            
-            raw_data = frappe.get_all(
-                doctype,
-                filters=filters,
-                fields=fields,
-                limit=limit,
-                order_by="creation desc"
-            )
-            
-            # Convert frappe._dict objects to plain dicts
-            return [dict(row) for row in raw_data]
-    
-    def _get_query_data(self, data_source: Dict, limit: int) -> List[Dict]:
-        """Get data from SQL query"""
-        query = data_source.get("query", "")
-        
-        # Check permission (requires System Manager for direct SQL)
-        if not frappe.has_permission("System Manager"):
-            frappe.throw(
-                _("Insufficient permissions to execute SQL queries"),
-                frappe.PermissionError
-            )
-        
-        # Apply limit to query
-        if "LIMIT" not in query.upper():
-            query = f"{query.rstrip(';')} LIMIT {limit}"
-        
-        raw_results = frappe.db.sql(query, as_dict=True)
-        
-        # Convert to serializable format to avoid array structure issues
-        import json
-        serializable_results = []
-        
-        for row in raw_results:
-            serializable_row = {}
-            for key, value in row.items():
-                try:
-                    # Handle various data types that might cause serialization issues
-                    if value is None:
-                        serializable_row[key] = None
-                    elif hasattr(value, '__array_struct__'):
-                        # Convert numpy arrays or similar structures
-                        try:
-                            serializable_row[key] = value.tolist() if hasattr(value, 'tolist') else str(value)
-                        except:
-                            serializable_row[key] = str(value)
-                    elif hasattr(value, 'isoformat'):
-                        # Convert datetime objects to strings
-                        serializable_row[key] = value.isoformat()
-                    elif isinstance(value, (bytes, bytearray)):
-                        # Convert binary data to string
-                        serializable_row[key] = value.decode('utf-8', errors='ignore')
-                    elif hasattr(value, '__dict__'):
-                        # Handle complex objects
-                        serializable_row[key] = str(value)
-                    else:
-                        # Test if value is JSON serializable
-                        try:
-                            json.dumps(value)
-                            serializable_row[key] = value
-                        except (TypeError, ValueError):
-                            # If not serializable, convert to string
-                            serializable_row[key] = str(value)
-                except Exception as e:
-                    # Fallback: convert problematic values to string
-                    frappe.log_error(f"Visualization serialization error for key {key}: {str(e)}")
-                    serializable_row[key] = str(value) if value is not None else None
-            
-            serializable_results.append(serializable_row)
-        
-        return serializable_results
-    
-    def _create_chart(self, data: List[Dict], chart_config: Dict, output_format: str) -> Dict[str, Any]:
-        """Create chart based on configuration"""
-        try:
-            import matplotlib
-            matplotlib.use('Agg')  # Set backend before importing pyplot
-            import matplotlib.pyplot as plt
-            import pandas as pd
-            import numpy as np
-        except ImportError as e:
-            return {"error": f"Required libraries not available: {str(e)}"}
-        
-        # Convert data to DataFrame - data should already be clean Python dicts
-        df = pd.DataFrame(data)
-        
-        if df.empty:
-            return {"error": "No data to visualize"}
-        
-        # Smart data type conversion for visualization compatibility
-        df = self._optimize_dataframe_for_visualization(df)
-        
-        chart_type = chart_config.get("chart_type")
-        
-        # Setup matplotlib for server environment
-        plt.switch_backend('Agg')
-        plt.ioff()
-        
-        # Create figure
-        fig, ax = plt.subplots(figsize=(10, 6))
-        
-        try:
-            if chart_type == "bar":
-                self._create_bar_chart(df, chart_config, ax, plt)
-            elif chart_type == "line":
-                self._create_line_chart(df, chart_config, ax, plt)
-            elif chart_type == "pie":
-                self._create_pie_chart(df, chart_config, ax, plt)
-            elif chart_type == "scatter":
-                self._create_scatter_chart(df, chart_config, ax, plt)
-            elif chart_type == "histogram":
-                self._create_histogram(df, chart_config, ax, plt)
-            elif chart_type == "box":
-                self._create_box_plot(df, chart_config, ax, plt)
-            elif chart_type == "heatmap":
-                self._create_heatmap(df, chart_config, ax, plt)
             else:
-                plt.close(fig)
-                return {"error": f"Unsupported chart type: {chart_type}"}
-            
-            # Apply common styling
-            self._apply_chart_styling(ax, chart_config, plt)
-            
-            # Generate output
-            result = self._generate_output(fig, output_format, plt)
-            
-            plt.close(fig)
-            return result
-            
+                return []
+                
         except Exception as e:
-            plt.close(fig)
+            frappe.logger("create_visualization").error(f"Failed to get data: {str(e)}")
+            return []
+    
+    def _create_chart(self, data: List[Dict], chart_config: Dict, styling: Dict, output_format: str) -> Dict[str, Any]:
+        """Create chart using matplotlib/plotly"""
+        try:
+            import pandas as pd
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            import json
+            
+            # Clean data before creating DataFrame
+            cleaned_data = []
+            for row in data:
+                clean_row = {}
+                for key, value in row.items():
+                    # Convert complex objects to strings
+                    if hasattr(value, '__dict__') or hasattr(value, '__array_struct__'):
+                        clean_row[key] = str(value)
+                    elif isinstance(value, (list, dict)):
+                        clean_row[key] = json.dumps(value) if value else ""
+                    elif value is None:
+                        clean_row[key] = ""
+                    else:
+                        clean_row[key] = value
+                cleaned_data.append(clean_row)
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(cleaned_data)
+            
+            if df.empty:
+                return {"data": "", "display_hint": "No data to visualize"}
+            
+            # Apply styling
+            self._apply_styling(styling)
+            
+            # Create chart based on type
+            chart_type = chart_config.get("chart_type", "bar")
+            title = chart_config.get("title", "Chart")
+            
+            # Set up figure
+            figure_size = styling.get("figure_size", [10, 6])
+            dpi = styling.get("dpi", 150)
+            
+            plt.figure(figsize=figure_size, dpi=dpi)
+            
+            if chart_type == "bar":
+                result = self._create_bar_chart(df, chart_config)
+            elif chart_type == "line":
+                result = self._create_line_chart(df, chart_config)
+            elif chart_type == "pie":
+                result = self._create_pie_chart(df, chart_config)
+            elif chart_type == "scatter":
+                result = self._create_scatter_chart(df, chart_config)
+            elif chart_type == "histogram":
+                result = self._create_histogram(df, chart_config)
+            elif chart_type == "box":
+                result = self._create_box_plot(df, chart_config)
+            elif chart_type == "heatmap":
+                result = self._create_heatmap(df, chart_config)
+            elif chart_type == "area":
+                result = self._create_area_chart(df, chart_config)
+            else:
+                # Default to bar chart
+                result = self._create_bar_chart(df, chart_config)
+            
+            plt.title(title, fontsize=14, fontweight='bold')
+            plt.tight_layout()
+            
+            # Export based on format
+            if output_format == "base64":
+                # Save to base64
+                buffer = io.BytesIO()
+                plt.savefig(buffer, format='png', bbox_inches='tight', facecolor='white')
+                buffer.seek(0)
+                
+                chart_data = base64.b64encode(buffer.getvalue()).decode()
+                plt.close()
+                
+                return {
+                    "data": chart_data,
+                    "display_hint": "Base64 encoded PNG image. Use in <img> tag or save as PNG file."
+                }
+            
+            elif output_format == "svg":
+                buffer = io.StringIO()
+                plt.savefig(buffer, format='svg', bbox_inches='tight')
+                buffer.seek(0)
+                
+                chart_data = buffer.getvalue()
+                plt.close()
+                
+                return {
+                    "data": chart_data,
+                    "display_hint": "SVG vector image data"
+                }
+            
+            else:
+                # Default to base64
+                buffer = io.BytesIO()
+                plt.savefig(buffer, format='png', bbox_inches='tight', facecolor='white')
+                buffer.seek(0)
+                
+                chart_data = base64.b64encode(buffer.getvalue()).decode()
+                plt.close()
+                
+                return {
+                    "data": chart_data,
+                    "display_hint": "Base64 encoded PNG image"
+                }
+                
+        except Exception as e:
+            plt.close()  # Make sure to close any open figures
             raise e
     
-    def _create_bar_chart(self, df, config, ax, plt=None):
+    def _apply_styling(self, styling: Dict):
+        """Apply styling configuration"""
+        theme = styling.get("theme", "default")
+        color_palette = styling.get("color_palette", "default")
+        
+        # Apply seaborn style
+        if theme == "dark":
+            plt.style.use('dark_background')
+        elif theme in ["whitegrid", "darkgrid"]:
+            sns.set_style(theme)
+        
+        # Apply color palette
+        if color_palette != "default":
+            sns.set_palette(color_palette)
+    
+    def _create_bar_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
         """Create bar chart"""
-        x_field = config.get("x_field")
-        y_field = config.get("y_field")
-        group_by = config.get("group_by")
-        
-        if not x_field or not y_field:
-            # Auto-detect fields
-            if len(df.columns) >= 2:
-                x_field = df.columns[0]
-                y_field = df.columns[1]
-            else:
-                raise ValueError("Need at least 2 columns for bar chart")
-        
-        if group_by and group_by in df.columns:
-            # Grouped bar chart
-            grouped = df.groupby([x_field, group_by])[y_field].sum().unstack(fill_value=0)
-            grouped.plot(kind='bar', ax=ax)
-        else:
-            # Simple bar chart
-            if x_field in df.columns and y_field in df.columns:
-                df_agg = df.groupby(x_field)[y_field].sum()
-                ax.bar(df_agg.index, df_agg.values)
-    
-    def _create_line_chart(self, df, config, ax, plt=None):
-        """Create line chart"""
-        x_field = config.get("x_field", df.columns[0])
-        y_field = config.get("y_field", df.columns[1] if len(df.columns) > 1 else df.columns[0])
-        
-        if x_field in df.columns and y_field in df.columns:
-            ax.plot(df[x_field], df[y_field], marker='o')
-    
-    def _create_pie_chart(self, df, config, ax, plt=None):
-        """Create pie chart"""
-        x_field = config.get("x_field")
-        y_field = config.get("y_field")
-        
-        if not x_field:
-            # Use first categorical column
-            categorical_cols = df.select_dtypes(include=['object']).columns
-            if len(categorical_cols) > 0:
-                x_field = categorical_cols[0]
-        
-        if x_field in df.columns:
-            if y_field and y_field in df.columns:
-                # Aggregate by y_field
-                pie_data = df.groupby(x_field)[y_field].sum()
-            else:
-                # Count by x_field
-                pie_data = df[x_field].value_counts()
-            
-            ax.pie(pie_data.values, labels=pie_data.index, autopct='%1.1f%%')
-    
-    def _create_scatter_chart(self, df, config, ax, plt=None):
-        """Create scatter plot"""
-        x_field = config.get("x_field")
-        y_field = config.get("y_field")
-        
-        # Auto-detect numeric fields
-        numeric_cols = df.select_dtypes(include=['number']).columns
-        
-        if not x_field and len(numeric_cols) > 0:
-            x_field = numeric_cols[0]
-        if not y_field and len(numeric_cols) > 1:
-            y_field = numeric_cols[1]
-        
-        if x_field in df.columns and y_field in df.columns:
-            ax.scatter(df[x_field], df[y_field], alpha=0.6)
-    
-    def _create_histogram(self, df, config, ax, plt=None):
-        """Create histogram"""
-        x_field = config.get("x_field")
-        
-        if not x_field:
-            # Use first numeric column
-            numeric_cols = df.select_dtypes(include=['number']).columns
-            if len(numeric_cols) > 0:
-                x_field = numeric_cols[0]
-        
-        if x_field in df.columns:
-            ax.hist(df[x_field].dropna(), bins=20, alpha=0.7, edgecolor='black')
-    
-    def _create_box_plot(self, df, config, ax, plt=None):
-        """Create box plot"""
-        y_field = config.get("y_field")
-        group_by = config.get("group_by")
-        
-        if not y_field:
-            # Use first numeric column
-            numeric_cols = df.select_dtypes(include=['number']).columns
-            if len(numeric_cols) > 0:
-                y_field = numeric_cols[0]
-        
-        if y_field in df.columns:
-            if group_by and group_by in df.columns:
-                # Grouped box plot
-                groups = [group[y_field].dropna() for name, group in df.groupby(group_by)]
-                ax.boxplot(groups, labels=df[group_by].unique())
-            else:
-                # Single box plot
-                ax.boxplot(df[y_field].dropna())
-    
-    def _create_heatmap(self, df, config, ax, plt=None):
-        """Create heatmap"""
-        import numpy as np
-        
-        # Use correlation matrix for numeric data
-        numeric_df = df.select_dtypes(include=['number'])
-        if len(numeric_df.columns) > 1:
-            corr_matrix = numeric_df.corr()
-            im = ax.imshow(corr_matrix.values, cmap='coolwarm', aspect='auto')
-            
-            # Set ticks and labels
-            ax.set_xticks(range(len(corr_matrix.columns)))
-            ax.set_yticks(range(len(corr_matrix.columns)))
-            ax.set_xticklabels(corr_matrix.columns, rotation=45)
-            ax.set_yticklabels(corr_matrix.columns)
-            
-            # Add colorbar
-            if plt:
-                plt.colorbar(im, ax=ax)
-    
-    def _apply_chart_styling(self, ax, config, plt=None):
-        """Apply styling to chart"""
-        title = config.get("title", "Data Visualization")
-        x_label = config.get("x_label", "")
-        y_label = config.get("y_label", "")
-        
-        ax.set_title(title, fontsize=14, fontweight='bold')
-        if x_label:
-            ax.set_xlabel(x_label)
-        if y_label:
-            ax.set_ylabel(y_label)
-        
-        ax.grid(True, alpha=0.3)
-        if plt:
-            plt.tight_layout()
-    
-    def _generate_output(self, fig, output_format: str, plt=None) -> Dict[str, Any]:
-        """Generate output in specified format"""
-        import io
-        import base64
-        
-        if output_format == "base64":
-            # Convert to base64 image
-            buffer = io.BytesIO()
-            fig.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
-            buffer.seek(0)
-            image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-            buffer.close()
-            
-            return {
-                "visualization": image_base64,
-                "format": "base64_png",
-                "display_hint": "data:image/png;base64," + image_base64
-            }
-            
-        elif output_format == "html":
-            # Convert to HTML (simplified)
-            buffer = io.BytesIO()
-            fig.savefig(buffer, format='png', dpi=150, bbox_inches='tight')
-            buffer.seek(0)
-            image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
-            buffer.close()
-            
-            html_content = f'''
-            <div class="visualization-container">
-                <img src="data:image/png;base64,{image_base64}" 
-                     style="max-width: 100%; height: auto;" 
-                     alt="Data Visualization" />
-            </div>
-            '''
-            
-            return {
-                "visualization": html_content,
-                "format": "html"
-            }
-            
-        elif output_format == "json":
-            # Return chart configuration (for frontend rendering)
-            return {
-                "visualization": {
-                    "message": "JSON format not fully implemented - use base64 or html"
-                },
-                "format": "json"
-            }
-        
-        else:
-            raise ValueError(f"Unsupported output format: {output_format}")
-    
-    def _optimize_dataframe_for_visualization(self, df):
-        """Optimize DataFrame data types for visualization compatibility"""
+        import matplotlib.pyplot as plt
         import pandas as pd
         import numpy as np
         
-        # Create a copy to avoid modifying original
-        df_optimized = df.copy()
+        x_col = config.get("x_column") or df.columns[0]
+        y_col = config.get("y_column") or df.columns[1] if len(df.columns) > 1 else df.columns[0]
         
-        for column in df_optimized.columns:
-            # Try to convert string representations back to appropriate types
-            if df_optimized[column].dtype == 'object':
-                # Try numeric conversion first
-                try:
-                    # Check if it looks like numbers
-                    numeric_series = pd.to_numeric(df_optimized[column], errors='coerce')
-                    if not numeric_series.isna().all():
-                        df_optimized[column] = numeric_series
-                        continue
-                except:
-                    pass
-                
-                # Try datetime conversion
-                try:
-                    # Check if it looks like dates
-                    if df_optimized[column].astype(str).str.contains(r'\d{4}-\d{2}-\d{2}').any():
-                        df_optimized[column] = pd.to_datetime(df_optimized[column], errors='coerce')
-                        continue
-                except:
-                    pass
-                
-                # Try boolean conversion
-                try:
-                    if df_optimized[column].isin(['0', '1', 'True', 'False', 'true', 'false']).all():
-                        df_optimized[column] = df_optimized[column].map({
-                            '0': False, '1': True, 'True': True, 'False': False,
-                            'true': True, 'false': False
-                        })
-                        continue
-                except:
-                    pass
+        # Handle aggregation if needed
+        if config.get("aggregation") and config["aggregation"] != "count":
+            df_grouped = df.groupby(x_col)[y_col].agg(config["aggregation"]).reset_index()
+        elif config.get("aggregation") == "count":
+            df_grouped = df.groupby(x_col).size().reset_index(name='count')
+            y_col = 'count'
+        else:
+            df_grouped = df
         
-        return df_optimized
+        # Convert data to safe types for plotting
+        try:
+            x_data = df_grouped[x_col].astype(str) if df_grouped[x_col].dtype == 'object' else df_grouped[x_col]
+            y_data = pd.to_numeric(df_grouped[y_col], errors='coerce').fillna(0)
+            
+            # Handle any remaining NaN or inf values
+            y_data = np.where(np.isfinite(y_data), y_data, 0)
+            
+            plt.bar(x_data, y_data)
+            plt.xlabel(x_col)
+            plt.ylabel(y_col)
+            plt.xticks(rotation=45)
+            
+        except Exception as e:
+            # Fallback: simple value counts if data conversion fails
+            value_counts = df_grouped[x_col].value_counts()
+            plt.bar(range(len(value_counts)), value_counts.values)
+            plt.xticks(range(len(value_counts)), value_counts.index, rotation=45)
+            plt.xlabel(x_col)
+            plt.ylabel("Count")
+        
+        return {"success": True}
     
+    def _create_line_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create line chart"""
+        import matplotlib.pyplot as plt
+        
+        x_col = config.get("x_column") or df.columns[0]
+        y_col = config.get("y_column") or df.columns[1] if len(df.columns) > 1 else df.columns[0]
+        
+        plt.plot(df[x_col], df[y_col], marker='o')
+        plt.xlabel(x_col)
+        plt.ylabel(y_col)
+        plt.xticks(rotation=45)
+        
+        return {"success": True}
     
+    def _create_pie_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create pie chart"""
+        import matplotlib.pyplot as plt
+        import pandas as pd
+        import numpy as np
+        
+        x_col = config.get("x_column") or df.columns[0]
+        
+        # Count occurrences
+        value_counts = df[x_col].value_counts()
+        
+        # Convert to safe types
+        labels = [str(label) for label in value_counts.index]
+        values = np.array(value_counts.values, dtype=float)
+        
+        # Filter out any zero or negative values
+        mask = values > 0
+        labels = [labels[i] for i in range(len(labels)) if mask[i]]
+        values = values[mask]
+        
+        if len(values) > 0:
+            plt.pie(values, labels=labels, autopct='%1.1f%%', startangle=90)
+        else:
+            # Empty pie chart fallback
+            plt.text(0.5, 0.5, 'No data to display', ha='center', va='center')
+        
+        return {"success": True}
+    
+    def _create_scatter_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create scatter plot"""
+        import matplotlib.pyplot as plt
+        
+        x_col = config.get("x_column") or df.columns[0]
+        y_col = config.get("y_column") or df.columns[1] if len(df.columns) > 1 else df.columns[0]
+        
+        plt.scatter(df[x_col], df[y_col])
+        plt.xlabel(x_col)
+        plt.ylabel(y_col)
+        
+        return {"success": True}
+    
+    def _create_histogram(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create histogram"""
+        import matplotlib.pyplot as plt
+        
+        y_col = config.get("y_column") or df.columns[0]
+        
+        plt.hist(df[y_col], bins=20, alpha=0.7)
+        plt.xlabel(y_col)
+        plt.ylabel("Frequency")
+        
+        return {"success": True}
+    
+    def _create_box_plot(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create box plot"""
+        import matplotlib.pyplot as plt
+        
+        y_col = config.get("y_column") or df.columns[0]
+        
+        plt.boxplot(df[y_col])
+        plt.ylabel(y_col)
+        
+        return {"success": True}
+    
+    def _create_heatmap(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create heatmap"""
+        import seaborn as sns
+        
+        # Use only numeric columns
+        numeric_df = df.select_dtypes(include=['number'])
+        
+        if numeric_df.empty:
+            raise ValueError("No numeric data available for heatmap")
+        
+        correlation_matrix = numeric_df.corr()
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
+        
+        return {"success": True}
+    
+    def _create_area_chart(self, df: "pd.DataFrame", config: Dict) -> Dict:
+        """Create area chart"""
+        import matplotlib.pyplot as plt
+        
+        x_col = config.get("x_column") or df.columns[0]
+        y_col = config.get("y_column") or df.columns[1] if len(df.columns) > 1 else df.columns[0]
+        
+        plt.fill_between(df[x_col], df[y_col], alpha=0.7)
+        plt.xlabel(x_col)
+        plt.ylabel(y_col)
+        plt.xticks(rotation=45)
+        
+        return {"success": True}
 
 
-# Make sure class is available for discovery
-# The plugin manager will find CreateVisualization automatically
+# Export for plugin discovery
+__all__ = ["CreateVisualization"]

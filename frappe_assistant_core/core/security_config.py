@@ -1,3 +1,20 @@
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Security Configuration for Frappe Assistant Core
 
@@ -559,15 +576,31 @@ def audit_log_tool_access(user: str, tool_name: str, arguments: Dict[str, Any], 
         result: Tool execution result
     """
     try:
+        # Map tool names to valid audit log actions
+        tool_action_mapping = {
+            "document_get": "get_document",
+            "document_list": "search_documents", 
+            "document_create": "create_document",
+            "document_update": "update_document",
+            "document_delete": "delete_document",
+            "document_submit": "update_document",
+            "report_execute": "run_report",
+            "metadata_get": "get_metadata"
+        }
+        
+        # Get the appropriate action, default to custom_tool
+        action = tool_action_mapping.get(tool_name, "custom_tool")
+        
         # Create audit log entry
         audit_log = frappe.get_doc({
             "doctype": "Assistant Audit Log",
             "user": user,
-            "action": "tool_execution",
+            "action": action,
             "tool_name": tool_name,
-            "arguments": frappe.as_json(arguments),
-            "success": result.get("success", False),
-            "error": result.get("error", ""),
+            "input_data": frappe.as_json(arguments),
+            "output_data": frappe.as_json(result) if result.get("success") else None,
+            "error_message": result.get("error", "") if not result.get("success") else None,
+            "status": "Success" if result.get("success") else "Error",
             "timestamp": frappe.utils.now()
         })
         audit_log.insert(ignore_permissions=True)

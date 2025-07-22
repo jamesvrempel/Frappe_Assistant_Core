@@ -21,8 +21,8 @@ After comprehensive testing of **all 18 core MCP tools**, I can confirm that you
 |------|--------------|---------|-------------|
 | `get_user_info` | Administrator profile access | ✅ **Success** | < 50ms |
 | `get_doctypes` | System DocType discovery | ✅ **765 DocTypes found** | < 100ms |
-| `document_list` | Customer portfolio query | ✅ **8 customers retrieved** | < 150ms |
-| `document_get` | Individual record access | ✅ **Complete data access** | < 200ms |
+| `list_documents` | Customer portfolio query | ✅ **8 customers retrieved** | < 150ms |
+| `get_document` | Individual record access | ✅ **Complete data access** | < 200ms |
 
 **Sample Results:**
 ```yaml
@@ -42,7 +42,7 @@ Customer Portfolio:
 
 | Tool | Test Query | Results | Accuracy |
 |------|------------|---------|----------|
-| `search_global` | "sales" | 5 relevant DocTypes | 100% |
+| `search_documents` | "sales" | 5 relevant DocTypes | 100% |
 | `search_doctype` | "TechCorp" in Sales Invoice | 2 matching invoices | 100% |
 | `search_link` | Customer links | Dynamic options | 100% |
 
@@ -63,7 +63,7 @@ Performance: < 200ms response time
 | Tool | Module Tested | Reports Found | Business Value |
 |------|---------------|---------------|----------------|
 | `report_list` | Accounts | 49 reports | Critical financial insights |
-| `report_execute` | Available | Multi-format support | Real-time reporting |
+| `generate_report` | Available | Multi-format support | Real-time reporting |
 | `report_columns` | Available | Schema analysis | Report customization |
 
 **Report Infrastructure Analysis:**
@@ -83,7 +83,7 @@ Report Types: Script Reports, Query Reports, Report Builder
 
 | Tool | DocType Analyzed | Fields Discovered | Complexity |
 |------|------------------|-------------------|------------|
-| `metadata_doctype` | Sales Invoice | 215 fields | Enterprise-grade |
+| `get_doctype_info` | Sales Invoice | 215 fields | Enterprise-grade |
 | `metadata_list_doctypes` | System-wide | 765 DocTypes | Comprehensive ERP |
 | `metadata_permissions` | Customer | Role-based access | Security validated |
 | `metadata_workflow` | Available | State management | Process automation |
@@ -107,7 +107,7 @@ System Overview:
 
 | Tool | Data Source | Analysis Type | Result Quality |
 |------|-------------|---------------|----------------|
-| `analyze_frappe_data` | Customer | Statistical summary | High precision |
+| `analyze_business_data` | Customer | Statistical summary | High precision |
 | `query_and_analyze` | Sales Invoice | SQL + Analysis | Real-time data |
 | `create_visualization` | Customer/Sales | Chart generation | Production-ready |
 

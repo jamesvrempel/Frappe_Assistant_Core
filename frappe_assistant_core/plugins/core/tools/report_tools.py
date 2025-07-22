@@ -1,4 +1,19 @@
-
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import frappe
 import json
@@ -13,7 +28,7 @@ class ReportTools:
         """Return list of report-related assistant tools"""
         return [
             {
-                "name": "report_execute",
+                "name": "generate_report",
                 "description": "Execute a Frappe report to get business data and analytics. Use this for financial reports, sales analysis, inventory reports, etc. Always check available reports first using report_list if unsure of report names.",
                 "inputSchema": {
                     "type": "object",
@@ -74,7 +89,7 @@ class ReportTools:
     @staticmethod
     def execute_tool(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a report tool with given arguments"""
-        if tool_name == "report_execute":
+        if tool_name == "generate_report":
             return ReportTools.execute_report(**arguments)
         elif tool_name == "report_list":
             return ReportTools.list_reports(**arguments)

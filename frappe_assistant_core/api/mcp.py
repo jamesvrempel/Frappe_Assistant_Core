@@ -1,3 +1,20 @@
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 MCP (Model Context Protocol) API endpoints for Frappe Assistant Core.
 Handles communication between AI assistants and Frappe system.
@@ -101,7 +118,7 @@ def _handle_initialize(params: Dict[str, Any]) -> Dict[str, Any]:
     
     # Return server capabilities
     return {
-        "protocolVersion": "2024-11-05",
+        "protocolVersion": "2025-06-18",
         "capabilities": {
             "tools": {
                 "listChanged": True

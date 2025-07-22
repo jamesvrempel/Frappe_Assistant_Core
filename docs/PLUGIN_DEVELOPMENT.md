@@ -4,6 +4,8 @@
 
 This comprehensive guide covers creating plugins for Frappe Assistant Core. Plugins allow you to extend the system with custom functionality while maintaining clean separation from core features.
 
+> **Note**: For most use cases, we recommend creating tools in external Frappe apps using the hooks system (see TOOL_DEVELOPMENT_TEMPLATES.md). Internal plugins are primarily for core functionality within frappe_assistant_core.
+
 ## Plugin Architecture
 
 ### Plugin Structure
@@ -64,13 +66,13 @@ from typing import Dict, Any, List, Tuple, Optional
 class MyAwesomePlugin(BasePlugin):
     """
     Plugin for awesome functionality.
-    
+
     Provides tools for:
     - Awesome data processing
     - Advanced awesome analysis
     - Awesome visualization
     """
-    
+
     def get_info(self) -> Dict[str, Any]:
         """Get plugin information"""
         return {
@@ -88,7 +90,7 @@ class MyAwesomePlugin(BasePlugin):
             'category': 'analysis',     # Plugin category (optional)
             'tags': ['awesome', 'analysis', 'data']  # Plugin tags (optional)
         }
-    
+
     def get_tools(self) -> List[str]:
         """Get list of tools provided by this plugin"""
         return [
@@ -96,40 +98,40 @@ class MyAwesomePlugin(BasePlugin):
             'awesome_processor',    # Must match tool file names
             'awesome_reporter'      # in tools/ directory
         ]
-    
+
     def validate_environment(self) -> Tuple[bool, Optional[str]]:
         """Validate that plugin can be enabled"""
         info = self.get_info()
         dependencies = info['dependencies']
-        
+
         # Check Python dependencies
         can_enable, error = self._check_dependencies(dependencies)
         if not can_enable:
             return can_enable, error
-        
+
         # Check custom requirements
         try:
             # Example: Check if specific DocType exists
             if not frappe.db.exists("DocType", "Custom DocType"):
                 return False, _("Required DocType 'Custom DocType' not found")
-            
+
             # Example: Check configuration
             settings = frappe.get_single("System Settings")
             if not settings.enable_awesome_feature:
                 return False, _("Awesome feature not enabled in System Settings")
-            
+
             # Example: Check external service
             import requests
             response = requests.get("https://api.awesome-service.com/health", timeout=5)
             if response.status_code != 200:
                 return False, _("Awesome service not available")
-            
+
             self.logger.info("My Awesome Plugin validation passed")
             return True, None
-            
+
         except Exception as e:
             return False, _("Environment validation failed: {0}").format(str(e))
-    
+
     def get_capabilities(self) -> Dict[str, Any]:
         """Get plugin capabilities for MCP protocol"""
         return {
@@ -149,36 +151,36 @@ class MyAwesomePlugin(BasePlugin):
                 "visualization": True
             }
         }
-    
+
     def on_enable(self) -> None:
         """Called when plugin is enabled"""
         super().on_enable()
-        
+
         # Plugin-specific initialization
         self._setup_awesome_cache()
         self._register_awesome_hooks()
-        
+
         # Log successful enable
         self.logger.info("My Awesome Plugin enabled with all features")
-    
+
     def on_disable(self) -> None:
         """Called when plugin is disabled"""
         super().on_disable()
-        
+
         # Plugin-specific cleanup
         self._cleanup_awesome_cache()
         self._unregister_awesome_hooks()
-    
+
     def on_server_start(self) -> None:
         """Called when server starts with plugin enabled"""
         # Start background services if needed
         self._start_awesome_background_service()
-    
+
     def on_server_stop(self) -> None:
         """Called when server stops"""
         # Stop background services
         self._stop_awesome_background_service()
-    
+
     def _setup_awesome_cache(self):
         """Setup plugin-specific caching"""
         try:
@@ -186,7 +188,7 @@ class MyAwesomePlugin(BasePlugin):
             self.logger.debug("Awesome cache initialized")
         except Exception as e:
             self.logger.warning(f"Failed to setup awesome cache: {str(e)}")
-    
+
     def _cleanup_awesome_cache(self):
         """Cleanup plugin-specific caching"""
         try:
@@ -194,23 +196,23 @@ class MyAwesomePlugin(BasePlugin):
             self.logger.debug("Awesome cache cleaned up")
         except Exception as e:
             self.logger.warning(f"Failed to cleanup awesome cache: {str(e)}")
-    
+
     def _register_awesome_hooks(self):
         """Register plugin hooks"""
         # Example: Register document hooks
         # frappe.db.add_after_insert_hook("Customer", self._on_customer_insert)
         pass
-    
+
     def _unregister_awesome_hooks(self):
         """Unregister plugin hooks"""
         # Clean up any registered hooks
         pass
-    
+
     def _start_awesome_background_service(self):
         """Start background services"""
         # Example: Start scheduled jobs
         pass
-    
+
     def _stop_awesome_background_service(self):
         """Stop background services"""
         # Example: Stop scheduled jobs
@@ -238,20 +240,20 @@ from frappe_assistant_core.core.base_tool import BaseTool
 class AwesomeAnalyzer(BaseTool):
     """
     Tool for performing awesome analysis.
-    
+
     Provides capabilities for:
     - Data awesomeness scoring
     - Awesome pattern detection
     - Awesome insights generation
     """
-    
+
     def __init__(self):
         super().__init__()
         self.name = "awesome_analyzer"
         self.description = "Analyze data for awesomeness patterns and insights"
         self.requires_permission = None  # Or specify required DocType
-        
-        self.input_schema = {
+
+        self.inputSchema = {
             "type": "object",
             "properties": {
                 "data_source": {
@@ -277,18 +279,18 @@ class AwesomeAnalyzer(BaseTool):
             },
             "required": ["data_source"]
         }
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute awesome analysis"""
         data_source = arguments.get("data_source")
         analysis_type = arguments.get("analysis_type", "basic")
         parameters = arguments.get("parameters", {})
         output_format = arguments.get("output_format", "json")
-        
+
         try:
             # Validate plugin is enabled
             self._check_plugin_enabled()
-            
+
             # Perform analysis based on type
             if analysis_type == "basic":
                 result = self._basic_awesome_analysis(data_source, parameters)
@@ -301,10 +303,10 @@ class AwesomeAnalyzer(BaseTool):
                     "success": False,
                     "error": f"Unknown analysis type: {analysis_type}"
                 }
-            
+
             # Format output
             formatted_result = self._format_output(result, output_format)
-            
+
             return {
                 "success": True,
                 "data_source": data_source,
@@ -312,24 +314,24 @@ class AwesomeAnalyzer(BaseTool):
                 "output_format": output_format,
                 "result": formatted_result
             }
-            
+
         except Exception as e:
             frappe.log_error(
                 title=_("Awesome Analysis Error"),
                 message=f"Error in awesome analysis: {str(e)}"
             )
-            
+
             return {
                 "success": False,
                 "error": str(e),
                 "data_source": data_source
             }
-    
+
     def _check_plugin_enabled(self):
         """Check if the awesome plugin is properly enabled"""
         if not frappe.cache().hget("awesome_plugin", "initialized"):
             frappe.throw(_("Awesome plugin not properly initialized"))
-    
+
     def _basic_awesome_analysis(self, data_source: str, parameters: Dict) -> Dict:
         """Perform basic awesome analysis"""
         # Your awesome analysis logic here
@@ -338,7 +340,7 @@ class AwesomeAnalyzer(BaseTool):
             "patterns_found": ["awesome_pattern_1", "awesome_pattern_2"],
             "insights": ["Data shows high awesomeness potential"]
         }
-    
+
     def _advanced_awesome_analysis(self, data_source: str, parameters: Dict) -> Dict:
         """Perform advanced awesome analysis"""
         # More sophisticated analysis
@@ -350,7 +352,7 @@ class AwesomeAnalyzer(BaseTool):
             },
             "recommendations": ["Increase awesome factor by 15%"]
         }
-    
+
     def _comprehensive_awesome_analysis(self, data_source: str, parameters: Dict) -> Dict:
         """Perform comprehensive awesome analysis"""
         # Most detailed analysis
@@ -359,7 +361,7 @@ class AwesomeAnalyzer(BaseTool):
             "detailed_metrics": {"score": 96.7, "rank": "excellent"},
             "full_report": "Complete awesome analysis report..."
         }
-    
+
     def _format_output(self, result: Dict, output_format: str) -> Any:
         """Format analysis output"""
         if output_format == "json":
@@ -370,11 +372,11 @@ class AwesomeAnalyzer(BaseTool):
             return self._generate_awesome_visualization(result)
         else:
             return result
-    
+
     def _generate_awesome_report(self, result: Dict) -> str:
         """Generate awesome report format"""
         return f"AWESOME ANALYSIS REPORT\n{'-'*30}\n{result}"
-    
+
     def _generate_awesome_visualization(self, result: Dict) -> Dict:
         """Generate awesome visualization"""
         return {
@@ -403,7 +405,7 @@ matplotlib>=3.5.0
 
 Create `plugins/my_awesome_plugin/README.md`:
 
-```markdown
+````markdown
 # My Awesome Plugin
 
 ## Overview
@@ -422,6 +424,7 @@ This plugin provides awesome functionality for Frappe Assistant Core.
    ```bash
    pip install numpy pandas requests matplotlib
    ```
+````
 
 2. Enable plugin in Assistant Core Settings
 
@@ -447,10 +450,12 @@ No additional configuration required.
 ## Troubleshooting
 
 ### Plugin Not Loading
+
 - Check dependencies are installed
 - Verify plugin validation passes
 - Review error logs
-```
+
+````
 
 ## Advanced Plugin Features
 
@@ -469,7 +474,7 @@ def _create_plugin_config(self):
     if not frappe.db.exists("DocType", "My Awesome Plugin Settings"):
         # Create custom DocType for plugin settings
         pass
-```
+````
 
 ### Plugin Dependencies
 
@@ -479,10 +484,10 @@ Handle dependencies between plugins:
 def validate_environment(self):
     # Check for other plugins
     plugin_manager = get_plugin_manager()
-    
+
     if 'data_science' not in plugin_manager.loaded_plugins:
         return False, _("Requires Data Science plugin to be enabled")
-    
+
     return super().validate_environment()
 ```
 
@@ -493,7 +498,7 @@ Register for Frappe events:
 ```python
 def on_enable(self):
     super().on_enable()
-    
+
     # Register for document events
     frappe.connect("before_save", self._on_document_save)
     frappe.connect("after_insert", self._on_document_insert)
@@ -534,7 +539,7 @@ Add plugin-specific API endpoints:
 def awesome_api_endpoint():
     """Custom API endpoint for plugin"""
     frappe.only_for("System Manager")
-    
+
     try:
         # Plugin-specific API logic
         return {"success": True, "data": "awesome_result"}
@@ -558,32 +563,32 @@ from frappe_assistant_core.plugins.my_awesome_plugin.plugin import MyAwesomePlug
 
 class TestMyAwesomePlugin(FrappeTestCase):
     """Test My Awesome Plugin functionality"""
-    
+
     def setUp(self):
         self.plugin = MyAwesomePlugin()
-    
+
     def test_plugin_info(self):
         """Test plugin information"""
         info = self.plugin.get_info()
-        
+
         self.assertEqual(info['name'], 'my_awesome_plugin')
         self.assertIn('description', info)
         self.assertIn('version', info)
-    
+
     def test_environment_validation(self):
         """Test environment validation"""
         can_enable, error = self.plugin.validate_environment()
-        
+
         # Should pass if dependencies are installed
         if can_enable:
             self.assertIsNone(error)
         else:
             self.assertIsNotNone(error)
-    
+
     def test_plugin_tools(self):
         """Test plugin tool loading"""
         tools = self.plugin.get_tools()
-        
+
         self.assertIn('awesome_analyzer', tools)
         self.assertTrue(len(tools) > 0)
 ```
@@ -596,17 +601,17 @@ Test tools through the MCP protocol:
 def test_awesome_analyzer_integration(self):
     """Test awesome analyzer through MCP"""
     from frappe_assistant_core.core.tool_registry import get_tool_registry
-    
+
     registry = get_tool_registry()
     tool = registry.get_tool("awesome_analyzer")
-    
+
     self.assertIsNotNone(tool)
-    
+
     result = tool.execute({
         "data_source": "test_data",
         "analysis_type": "basic"
     })
-    
+
     self.assertTrue(result["success"])
 ```
 
@@ -658,7 +663,7 @@ def get_plugin_config(self):
 ```python
 def execute(self, arguments):
     self.logger.info(f"Starting awesome analysis for {arguments.get('data_source')}")
-    
+
     try:
         result = self._perform_analysis(arguments)
         self.logger.info("Awesome analysis completed successfully")
@@ -705,18 +710,21 @@ my_awesome_plugin/
 ### Common Issues
 
 1. **Plugin Not Discovered**
+
    - Check directory structure
    - Verify `plugin.py` exists
    - Check for syntax errors
    - Review discovery logs
 
 2. **Validation Failures**
+
    - Install missing dependencies
    - Check permission requirements
    - Verify external service availability
    - Review validation error messages
 
 3. **Tool Not Loading**
+
    - Check tool class names match file names
    - Verify inheritance from BaseTool
    - Check for import errors

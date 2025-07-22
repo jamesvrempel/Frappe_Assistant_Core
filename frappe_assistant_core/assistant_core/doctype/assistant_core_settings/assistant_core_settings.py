@@ -1,4 +1,19 @@
-
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import frappe
 from frappe.model.document import Document
@@ -128,44 +143,36 @@ Build unlimited analysis depth via progressive artifact updates.
     
     @frappe.whitelist()
     def refresh_plugins(self):
-        """Refresh plugin repository and update plugin table"""
+        """Refresh the entire plugin system - discovery and tools"""
         try:
-            # First refresh the plugin repository
-            from frappe_assistant_core.assistant_core.doctype.assistant_plugin_repository.assistant_plugin_repository import refresh_plugin_repository
-            refresh_plugin_repository()
+            from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
             
-            # Clear existing plugin configs
-            self.enabled_plugins = []
+            # Refresh plugin manager discovery
+            plugin_manager = get_plugin_manager()
+            plugin_manager.refresh_plugins()
             
-            # Get all plugins from repository
-            plugins = frappe.get_all(
-                "Assistant Plugin Repository",
-                fields=["plugin_name", "display_name", "description", "version", "can_enable", "validation_error"]
-            )
-            
-            # Add plugins to the table
-            for plugin in plugins:
-                self.append('enabled_plugins', {
-                    'plugin_name': plugin['plugin_name'],
-                    'display_name': plugin.get('display_name', plugin['plugin_name']),
-                    'description': plugin.get('description', ''),
-                    'version': plugin.get('version', ''),
-                    'can_enable': plugin.get('can_enable', False),
-                    'validation_error': plugin.get('validation_error', ''),
-                    'enabled': False  # Default to disabled
-                })
-            
-            # Save changes
-            self.save()
-            
-            # Clear relevant caches
-            frappe.clear_cache()
+            # Get statistics
+            discovered_plugins = plugin_manager.get_discovered_plugins()
+            enabled_plugins = plugin_manager.get_enabled_plugins()
+            available_tools = plugin_manager.get_all_tools()
             
             frappe.msgprint(
-                frappe._("Plugin discovery completed. Found {0} plugins.").format(
-                    len(plugins)
+                frappe._("Plugin system refreshed successfully.<br>Found {0} tools from {1} plugins.<br>Plugins: {2} enabled out of {3} discovered.").format(
+                    len(available_tools),
+                    len(enabled_plugins),
+                    len(enabled_plugins),
+                    len(discovered_plugins)
                 )
             )
+            
+            return {
+                "success": True,
+                "stats": {
+                    "total_tools": len(available_tools),
+                    "discovered_plugins": len(discovered_plugins),
+                    "enabled_plugins": len(enabled_plugins)
+                }
+            }
             
         except Exception as e:
             frappe.log_error(
@@ -173,83 +180,13 @@ Build unlimited analysis depth via progressive artifact updates.
                 message=str(e)
             )
             frappe.throw(
-                frappe._("Failed to refresh plugins: {0}").format(str(e))
+                frappe._("Failed to refresh plugin system: {0}").format(str(e))
             )
     
-    @frappe.whitelist()
-    def refresh_tool_registry(self):
-        """Refresh tool registry with source plugin information"""
-        try:
-            from frappe_assistant_core.install import determine_tool_source_plugin
-            
-            # Debug: Check plugin discovery
-            try:
-                from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
-                plugin_manager = get_plugin_manager()
-                discovered_plugins = plugin_manager.get_discovered_plugins()
-                frappe.logger().info(f"DEBUG: Found {len(discovered_plugins)} plugins during tool registry refresh")
-                for plugin in discovered_plugins:
-                    tools_count = len(plugin.get('tools', []))
-                    frappe.logger().info(f"DEBUG: Plugin {plugin.get('name')} has {tools_count} tools")
-            except Exception as debug_e:
-                frappe.logger().error(f"DEBUG: Plugin discovery error: {debug_e}")
-            
-            # Get all tools from registry
-            tools = frappe.get_all(
-                "Assistant Tool Registry", 
-                fields=["name", "tool_name", "source_plugin"]
-            )
-            
-            debug_info = []
-            updated_count = 0
-            for tool in tools:
-                # Determine the source plugin for this tool
-                source_plugin = determine_tool_source_plugin(tool["tool_name"])
-                
-                debug_info.append(f"{tool['tool_name']} -> {source_plugin or 'core'}")
-                
-                # Update only if source_plugin is different
-                current_source = tool.get("source_plugin")
-                if current_source != source_plugin:
-                    frappe.db.set_value(
-                        "Assistant Tool Registry", 
-                        tool["name"], 
-                        "source_plugin", 
-                        source_plugin
-                    )
-                    updated_count += 1
-            
-            # Commit the changes
-            frappe.db.commit()
-            
-            # Refresh tool registry to clear cache and reload tools
-            from frappe_assistant_core.core.tool_registry import refresh_tool_registry
-            refresh_tool_registry()
-            
-            # Show debug info in the message
-            debug_summary = "<br>".join(debug_info[:10])  # Show first 10 mappings
-            if len(debug_info) > 10:
-                debug_summary += f"<br>... and {len(debug_info)-10} more tools"
-            
-            frappe.msgprint(
-                frappe._("Tool registry updated. {0} tools updated with source plugin information.<br><br>Tool mappings:<br>{1}").format(
-                    updated_count, debug_summary
-                )
-            )
-            
-        except Exception as e:
-            frappe.log_error(
-                title=frappe._("Tool Registry Refresh Error"),
-                message=str(e)
-            )
-            frappe.throw(
-                frappe._("Failed to refresh tool registry: {0}").format(str(e))
-            )
     
     def on_update(self):
-        """Handle settings update including plugin changes"""
+        """Handle settings update"""
         from frappe_assistant_core.assistant_core.server import get_server_instance
-        from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
         
         server = get_server_instance()
         server_was_enabled = self.has_value_changed('server_enabled')
@@ -264,31 +201,217 @@ Build unlimited analysis depth via progressive artifact updates.
                 # Disable API if it was just disabled
                 self.disable_assistant_api()
         
-        # Handle plugin changes
-        if hasattr(self, 'enabled_plugins') and self.enabled_plugins:
-            try:
-                # Get enabled plugin names
-                enabled_plugin_names = [
-                    p.plugin_name for p in self.enabled_plugins if p.enabled
-                ]
+        # Refresh tool registry if settings changed
+        try:
+            from frappe_assistant_core.utils.tool_cache import refresh_tool_cache
+            refresh_tool_cache()
+        except Exception as e:
+            frappe.log_error(
+                title=frappe._("Tool Cache Refresh Error"),
+                message=str(e)
+            )
+    
+    @frappe.whitelist()
+    def get_plugin_status(self):
+        """Get plugin status with enable/disable controls"""
+        try:
+            from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+            
+            # Get plugin manager for plugin info
+            plugin_manager = get_plugin_manager()
+            discovered_plugins = plugin_manager.get_discovered_plugins()
+            enabled_plugins = plugin_manager.get_enabled_plugins()
+            available_tools = plugin_manager.get_all_tools()
+            
+            # Build HTML with plugin controls
+            html_parts = []
+            
+            # Overall statistics header
+            html_parts.append(f"""
+            <div class="alert alert-info mb-3">
+                <h5><i class="fa fa-cogs"></i> Plugin System Status</h5>
+                <div class="row">
+                    <div class="col-md-4"><strong>Total Tools:</strong> {len(available_tools)}</div>
+                    <div class="col-md-4"><strong>Active Plugins:</strong> {len(enabled_plugins)}/{len(discovered_plugins)}</div>
+                    <div class="col-md-4"><strong>System:</strong> 🟢 Running</div>
+                </div>
+            </div>
+            """)
+            
+            # Plugin management section
+            html_parts.append("""
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fa fa-puzzle-piece"></i> Plugin Management</h6>
+                    <small class="text-muted">Enable or disable plugins to control available tools</small>
+                </div>
+                <div class="card-body">
+            """)
+            
+            # Individual plugin cards
+            for plugin in discovered_plugins:
+                plugin_name = plugin.get('name', 'Unknown')
+                is_enabled = plugin_name in enabled_plugins
+                tools_count = len(plugin.get('tools', []))
                 
-                # Load enabled plugins
-                plugin_manager = get_plugin_manager()
-                plugin_manager.load_enabled_plugins(enabled_plugin_names)
+                status_badge = "badge-success" if is_enabled else "badge-secondary"
+                status_text = "Enabled" if is_enabled else "Disabled"
+                toggle_action = "disable" if is_enabled else "enable"
+                toggle_class = "btn-warning" if is_enabled else "btn-success"
+                toggle_icon = "fa-pause" if is_enabled else "fa-play"
                 
-                # Refresh tool registry if plugins changed
-                from frappe_assistant_core.core.tool_registry import refresh_tool_registry
-                refresh_tool_registry()
+                html_parts.append(f"""
+                <div class="plugin-card border rounded p-3 mb-3" style="background: {'#f8f9fa' if is_enabled else '#ffffff'}">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h6 class="mb-1">
+                                <i class="fa fa-puzzle-piece text-primary"></i> 
+                                {plugin.get('display_name', plugin_name.title())}
+                                <span class="badge {status_badge} ml-2">{status_text}</span>
+                            </h6>
+                            <p class="text-muted mb-1 small">{plugin.get('description', 'No description available')}</p>
+                            <small class="text-info">
+                                <i class="fa fa-tools"></i> {tools_count} tools • 
+                                <i class="fa fa-tag"></i> v{plugin.get('version', '1.0.0')}
+                            </small>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <button type="button" 
+                                    class="btn {toggle_class} btn-sm" 
+                                    onclick="togglePlugin('{plugin_name}', '{toggle_action}')">
+                                <i class="fa {toggle_icon}"></i> {toggle_action.title()}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                """)
+            
+            html_parts.append("""
+                </div>
+            </div>
+            """)
+            
+            # Tools breakdown by plugin
+            if available_tools:
+                html_parts.append("""
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6><i class="fa fa-list"></i> Tool Distribution</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                """)
                 
-            except Exception as e:
-                frappe.log_error(
-                    title=frappe._("Plugin Load Error"),
-                    message=str(e)
-                )
-                frappe.msgprint(
-                    frappe._("Warning: Some plugins failed to load: {0}").format(str(e)),
-                    indicator='orange'
-                )
+                # Group tools by plugin
+                tools_by_plugin = {}
+                for tool_name, tool_info in available_tools.items():
+                    plugin = tool_info.plugin_name
+                    if plugin not in tools_by_plugin:
+                        tools_by_plugin[plugin] = []
+                    tools_by_plugin[plugin].append(tool_name)
+                
+                for plugin, plugin_tools in tools_by_plugin.items():
+                    html_parts.append(f"""
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <span><strong>{plugin.title()}</strong></span>
+                            <span class="badge badge-primary">{len(plugin_tools)} tools</span>
+                        </div>
+                    </div>
+                    """)
+                
+                html_parts.append("""
+                        </div>
+                    </div>
+                </div>
+                """)
+            
+            # Show error plugins (if any)
+            error_plugins = [p for p in discovered_plugins if not p.get('can_enable', True)]
+            if error_plugins:
+                html_parts.append("""
+                <div class="alert alert-warning mt-3">
+                    <h6><i class="fa fa-exclamation-triangle"></i> Plugin Issues</h6>
+                    <ul class="mb-0">
+                """)
+                for plugin in error_plugins[:3]:
+                    error_msg = plugin.get('validation_error', 'Unknown error')
+                    html_parts.append(f"<li><strong>{plugin.get('name', 'Unknown')}:</strong> {error_msg}</li>")
+                if len(error_plugins) > 3:
+                    html_parts.append(f"<li><em>... and {len(error_plugins) - 3} more plugin errors</em></li>")
+                html_parts.append("</ul></div>")
+            
+            # Add JavaScript for plugin toggle
+            html_parts.append("""
+            <script>
+            function togglePlugin(pluginName, action) {
+                frappe.call({
+                    method: 'toggle_plugin',
+                    doc: cur_frm.doc,
+                    args: {
+                        plugin_name: pluginName,
+                        action: action
+                    },
+                    callback: function(response) {
+                        if (!response.exc) {
+                            cur_frm.reload_doc();
+                            frappe.show_alert({
+                                message: __('Plugin {0} {1}d successfully', [pluginName, action]),
+                                indicator: 'green'
+                            });
+                        }
+                    }
+                });
+            }
+            </script>
+            """)
+            
+            return {"success": True, "html": "".join(html_parts)}
+            
+        except Exception as e:
+            return {
+                "success": False, 
+                "html": f"<div class='alert alert-danger'>Error loading plugin status: {str(e)}</div>"
+            }
+    
+    @frappe.whitelist()
+    def toggle_plugin(self, plugin_name, action):
+        """Enable or disable a plugin"""
+        try:
+            from frappe_assistant_core.utils.plugin_manager import get_plugin_manager, PluginError
+            
+            plugin_manager = get_plugin_manager()
+            
+            if action == "enable":
+                result = plugin_manager.enable_plugin(plugin_name)
+                message = f"Plugin '{plugin_name}' enabled successfully"
+            elif action == "disable":
+                result = plugin_manager.disable_plugin(plugin_name)
+                message = f"Plugin '{plugin_name}' disabled successfully"
+            else:
+                frappe.throw(f"Invalid action: {action}")
+            
+            if result:
+                frappe.msgprint(frappe._(message))
+                return {"success": True, "message": message}
+            else:
+                error_msg = f"Failed to {action} plugin '{plugin_name}'"
+                frappe.throw(error_msg)
+                
+        except PluginError as e:
+            frappe.log_error(
+                title=frappe._("Plugin Toggle Error"),
+                message=str(e)
+            )
+            frappe.throw(frappe._(str(e)))
+        except Exception as e:
+            frappe.log_error(
+                title=frappe._("Plugin Toggle Error"),
+                message=str(e)
+            )
+            frappe.throw(
+                frappe._("Failed to {0} plugin '{1}': {2}").format(action, plugin_name, str(e))
+            )
 
 
 

@@ -1,3 +1,20 @@
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Core plugin providing essential Frappe operations.
 This plugin is always enabled and provides fundamental tools.
@@ -29,25 +46,20 @@ class CorePlugin(BasePlugin):
         These correspond to files in the core/tools directory.
         """
         return [
-            'document_create',
-            'document_get', 
-            'document_update',
-            'document_list',
-            'document_delete',
-            'search_global',
-            'search_doctype', 
-            'search_link',
-            'metadata_doctype',
-            'metadata_list_doctypes',
-            'metadata_doctype_fields',
-            'metadata_permissions',
-            'metadata_workflow',
-            'report_execute',
-            'report_list',
-            'report_details',
-            'workflow_action',
-            'workflow_list', 
-            'workflow_status'
+            # Individual document tools
+            'create_document',
+            'get_document', 
+            'update_document',
+            'list_documents',
+            'delete_document',
+            'submit_document',
+            # Consolidated tool classes
+            'search_documents',
+            'get_doctype_info', 
+            'generate_report',
+            'run_workflow',
+            # Individual report details tool
+            'get_report_data'
         ]
     
     def validate_environment(self):

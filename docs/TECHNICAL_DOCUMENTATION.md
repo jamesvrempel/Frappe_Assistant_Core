@@ -22,9 +22,11 @@
 ## Project Overview
 
 ### Introduction
+
 Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Context Protocol (MCP) server implementation that enables AI assistants like Claude to interact seamlessly with Frappe Framework and ERPNext systems. The server implements JSON-RPC 2.0 based assistant protocol for secure document operations, report execution, data analysis, and visualization with inline display capabilities.
 
 ### Key Features
+
 - **🏗️ Plugin-Based Architecture** - Complete architectural redesign from monolithic to modular plugin system
 - **21 Comprehensive Tools** across 4 plugin categories (all included - no paid tiers)
 - **🔌 Plugin Auto-Discovery** - Zero configuration plugin and tool loading
@@ -46,6 +48,7 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 - **⚖️ MIT Licensed** - Free for all commercial and personal use
 
 ### Technology Stack
+
 - **Backend**: Python, Frappe Framework
 - **Protocol**: JSON-RPC 2.0, MCP (Model Context Protocol)
 - **Data Analysis**: pandas, numpy, matplotlib, seaborn
@@ -61,6 +64,7 @@ Frappe Assistant Core is a comprehensive, **MIT-licensed open source** Model Con
 ### Plugin-Based Architecture
 
 #### 1. **Core System Components**
+
 ```
 frappe_assistant_core/
 ├── core/                        # Core system components
@@ -76,18 +80,19 @@ frappe_assistant_core/
         └── assistant_tool_registry/        # Tool registration
 ```
 
-#### 2. **Plugin System** 🆕 *Plugin Architecture*
+#### 2. **Plugin System** 🆕 _Plugin Architecture_
+
 ```
 frappe_assistant_core/plugins/
 ├── core/                        # Core tools plugin (always enabled)
 │   ├── plugin.py                # Plugin definition and metadata
 │   └── tools/                   # Tool implementations
-│       ├── document_create.py   # Document creation
-│       ├── document_get.py      # Document retrieval  
-│       ├── document_update.py   # Document updates
-│       ├── document_delete.py   # Document deletion
-│       ├── document_list.py     # Document listing
-│       ├── search_global.py     # Global search
+│       ├── create_document.py   # Document creation
+│       ├── get_document.py      # Document retrieval
+│       ├── update_document.py   # Document updates
+│       ├── delete_document.py   # Document deletion
+│       ├── list_documents.py     # Document listing
+│       ├── search_documents.py     # Global search
 │       ├── search_doctype.py    # DocType-specific search
 │       ├── search_link.py       # Link field search
 │       ├── metadata_*.py        # Metadata tools
@@ -96,8 +101,8 @@ frappe_assistant_core/plugins/
 ├── data_science/                # Data science plugin (optional)
 │   ├── plugin.py                # Plugin definition
 │   └── tools/
-│       ├── execute_python_code.py      # Python code execution
-│       ├── analyze_frappe_data.py      # Data analysis
+│       ├── run_python_code.py      # Python code execution
+│       ├── analyze_business_data.py      # Data analysis
 │       ├── query_and_analyze.py        # SQL analysis
 │       └── create_visualization.py     # Chart generation
 ├── websocket/                   # WebSocket plugin (optional)
@@ -105,6 +110,7 @@ frappe_assistant_core/plugins/
 ```
 
 #### 3. **Plugin Architecture Benefits**
+
 - **🔌 Modular Design**: Tools organized in logical, discoverable plugins
 - **🚀 Auto-Discovery**: Automatic plugin and tool discovery on startup
 - **⚙️ Runtime Management**: Enable/disable plugins through web interface
@@ -114,7 +120,8 @@ frappe_assistant_core/plugins/
 
 ### Tool Discovery and Registry System
 
-#### 1. **Tool Registry** 🔄 *Plugin-Based Discovery*
+#### 1. **Tool Registry** 🔄 _Plugin-Based Discovery_
+
 ```python
 # Core registry handles plugin-based tool discovery
 from frappe_assistant_core.core.tool_registry import ToolRegistry
@@ -124,7 +131,8 @@ registry = ToolRegistry()
 available_tools = registry.get_available_tools()
 ```
 
-#### 2. **Plugin Manager** 🆕 *Plugin Lifecycle*  
+#### 2. **Plugin Manager** 🆕 _Plugin Lifecycle_
+
 ```python
 from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
 
@@ -135,7 +143,8 @@ discovered_plugins = plugin_manager.get_discovered_plugins()
 plugin_manager.load_enabled_plugins(['core', 'data_science'])
 ```
 
-#### 3. **Base Tool Class** 🔧 *Standardized Interface*
+#### 3. **Base Tool Class** 🔧 _Standardized Interface_
+
 ```python
 from frappe_assistant_core.core.base_tool import BaseTool
 
@@ -144,8 +153,8 @@ class MyTool(BaseTool):
         super().__init__()
         self.name = "my_tool"
         self.description = "Tool description"
-        self.input_schema = {...}  # JSON schema
-    
+        self.inputSchema = {...}  # JSON schema
+
     def execute(self, arguments):
         # Tool implementation
         return {"success": True, "result": "..."}
@@ -154,6 +163,7 @@ class MyTool(BaseTool):
 ### Modern Python Packaging 🆕
 
 #### pyproject.toml Configuration
+
 ```toml
 [build-system]
 requires = ["setuptools>=64", "wheel"]
@@ -174,6 +184,7 @@ dependencies = [
 ```
 
 **Benefits:**
+
 - ✅ Eliminates pip deprecation warnings
 - ✅ Modern Python packaging standards
 - ✅ Proper dependency management
@@ -188,12 +199,14 @@ dependencies = [
 #### 1. **Plugin-Based Architecture Implementation** ⭐ **MAJOR**
 
 **Before:**
+
 - Single 1580-line monolithic API file
 - Hardcoded tool discovery
 - Fixed tool structure
 - Legacy setup.py packaging
 
 **After:**
+
 - Complete plugin-based architecture
 - 4 distinct plugin categories (core, data_science, websocket, batch_processing)
 - Automatic plugin and tool discovery
@@ -205,6 +218,7 @@ dependencies = [
 #### 2. **Modular Architecture Implementation**
 
 **Additional Improvements:**
+
 - Centralized constants in dedicated module
 - Professional logging system replacing print statements
 - Enhanced error handling and validation
@@ -213,13 +227,15 @@ dependencies = [
 #### 3. **Critical Data Compatibility Fixes** 🔧
 
 **Data Science Plugin Enhancements:**
+
 - ✅ **Fixed `invalid __array_struct__` errors** with pandas DataFrame creation from Frappe data
-- ✅ **Resolved matplotlib import scope issues** in visualization tools  
-- ✅ **Enhanced SQL-based data fetching** to bypass frappe._dict compatibility problems
+- ✅ **Resolved matplotlib import scope issues** in visualization tools
+- ✅ **Enhanced SQL-based data fetching** to bypass frappe.\_dict compatibility problems
 - ✅ **Improved data serialization** for complex Frappe data types
 - ✅ **Better error handling** with meaningful error messages for debugging
 
 **Impact:**
+
 - All 21 tools now functional without data conversion errors
 - Seamless pandas integration with Frappe business data
 - Reliable visualization creation across all chart types
@@ -227,16 +243,17 @@ dependencies = [
 
 #### 2. **Code Quality Improvements**
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Main API File Size | 1580 lines | 200 lines | 87% reduction |
-| Print Statements | 905 across 26 files | 0 in production code | 100% eliminated |
-| Hardcoded Strings | 50+ scattered | Centralized in constants | Organized |
-| Module Structure | Monolithic | Modular handlers | Clean separation |
+| Metric             | Before              | After                    | Improvement      |
+| ------------------ | ------------------- | ------------------------ | ---------------- |
+| Main API File Size | 1580 lines          | 200 lines                | 87% reduction    |
+| Print Statements   | 905 across 26 files | 0 in production code     | 100% eliminated  |
+| Hardcoded Strings  | 50+ scattered       | Centralized in constants | Organized        |
+| Module Structure   | Monolithic          | Modular handlers         | Clean separation |
 
 #### 3. **Files Created During Refactoring**
 
 **New Architecture Files:**
+
 - `frappe_assistant_core/constants/definitions.py`
 - `frappe_assistant_core/utils/logger.py`
 - `frappe_assistant_core/api/handlers/initialize.py`
@@ -250,17 +267,20 @@ dependencies = [
 #### 4. **Error Fixes Applied**
 
 **Import Errors Fixed:**
+
 - ✅ Created missing `tools/registry.py` module
-- ✅ Created missing `tools/executor.py` module  
+- ✅ Created missing `tools/executor.py` module
 - ✅ Fixed missing notification handler
 - ✅ Corrected DocType name inconsistencies
 
 **Module Structure Fixed:**
+
 - ✅ Added missing `__init__.py` files
 - ✅ Organized proper import hierarchy
 - ✅ Created compatibility wrappers
 
 **Cleanup Completed:**
+
 - ✅ Removed 26 temporary test/debug files
 - ✅ Removed backup files
 - ✅ Cleaned empty directories
@@ -272,56 +292,68 @@ dependencies = [
 ### Plugin-Based Tool Categories
 
 #### 1. **Core Plugin Tools** (`plugins/core/`) - Always Enabled
+
 Essential Frappe operations that are always available:
 
 **Document Operations** (`document_*`)
-- `document_create` - Create new documents
-- `document_get` - Retrieve document data
-- `document_update` - Update existing documents
-- `document_delete` - Delete documents
-- `document_list` - List documents with filters
+
+- `create_document` - Create new documents
+- `get_document` - Retrieve document data
+- `update_document` - Update existing documents
+- `delete_document` - Delete documents
+- `list_documents` - List documents with filters
 
 **Search Tools** (`search_*`)
-- `search_global` - Global search across all DocTypes
+
+- `search_documents` - Global search across all DocTypes
 - `search_doctype` - DocType-specific search
 - `search_link` - Link field search and filtering
 
 **Metadata Tools** (`metadata_*`)
-- `metadata_doctype` - Get DocType structure information
+
+- `get_doctype_info` - Get DocType structure information
 - `metadata_list_doctypes` - List all available DocTypes
-- `metadata_doctype_fields` - Get field definitions
+- `get_doctype_info_fields` - Get field definitions
 - `metadata_permissions` - Permission information
 - `metadata_workflow` - Workflow information
 
 **Report Tools** (`report_*`)
-- `report_execute` - Execute any Frappe report type
+
+- `generate_report` - Execute any Frappe report type
 - `report_list` - Get available reports
-- `report_details` - Get report structure and parameters
+- `get_report_data` - Get report structure and parameters
 
 **Workflow Tools** (`workflow_*`)
+
 - `workflow_action` - Execute workflow actions
 - `workflow_list` - List available workflows
 - `workflow_status` - Get workflow status
 
 #### 2. **Data Science Plugin Tools** (`plugins/data_science/`) - Optional
+
 Advanced analytics and visualization capabilities:
 
 **Analysis Tools**
-- `execute_python_code` - Sandboxed Python execution with Frappe context
-- `analyze_frappe_data` - Statistical data analysis with pandas
+
+- `run_python_code` - Sandboxed Python execution with Frappe context
+- `analyze_business_data` - Statistical data analysis with pandas
 - `query_and_analyze` - SQL queries with advanced analysis
 - `create_visualization` - Chart generation with matplotlib (bar, line, pie, scatter, heatmap)
 
 **Dependencies:** pandas, numpy, matplotlib, seaborn, plotly, scipy
 
 #### 3. **WebSocket Plugin Tools** (`plugins/websocket/`) - Optional
+
 Real-time communication capabilities:
+
 - Live data streaming
 - Real-time notifications
 - Interactive dashboard updates
 
 #### 4. **Batch Processing Plugin Tools** (`plugins/batch_processing/`) - Optional
+
 Background and bulk operations:
+
 - Large dataset processing
 - Background task management
 - Bulk operation optimization
@@ -329,24 +361,25 @@ Background and bulk operations:
 ### Plugin-Based Auto-Discovery System
 
 #### Tool Registry with Plugin Integration 🆕
+
 ```python
 # frappe_assistant_core/core/tool_registry.py
 class ToolRegistry:
     """Registry for all available tools. Handles discovery from plugins."""
-    
+
     def __init__(self):
         self.tools: Dict[str, BaseTool] = {}
         self._discover_tools()
-    
+
     def _discover_tools(self):
         """Discover all available tools from enabled plugins"""
         self._discover_plugin_tools()
-    
+
     def _discover_plugin_tools(self):
         """Discover tools from enabled plugins"""
         plugin_manager = get_plugin_manager()
         enabled_plugins = plugin_manager.get_enabled_plugins()
-        
+
         for plugin_name, plugin_instance in enabled_plugins.items():
             # Load tools from each enabled plugin
             plugin_tools = plugin_manager.get_plugin_tools(plugin_name)
@@ -354,52 +387,55 @@ class ToolRegistry:
 ```
 
 #### Plugin Manager 🆕
+
 ```python
 # frappe_assistant_core/utils/plugin_manager.py
 class PluginManager:
     """Manages plugin discovery, loading, and lifecycle"""
-    
+
     def _discover_plugins(self):
         """Auto-discover all plugins in the plugins directory"""
         plugins_dir = Path(__file__).parent.parent / "plugins"
-        
+
         for item in plugins_dir.iterdir():
             if item.is_dir() and not item.name.startswith(('_', '.')):
                 self._discover_plugin(item)
-    
+
     def get_enabled_plugins(self) -> Dict[str, BasePlugin]:
         """Get all enabled plugin instances"""
-        
+
     def get_plugin_tools(self, plugin_name: str) -> Dict[str, BaseTool]:
         """Get all tools from a specific plugin"""
 ```
 
 #### Base Tool Framework 🆕
+
 ```python
 # frappe_assistant_core/core/base_tool.py
 class BaseTool:
     """Base class for all tools with standardized interface"""
-    
+
     def __init__(self):
         self.name: str = ""
         self.description: str = ""
-        self.input_schema: Dict = {}
+        self.inputSchema: Dict = {}
         self.requires_permission: Optional[str] = None
-    
+
     def execute(self, arguments: Dict[str, Any]) -> Any:
         """Execute the tool - must be implemented by subclasses"""
         raise NotImplementedError
-    
+
     def validate_arguments(self, arguments: Dict[str, Any]) -> bool:
         """Validate arguments against tool schema"""
-    
+
     def check_permission(self, user: str = None) -> bool:
         """Check if user has permission to use this tool"""
 ```
-    
+
 def get_tool_info(tool_name: str) -> Dict[str, Any]:
-    """Get detailed tool information"""
-```
+"""Get detailed tool information"""
+
+````
 
 ---
 
@@ -427,31 +463,32 @@ ROLE_TOOL_ACCESS = {
     "Assistant Admin": {
         "allowed_tools": [
             *BASIC_CORE_TOOLS,  # All basic tools
-            "metadata_permissions", "metadata_workflow", 
+            "metadata_permissions", "metadata_workflow",
             "tool_registry_list", "audit_log_view", "workflow_action"
         ],
-        "restricted_tools": ["execute_python_code", "query_and_analyze"],
+        "restricted_tools": ["run_python_code", "query_and_analyze"],
         "description": "Administrative access without code execution capabilities"
     },
     "Assistant User": {
         "allowed_tools": BASIC_CORE_TOOLS,
         "restricted_tools": [
-            "execute_python_code", "query_and_analyze",
+            "run_python_code", "query_and_analyze",
             "metadata_permissions", "tool_registry_list", "audit_log_view"
         ],
         "description": "Basic business user access with document-level permissions"
     },
     "Default": {
         "allowed_tools": BASIC_CORE_TOOLS,
-        "restricted_tools": ["execute_python_code", "query_and_analyze"],
+        "restricted_tools": ["run_python_code", "query_and_analyze"],
         "description": "Basic tool access for all users - document permissions control actual access"
     }
 }
-```
+````
 
 **Tool Categories by Role:**
+
 - **System Manager**: Full access to all 21 tools including dangerous operations
-- **Assistant Admin**: 16 tools excluding code execution and direct database queries  
+- **Assistant Admin**: 16 tools excluding code execution and direct database queries
 - **Assistant User**: 14 basic tools for standard business operations
 - **Default**: 14 basic tools for any other Frappe user roles
 
@@ -464,19 +501,19 @@ Every document operation goes through comprehensive permission validation:
 ```python
 def validate_document_access(user: str, doctype: str, name: str, perm_type: str = "read") -> Dict[str, Any]:
     """Multi-layer document access validation"""
-    
+
     # Layer 1: Role-based DocType accessibility
     if not is_doctype_accessible(doctype, primary_role):
         return {"success": False, "error": "Access to {doctype} is restricted for your role"}
-    
+
     # Layer 2: Frappe DocType-level permissions
     if not frappe.has_permission(doctype, perm_type, user=user):
         return {"success": False, "error": "Insufficient {perm_type} permissions for {doctype}"}
-    
+
     # Layer 3: Document-specific permissions (row-level security)
     if name and not frappe.has_permission(doctype, perm_type, doc=name, user=user):
         return {"success": False, "error": "Insufficient {perm_type} permissions for {doctype} {name}"}
-    
+
     # Layer 4: Submitted document state validation
     if perm_type in ["write", "delete"]:
         # Prevent modification of submitted documents
@@ -486,6 +523,7 @@ def validate_document_access(user: str, doctype: str, name: str, perm_type: str 
 ```
 
 **Permission Layers:**
+
 1. **Role-based DocType Access**: Certain DocTypes restricted by user role
 2. **Frappe DocType Permissions**: Standard Frappe permission checking
 3. **Row-Level Security**: Document-specific access (company/user filters)
@@ -518,7 +556,7 @@ def filter_sensitive_fields(doc_dict: Dict[str, Any], doctype: str, user_role: s
     """Filter sensitive fields based on user role"""
     if user_role == "System Manager":
         return doc_dict  # System Manager can see all fields
-    
+
     # Replace sensitive values with "***RESTRICTED***"
     for field in sensitive_fields:
         if field in filtered_doc:
@@ -526,6 +564,7 @@ def filter_sensitive_fields(doc_dict: Dict[str, Any], doctype: str, user_role: s
 ```
 
 **Data Protection Features:**
+
 - **Global Sensitive Fields**: 18 universally sensitive fields across all DocTypes
 - **DocType-Specific Protection**: Custom sensitive field lists for 15+ DocTypes
 - **Admin-Only Fields**: System metadata hidden from Assistant Users
@@ -541,19 +580,19 @@ RESTRICTED_DOCTYPES = {
         # System administration DocTypes
         "System Settings", "Print Settings", "Email Domain", "LDAP Settings",
         "OAuth Settings", "Social Login Key", "Dropbox Settings",
-        
-        # Security and permissions DocTypes  
+
+        # Security and permissions DocTypes
         "Role", "User Permission", "Role Permission", "Custom Role",
         "Module Profile", "Role Profile", "Custom DocPerm", "DocShare",
-        
+
         # System logs and audit DocTypes
         "Error Log", "Activity Log", "Access Log", "View Log",
         "Scheduler Log", "Integration Request",
-        
+
         # System customization DocTypes
         "Server Script", "Client Script", "Custom Script", "Property Setter",
         "DocType", "DocField", "DocPerm", "Custom Field",
-        
+
         # Development and maintenance DocTypes
         "Package", "Data Import", "Data Export", "Bulk Update"
         # ... 30+ restricted DocTypes total
@@ -562,6 +601,7 @@ RESTRICTED_DOCTYPES = {
 ```
 
 **Access Control:**
+
 - **30+ Restricted DocTypes** for Assistant Users to prevent system tampering
 - **Administrative Protection**: Core system DocTypes only accessible to System Managers
 - **Security-Critical Access**: Permission and role management restricted to admins
@@ -576,7 +616,7 @@ RESTRICTED_DOCTYPES = {
 if doctype == "User" and user_role in ["Assistant User", "Default"]:
     filters["name"] = current_user  # Users can only see themselves
 
-# Example: Audit log access control  
+# Example: Audit log access control
 def get_permission_query_conditions(user=None):
     if "System Manager" in frappe.get_roles(user):
         return ""  # See all records
@@ -588,6 +628,7 @@ def get_permission_query_conditions(user=None):
 ```
 
 **Row-Level Security Features:**
+
 - **Company-Based Access**: Automatic filtering based on user's company permissions
 - **User-Scoped Data**: Users can only access their own audit logs and connection logs
 - **Permission Query Integration**: Uses Frappe's permission query system
@@ -603,7 +644,7 @@ def audit_log_tool_access(user: str, tool_name: str, arguments: Dict[str, Any], 
     audit_log = frappe.get_doc({
         "doctype": "Assistant Audit Log",
         "user": user,
-        "action": "tool_execution", 
+        "action": "tool_execution",
         "tool_name": tool_name,
         "arguments": frappe.as_json(arguments),
         "success": result.get("success", False),
@@ -615,6 +656,7 @@ def audit_log_tool_access(user: str, tool_name: str, arguments: Dict[str, Any], 
 ```
 
 **Audit Features:**
+
 - **Complete Tool Logging**: Every tool execution logged with full context
 - **Success/Failure Tracking**: Both successful and failed operations recorded
 - **IP Address Tracking**: Security monitoring with source IP logging
@@ -658,37 +700,37 @@ All tools inherit security validation:
 ```python
 class BaseTool:
     """Base class with built-in security validation"""
-    
+
     def execute_with_security(self, arguments: Dict[str, Any]) -> Any:
         """Execute tool with comprehensive security validation"""
-        
+
         # 1. User context validation
         current_user = frappe.session.user
         if not current_user or current_user == "Guest":
             return {"success": False, "error": "Authentication required"}
-        
+
         # 2. Tool permission validation
         user_role = get_user_primary_role(current_user)
         if not check_tool_access(user_role, self.name):
             return {"success": False, "error": "Insufficient permissions for this tool"}
-        
+
         # 3. Argument validation
         if not self.validate_arguments(arguments):
             return {"success": False, "error": "Invalid arguments provided"}
-        
+
         # 4. Execute with error handling
         try:
             result = self.execute(arguments)
-            
+
             # 5. Filter sensitive data
             if isinstance(result, dict) and "data" in result:
                 result["data"] = self.filter_result_data(result["data"], user_role)
-            
+
             # 6. Audit logging
             audit_log_tool_access(current_user, self.name, arguments, result)
-            
+
             return result
-            
+
         except Exception as e:
             error_result = {"success": False, "error": str(e)}
             audit_log_tool_access(current_user, self.name, arguments, error_result)
@@ -700,56 +742,60 @@ class BaseTool:
 **Example:** Document Get Tool with Security
 
 ```python
-# frappe_assistant_core/plugins/core/tools/document_get.py
+# frappe_assistant_core/plugins/core/tools/get_document.py
 def execute(self, arguments):
     doctype = arguments.get("doctype")
     name = arguments.get("name")
     current_user = frappe.session.user
-    
+
     # Security validation
     validation_result = validate_document_access(
         user=current_user,
-        doctype=doctype, 
+        doctype=doctype,
         name=name,
         perm_type="read"
     )
-    
+
     if not validation_result["success"]:
         return validation_result
-    
+
     # Special Administrator protection
     if name == "Administrator" and current_user != "Administrator":
         return {"success": False, "error": "Access denied: Cannot access Administrator record"}
-    
+
     # Get document data
     doc = frappe.get_doc(doctype, name)
     doc_dict = doc.as_dict()
-    
+
     # Filter sensitive fields based on user role
     user_role = get_user_primary_role(current_user)
     filtered_doc = filter_sensitive_fields(doc_dict, doctype, user_role)
-    
+
     return {"success": True, "data": filtered_doc}
 ```
 
 ### Security Best Practices Implemented
 
 #### 1. **Defense in Depth**
+
 - **Multiple Security Layers**: Role → DocType → Document → Field validation
 - **Permission Redundancy**: Both custom and Frappe permission checking
 - **Fail-Safe Defaults**: Restrictive permissions by default
 
-#### 2. **Principle of Least Privilege**  
+#### 2. **Principle of Least Privilege**
+
 - **Role-Based Minimum Access**: Each role gets only necessary tool access
 - **Granular Permissions**: Fine-grained control over operations
 - **Data Scoping**: Users see only data they're authorized to access
 
 #### 3. **Complete Audit Trail**
+
 - **Comprehensive Logging**: All operations logged with full context
 - **Security Monitoring**: Failed access attempts recorded
 - **Forensic Capability**: Complete audit trail for security investigations
 
 #### 4. **Data Protection**
+
 - **Sensitive Field Masking**: Automatic filtering of sensitive information
 - **Role-Based Filtering**: Data visibility based on user roles
 - **No Data Leakage**: Secure error messages without sensitive data exposure
@@ -768,7 +814,7 @@ standard_roles = [
 # Role assignment in Frappe
 # System Manager: Built-in Frappe role
 # Assistant Admin: Custom administrative role
-# Assistant User: Custom business user role  
+# Assistant User: Custom business user role
 # Default: Any other Frappe role gets basic access
 ```
 
@@ -782,19 +828,21 @@ permission_query_conditions = {
 }
 
 # Security settings can be customized through DocTypes:
-# - Assistant Core Settings: General security configuration  
+# - Assistant Core Settings: General security configuration
 # - Assistant Tool Registry: Tool-specific permission settings
 ```
 
 ### Security Monitoring & Analytics
 
 #### Audit Log Analysis
+
 - **Tool Usage Patterns**: Track which tools are used most frequently
 - **Access Attempt Monitoring**: Monitor failed access attempts for security threats
 - **User Activity Analysis**: Analyze user behavior for anomaly detection
 - **Role Effectiveness**: Evaluate if role permissions are appropriately configured
 
 #### Security Metrics
+
 - **Permission Denial Rate**: Percentage of requests denied due to permissions
 - **Sensitive Data Access**: Monitor access to sensitive DocTypes and fields
 - **Tool Usage by Role**: Understand tool usage patterns across different user roles
@@ -803,12 +851,14 @@ permission_query_conditions = {
 ### Integration with Frappe Security
 
 #### Native Permission System
+
 - **frappe.has_permission()**: Deep integration with Frappe's permission engine
 - **Permission Query Conditions**: Custom query filters for row-level security
 - **User Permissions**: Automatic enforcement of user-specific data restrictions
 - **Company-Based Filtering**: Seamless multi-company security support
 
 #### Built-in Security Features
+
 - **Session Management**: Leverages Frappe's session handling
 - **IP Restriction**: Integration with Frappe's IP-based access control
 - **Two-Factor Authentication**: Compatible with Frappe's 2FA system
@@ -825,8 +875,9 @@ The Frappe Assistant Core implements an **Intelligent Artifact Streaming System*
 ### Problem Statement
 
 **Challenge**: Large tool results (>5 lines, >1000 characters) cause:
+
 - ❌ **Conversation Length Limits**: Claude Desktop hitting maximum response length
-- ❌ **Poor User Experience**: Truncated or incomplete results  
+- ❌ **Poor User Experience**: Truncated or incomplete results
 - ❌ **Unprofessional Output**: Raw data dumps instead of structured reports
 - ❌ **Lost Work**: Analysis results lost when conversations exceed limits
 
@@ -839,16 +890,17 @@ The Frappe Assistant Core implements an **Intelligent Artifact Streaming System*
 **File**: `frappe_assistant_core/api/handlers/tools_streaming.py`
 
 ```python
-def should_stream_to_artifact(result: str, tool_name: str, 
-                             line_threshold: int = 5, 
+def should_stream_to_artifact(result: str, tool_name: str,
+                             line_threshold: int = 5,
                              char_threshold: int = 1000) -> bool:
     """Multi-criteria detection for artifact streaming requirement"""
 ```
 
 **Detection Criteria:**
+
 - ✅ **Line Count**: Results with >5 lines (configurable)
 - ✅ **Character Count**: Results with >1,000 characters (configurable)
-- ✅ **Analysis Tools**: Always stream for `analyze_frappe_data`, `execute_python_code`, etc.
+- ✅ **Analysis Tools**: Always stream for `analyze_business_data`, `run_python_code`, etc.
 - ✅ **Large Datasets**: JSON results with multiple records (`"name"` count >3)
 - ✅ **Tabular Data**: Extensive tables (pipe character count >20)
 - ✅ **List Content**: Many bullet points (>10 list items)
@@ -857,34 +909,35 @@ def should_stream_to_artifact(result: str, tool_name: str,
 
 **Dual-Mode Response Strategy:**
 
-| Result Size | Mode | Behavior |
-|-------------|------|----------|
-| **<10,000 chars** | **Full Result Mode** | Include complete result with streaming instructions |
-| **>10,000 chars** | **Truncated Mode** | Show preview only, require re-execution with artifacts |
+| Result Size       | Mode                 | Behavior                                               |
+| ----------------- | -------------------- | ------------------------------------------------------ |
+| **<10,000 chars** | **Full Result Mode** | Include complete result with streaming instructions    |
+| **>10,000 chars** | **Truncated Mode**   | Show preview only, require re-execution with artifacts |
 
 #### 3. **Tool-Specific Artifact Guidance**
 
 **Smart Category Detection:**
 
 ```python
-if tool_name in ["analyze_frappe_data", "execute_python_code", "query_and_analyze"]:
+if tool_name in ["analyze_business_data", "run_python_code", "query_and_analyze"]:
     artifact_type = "Data Analysis Report"
     sections = ["Executive Summary", "Key Findings", "Detailed Analysis", "Recommendations"]
 elif tool_name.startswith("report_"):
-    artifact_type = "Business Report" 
+    artifact_type = "Business Report"
     sections = ["Report Summary", "Key Metrics", "Detailed Data", "Action Items"]
 ```
 
-| Tool Category | Artifact Type | Suggested Sections |
-|---------------|---------------|-------------------|
-| **Analysis Tools** | Data Analysis Report | Executive Summary, Key Findings, Detailed Analysis, Recommendations |
-| **Report Tools** | Business Report | Report Summary, Key Metrics, Detailed Data, Action Items |
-| **Search/Metadata** | Technical Documentation | Overview, Search Results, Technical Details, Usage Notes |
-| **General Tools** | Comprehensive Results | Summary, Main Results, Detailed Output, Next Steps |
+| Tool Category       | Artifact Type           | Suggested Sections                                                  |
+| ------------------- | ----------------------- | ------------------------------------------------------------------- |
+| **Analysis Tools**  | Data Analysis Report    | Executive Summary, Key Findings, Detailed Analysis, Recommendations |
+| **Report Tools**    | Business Report         | Report Summary, Key Metrics, Detailed Data, Action Items            |
+| **Search/Metadata** | Technical Documentation | Overview, Search Results, Technical Details, Usage Notes            |
+| **General Tools**   | Comprehensive Results   | Summary, Main Results, Detailed Output, Next Steps                  |
 
 ### Implementation Flow
 
 #### 1. **Request Processing**
+
 ```mermaid
 graph LR
     A[Tool Execution] --> B[Result Generated]
@@ -911,13 +964,14 @@ if should_stream:
 #### 3. **User Guidance Format**
 
 **Standard Streaming Response:**
+
 ```
 🚨 ARTIFACT STREAMING REQUIRED - LARGE RESULT DETECTED
 
 📊 Result Statistics:
 • Lines: 15 (threshold: 5+)
 • Characters: 2,847 (threshold: 1,000+)
-• Tool: analyze_frappe_data
+• Tool: analyze_business_data
 
 📋 REQUIRED WORKFLOW:
 1. CREATE ARTIFACT - Type: Data Analysis Report
@@ -934,7 +988,7 @@ if should_stream:
 ... (12 more lines)
 
 🔧 Tool Execution Details:
-• Tool: analyze_frappe_data
+• Tool: analyze_business_data
 • Arguments: {doctype: "Sales Invoice", analysis_type: "trends"}
 • Timestamp: 2025-06-27 14:30:22
 
@@ -944,21 +998,25 @@ if should_stream:
 ### Benefits Achieved
 
 #### 1. **Conversation Continuity**
+
 - ✅ **No Length Limits**: Prevents "maximum conversation length" errors
 - ✅ **Unlimited Analysis**: Enable complex, multi-step analysis workflows
 - ✅ **Session Persistence**: Analysis results preserved across conversations
 
-#### 2. **Professional Deliverables**  
+#### 2. **Professional Deliverables**
+
 - ✅ **Structured Reports**: Organized artifacts with proper sections
 - ✅ **Stakeholder Ready**: Professional outputs suitable for business use
 - ✅ **Reusable Results**: Artifacts can be shared and referenced
 
 #### 3. **Enhanced User Experience**
+
 - ✅ **Automatic Guidance**: No need to remember artifact creation
 - ✅ **Tool-Specific Suggestions**: Context-aware artifact structure
 - ✅ **Clear Workflows**: Step-by-step instructions for optimal use
 
 #### 4. **System Reliability**
+
 - ✅ **Predictable Behavior**: Consistent streaming across all tools
 - ✅ **Configurable Thresholds**: Adaptable to different use cases
 - ✅ **Graceful Degradation**: Fallback modes for edge cases
@@ -966,6 +1024,7 @@ if should_stream:
 ### Configuration Options
 
 #### Environment Variables
+
 ```python
 # Configurable thresholds in tools_streaming.py
 LINE_THRESHOLD = 5       # Lines before streaming required
@@ -974,11 +1033,12 @@ MAX_INLINE_SIZE = 10000  # Maximum size for inline display
 ```
 
 #### Runtime Configuration
+
 ```python
 # Customize streaming behavior per tool
 should_stream = should_stream_to_artifact(
     result=tool_result,
-    tool_name="analyze_frappe_data", 
+    tool_name="analyze_business_data",
     line_threshold=3,      # Custom threshold
     char_threshold=500     # Custom threshold
 )
@@ -987,16 +1047,18 @@ should_stream = should_stream_to_artifact(
 ### Monitoring & Analytics
 
 #### Streaming Metrics
+
 - **Streaming Rate**: Percentage of tool results requiring artifacts
 - **Tool Distribution**: Which tools most frequently trigger streaming
 - **Size Analytics**: Average result sizes by tool category
 - **User Adoption**: Artifact creation rates following streaming guidance
 
 #### Debug Information
+
 ```python
 # Included in every streaming response
 {
-    "tool": "analyze_frappe_data",
+    "tool": "analyze_business_data",
     "lines": 15,
     "characters": 2847,
     "streaming_triggered": True,
@@ -1008,6 +1070,7 @@ should_stream = should_stream_to_artifact(
 ### Future Enhancements
 
 #### Planned Improvements
+
 1. **Dynamic Thresholds**: ML-based optimization of streaming triggers
 2. **Template Library**: Pre-built artifact templates by industry/use case
 3. **Collaborative Artifacts**: Multi-user artifact editing capabilities
@@ -1015,6 +1078,7 @@ should_stream = should_stream_to_artifact(
 5. **Export Options**: PDF, Excel, PowerPoint export from artifacts
 
 #### Integration Opportunities
+
 1. **Frappe Reports**: Automatic artifact creation for complex reports
 2. **Dashboard Integration**: Stream analysis directly to Frappe dashboards
 3. **Email Integration**: Automated artifact sharing via email
@@ -1023,12 +1087,14 @@ should_stream = should_stream_to_artifact(
 ### Best Practices
 
 #### For Users
+
 1. **Create Artifacts First**: Follow streaming guidance to create artifacts before re-running tools
 2. **Use Suggested Sections**: Leverage tool-specific artifact structure recommendations
 3. **Keep Responses Minimal**: Let artifacts contain detailed analysis, keep chat responses focused
 4. **Build Progressively**: Use artifacts to build comprehensive analysis across multiple tool executions
 
 #### For Developers
+
 1. **Respect Thresholds**: Design tools with streaming-friendly output
 2. **Provide Context**: Include execution parameters in streaming responses
 3. **Tool Categories**: Ensure proper tool categorization for relevant artifact suggestions
@@ -1041,6 +1107,7 @@ should_stream = should_stream_to_artifact(
 ### Enhanced JSON-RPC 2.0 Endpoints
 
 #### 1. **Initialization**
+
 ```http
 POST /api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request
 Content-Type: application/json
@@ -1049,7 +1116,7 @@ Content-Type: application/json
     "jsonrpc": "2.0",
     "method": "initialize",
     "params": {
-        "protocolVersion": "2024-11-05",
+        "protocolVersion": "2025-06-18",
         "capabilities": {}
     },
     "id": 1
@@ -1059,56 +1126,61 @@ Content-Type: application/json
 #### 2. **Tools Management**
 
 **List Tools:**
+
 ```json
 {
-    "jsonrpc": "2.0", 
-    "method": "tools/list",
-    "id": 2
+  "jsonrpc": "2.0",
+  "method": "tools/list",
+  "id": 2
 }
 ```
 
 **Execute Tool:**
+
 ```json
 {
-    "jsonrpc": "2.0",
-    "method": "tools/call", 
-    "params": {
-        "name": "execute_python_code",
-        "arguments": {
-            "code": "import pandas as pd\nprint('Hello World')"
-        }
-    },
-    "id": 3
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "run_python_code",
+    "arguments": {
+      "code": "import pandas as pd\nprint('Hello World')"
+    }
+  },
+  "id": 3
 }
 ```
 
 #### 3. **Prompts Support** 🆕
+
 ```json
 {
-    "jsonrpc": "2.0",
-    "method": "prompts/list",
-    "id": 4
+  "jsonrpc": "2.0",
+  "method": "prompts/list",
+  "id": 4
 }
 ```
 
-#### 4. **Error Handling** 🔄 *Enhanced*
+#### 4. **Error Handling** 🔄 _Enhanced_
 
 **Centralized Error Responses:**
+
 ```json
 {
-    "jsonrpc": "2.0",
-    "error": {
-        "code": -32603,
-        "message": "Internal error",
-        "data": "Detailed error information"
-    },
-    "id": 1
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32603,
+    "message": "Internal error",
+    "data": "Detailed error information"
+  },
+  "id": 1
 }
 ```
 
 **Error Code Constants:**
+
 - `-32700`: Parse Error
-- `-32600`: Invalid Request  
+- `-32600`: Invalid Request
 - `-32601`: Method Not Found
 - `-32602`: Invalid Params
 - `-32603`: Internal Error
@@ -1119,6 +1191,7 @@ Content-Type: application/json
 ## Installation & Setup
 
 ### Prerequisites
+
 - Frappe Framework 14+
 - Python 3.8+
 - MariaDB/MySQL
@@ -1127,6 +1200,7 @@ Content-Type: application/json
 ### Installation Process
 
 #### 1. **App Installation**
+
 ```bash
 # Navigate to your Frappe bench
 cd frappe-bench
@@ -1137,18 +1211,19 @@ bench get-app https://github.com/paulclinton/frappe-assistant-core
 # Install on site
 bench --site [site-name] install-app frappe_assistant_core
 
-# Run database migrations  
+# Run database migrations
 bench --site [site-name] migrate
 ```
 
 #### 2. **Modern Package Installation** 🆕
+
 The app now uses modern Python packaging with `pyproject.toml`:
 
 ```bash
 # Development installation (editable)
 pip install -e .
 
-# Production installation  
+# Production installation
 pip install .
 
 # With analysis dependencies
@@ -1159,6 +1234,7 @@ pip install .[dev]
 ```
 
 #### 3. **Configuration**
+
 ```bash
 # Configure settings through UI
 bench --site [site-name] set-config assistant_enabled 1
@@ -1167,11 +1243,12 @@ bench --site [site-name] set-config assistant_enabled 1
 https://your-site.com/desk#/assistant-admin
 ```
 
-### Enhanced Docker Support 🔄 *Updated*
+### Enhanced Docker Support 🔄 _Updated_
 
 #### docker-compose.yml
+
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   frappe:
     image: frappe/erpnext:latest
@@ -1185,12 +1262,13 @@ services:
 
 ## Testing
 
-### Automated Testing Suite 🔄 *Cleaned Up*
+### Automated Testing Suite 🔄 _Cleaned Up_
 
 **Previous Issues:** 26 temporary test files were cluttering the repository
 **Resolution:** All temporary test files removed, proper test structure implemented
 
 #### Test Structure
+
 ```
 tests/
 ├── unit/
@@ -1205,6 +1283,7 @@ tests/
 ```
 
 #### Running Tests
+
 ```bash
 # Run all tests
 bench --site [site-name] run-tests frappe_assistant_core
@@ -1226,6 +1305,7 @@ pytest --cov=frappe_assistant_core tests/
 #### 🔒 **Comprehensive Security Framework** ⭐ **MAJOR**
 
 **Multi-Layer Security Implementation:**
+
 - **Role-Based Access Control**: 4-tier user role system (System Manager, Assistant Admin, Assistant User, Default)
 - **Document-Level Permissions**: Deep integration with Frappe's permission system for DocType and document-specific access
 - **Row-Level Security**: Automatic company-based filtering and user-specific data access enforcement
@@ -1234,12 +1314,14 @@ pytest --cov=frappe_assistant_core tests/
 - **Comprehensive Audit Trail**: Complete logging of all tool executions with IP tracking and security monitoring
 
 **Security Validation Flow:**
+
 - **4-Layer Validation**: Role → DocType → Document → Field level security checks
 - **Permission Integration**: Uses `frappe.has_permission()` for row-level security including company filters
 - **Sensitive Data Masking**: Automatic filtering of passwords, API keys, tokens, and administrative fields
 - **Audit Logging**: Every tool execution logged with user, arguments, success/failure, and IP address
 
 **Administrator Protection:**
+
 - **Hardcoded Safeguards**: Special protection for Administrator account access
 - **Submitted Document Protection**: Prevents modification of submitted documents without proper permissions
 - **System Manager Privileges**: Full access with appropriate security logging
@@ -1247,12 +1329,14 @@ pytest --cov=frappe_assistant_core tests/
 ### Version 1.2.0 - Comprehensive Refactoring (July 2025)
 
 #### 🏗️ **Architecture Modernization**
+
 - **Modular API Handlers**: Separated concerns into focused modules
 - **Centralized Constants**: All strings and configuration in dedicated module
 - **Professional Logging**: Replaced 905 print statements with structured logging
 - **Modern Packaging**: pyproject.toml with proper dependency management
 
 #### 🚀 **Artifact Streaming System** (New Feature)
+
 - **Intelligent Detection**: Automatic streaming triggers for results >5 lines or >1000 characters
 - **Smart Categorization**: Tool-specific artifact suggestions (Data Analysis, Business Reports, etc.)
 - **Dual-Mode Responses**: Full result mode (<10k chars) and truncated mode (>10k chars)
@@ -1260,21 +1344,24 @@ pytest --cov=frappe_assistant_core tests/
 - **Conversation Continuity**: Prevents "maximum length" errors and enables unlimited analysis depth
 
 #### 🐛 **Critical Bug Fixes**
+
 - **Import Errors**: Fixed missing modules causing runtime failures
 - **DocType Names**: Corrected inconsistent naming breaking tool counts
 - **Tool Execution**: Created missing executor and registry modules
 - **Notification Handling**: Implemented missing notification handlers
 - **Timestamp Serialization**: Fixed JSON serialization errors with datetime objects
-- **Import Statement Handling**: Auto-removal of import statements in execute_python_code
+- **Import Statement Handling**: Auto-removal of import statements in run_python_code
 - **Report Execution**: Fixed NoneType startswith errors in report filtering
 
 #### 🧹 **Code Cleanup**
+
 - **File Cleanup**: Removed 26 temporary test/debug files
 - **Module Structure**: Added missing `__init__.py` files
 - **Code Quality**: 87% reduction in main API file size
 - **Dependency Management**: Fixed pip deprecation warnings
 
 #### 📊 **Performance Improvements**
+
 - **Memory Usage**: Reduced through modular loading
 - **Maintainability**: Clean separation of concerns
 - **Extensibility**: Easy to add new handlers and tools
@@ -1284,12 +1371,14 @@ pytest --cov=frappe_assistant_core tests/
 ### Previous Improvements (2024)
 
 #### 🔧 **Tool System Enhancements**
+
 - **Enhanced Python Execution**: Comprehensive library support (30+ packages)
 - **Hybrid Streaming**: Smart artifact streaming based on output size
 - **Permission Model**: Granular role-based access control
 - **Error Handling**: Robust error handling and user feedback
 
 #### 📈 **Performance & Reliability**
+
 - **Auto-Discovery**: Zero-configuration tool loading
 - **Caching System**: Improved performance for repeated operations
 - **Audit Trail**: Comprehensive operation logging
@@ -1301,23 +1390,28 @@ pytest --cov=frappe_assistant_core tests/
 
 ### Common Issues & Solutions
 
-#### 1. **Import Errors** ✅ *Recently Fixed*
+#### 1. **Import Errors** ✅ _Recently Fixed_
+
 **Symptoms:** `ModuleNotFoundError` for registry or executor
 **Solution:** All missing modules have been created and properly configured
 
-#### 2. **Tool Execution Failures** ✅ *Recently Fixed*
+#### 2. **Tool Execution Failures** ✅ _Recently Fixed_
+
 **Symptoms:** Tools not found or execution errors
 **Solution:** Tool registry and executor modules now properly implemented
 
-#### 3. **Logging Issues** ✅ *Recently Fixed*
+#### 3. **Logging Issues** ✅ _Recently Fixed_
+
 **Symptoms:** Print statements appearing in production
 **Solution:** All print statements replaced with proper logging
 
-#### 4. **Package Installation Warnings** ✅ *Recently Fixed*
+#### 4. **Package Installation Warnings** ✅ _Recently Fixed_
+
 **Symptoms:** Pip deprecation warnings during installation
 **Solution:** Modern pyproject.toml packaging implemented
 
 ### Debug Mode
+
 ```python
 # Enable debug logging
 from frappe_assistant_core.utils.logger import api_logger
@@ -1330,6 +1424,7 @@ print(f"Available tools: {len(tools)}")
 ```
 
 ### Health Check Endpoint
+
 ```bash
 # Test server connectivity
 curl -X POST http://localhost:8000/api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request \
@@ -1342,6 +1437,7 @@ curl -X POST http://localhost:8000/api/method/frappe_assistant_core.api.assistan
 ## Future Enhancements
 
 ### Planned Features
+
 1. **Enhanced Analytics**: Advanced statistical analysis tools
 2. **Real-time Collaboration**: Multi-user sessions
 3. **Plugin System**: Third-party tool extensions
@@ -1350,6 +1446,7 @@ curl -X POST http://localhost:8000/api/method/frappe_assistant_core.api.assistan
 6. **Streaming Improvements**: Enhanced artifact streaming capabilities
 
 ### Contributing
+
 This is an open-source MIT licensed project. Contributions are welcome!
 
 1. Fork the repository
@@ -1360,6 +1457,7 @@ This is an open-source MIT licensed project. Contributions are welcome!
 6. Submit a pull request
 
 ### Architecture Guidelines for Contributors
+
 - **Use Modular Handlers**: Add new functionality in separate handler modules
 - **Leverage Constants**: All strings and configuration in `constants/definitions.py`
 - **Professional Logging**: Use `api_logger` instead of print statements
@@ -1377,5 +1475,5 @@ This is an open-source MIT licensed project. Contributions are welcome!
 
 ---
 
-*Last Updated: July 2025 - Version 1.2.0*
-*Architecture: Modular, Modern, Maintainable*
+_Last Updated: July 2025 - Version 1.2.0_
+_Architecture: Modular, Modern, Maintainable_
