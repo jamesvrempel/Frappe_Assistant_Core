@@ -1,4 +1,19 @@
-
+# -*- coding: utf-8 -*-
+# Frappe Assistant Core - AI Assistant integration for Frappe Framework
+# Copyright (C) 2025 Paul Clinton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from . import __version__ as app_version
 
@@ -9,7 +24,7 @@ app_description = "AI Assistant integration core for Frappe Framework"
 app_icon = "octicon octicon-server"
 app_color = "blue"
 app_email = "jypaulclinton@gmail.com"
-app_license = "MIT"
+app_license = "AGPL-3.0"
 app_version = app_version
 
 # Includes in <head>

@@ -24,14 +24,14 @@ Built for businesses who want to leverage AI to streamline their ERP operations,
 - **🚀 Production Ready**: Rate limiting, comprehensive monitoring, and robust error handling
 - **🏗️ Modern Architecture**: Modular, maintainable, and extensible codebase
 - **📝 Professional Logging**: Structured logging system for debugging and monitoring
-- **🆓 Completely Open Source**: MIT licensed - free for all uses, commercial and personal
+- **🆓 Completely Open Source**: AGPL-3.0 licensed - strong copyleft ensuring open source ecosystem
 - **🤝 Community Driven**: Built by the community, for the community
 
 ---
 
 ## 🎯 Features Overview
 
-### 🚀 Complete Feature Set (MIT Licensed)
+### 🚀 Complete Feature Set (AGPL-3.0 Licensed)
 - **🔄 Modern MCP Protocol**: JSON-RPC 2.0 with modular handler architecture
 - **📄 Document Operations**: Create, read, update, delete, and search Frappe documents with full permission integration
 - **📈 Advanced Reporting**: Execute Frappe reports with enhanced debugging and error handling
@@ -339,7 +339,7 @@ print(f"Available tools: {len(tools)}")
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU Affero General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ### Commercial Use
 This software is free for both personal and commercial use. You can:
@@ -375,7 +375,7 @@ Contact us at jypaulclinton@gmail.com
 
 ## 🤝 Contributing
 
-This is an open-source MIT licensed project. Contributions are welcome!
+This is an open-source AGPL-3.0 licensed project. Contributions are welcome!
 
 1. Fork the repository
 2. Create a feature branch
