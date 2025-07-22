@@ -78,10 +78,41 @@ class ToolRegistry:
         
         return tool.execute(arguments)
     
+    def has_tool(self, tool_name: str) -> bool:
+        """Check if a tool is available"""
+        tool = self.get_tool(tool_name)
+        return tool is not None
+    
     def refresh_tools(self) -> bool:
         """Refresh tool discovery"""
         plugin_manager = get_plugin_manager()
         return plugin_manager.refresh_plugins()
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get tool registry statistics"""
+        plugin_manager = get_plugin_manager()
+        all_tools = plugin_manager.get_all_tools()
+        
+        core_tools = []
+        plugin_tools = []
+        
+        for tool_info in all_tools.values():
+            if tool_info.plugin_name == 'core':
+                core_tools.append(tool_info.name)
+            else:
+                plugin_tools.append(tool_info.name)
+        
+        return {
+            'total_tools': len(all_tools),
+            'core_tools': len(core_tools),
+            'plugin_tools': len(plugin_tools),
+            'core_tool_names': core_tools,
+            'plugin_tool_names': plugin_tools
+        }
+    
+    def refresh(self) -> bool:
+        """Refresh tool registry"""
+        return self.refresh_tools()
     
     def _check_tool_permission(self, tool_instance: BaseTool, user: str) -> bool:
         """Check if user has permission to use the tool"""
