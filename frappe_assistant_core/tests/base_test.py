@@ -22,6 +22,7 @@ Provides common setup and utilities for all test classes
 
 import frappe
 import unittest
+import json
 from unittest.mock import patch, MagicMock
 
 class BaseAssistantTest(unittest.TestCase):
@@ -45,6 +46,9 @@ class BaseAssistantTest(unittest.TestCase):
         # Set test user
         self.test_user = "Administrator"
         frappe.set_user(self.test_user)
+        
+        # Ensure plugins are enabled for testing
+        self._ensure_plugins_enabled()
     
     def execute_tool_and_get_result(self, registry, tool_name, arguments):
         """
@@ -88,6 +92,47 @@ class BaseAssistantTest(unittest.TestCase):
         """Clean up after each test"""
         self.clear_test_data()
         self.cleanup_mocks()
+    
+    def _ensure_plugins_enabled(self):
+        """Ensure core plugins are enabled for testing"""
+        try:
+            # Check if Assistant Core Settings exists
+            if frappe.db.exists("Assistant Core Settings", "Assistant Core Settings"):
+                settings = frappe.get_single("Assistant Core Settings")
+                enabled_plugins = json.loads(settings.enabled_plugins_list or "[]")
+                
+                # Enable core plugin if not already enabled
+                if "core" not in enabled_plugins:
+                    enabled_plugins.append("core")
+                    settings.enabled_plugins_list = json.dumps(enabled_plugins)
+                    settings.save(ignore_permissions=True)
+                    frappe.db.commit()
+            else:
+                # Create settings with core plugin enabled
+                doc = frappe.get_doc({
+                    "doctype": "Assistant Core Settings",
+                    "server_enabled": 0,
+                    "max_connections": 100,
+                    "authentication_required": 1,
+                    "rate_limit": 60,
+                    "websocket_enabled": 1,
+                    "ssl_enabled": 0,
+                    "log_level": "INFO",
+                    "max_log_entries": 10000,
+                    "cleanup_logs_after_days": 30,
+                    "enabled_plugins_list": json.dumps(["core"])
+                })
+                doc.insert(ignore_permissions=True)
+                frappe.db.commit()
+            
+            # Force plugin manager refresh to load enabled plugins
+            from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+            plugin_manager = get_plugin_manager()
+            plugin_manager.refresh_plugins()
+            
+        except Exception as e:
+            # Log but don't fail tests if plugin setup fails
+            frappe.logger("test").warning(f"Could not ensure plugins enabled: {e}")
     
     def clear_test_data(self):
         """Clear any test data created during tests"""

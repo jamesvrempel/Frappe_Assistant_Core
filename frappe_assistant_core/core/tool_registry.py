@@ -39,8 +39,16 @@ class ToolRegistry:
         """Get a tool by name"""
         plugin_manager = get_plugin_manager()
         tools = plugin_manager.get_all_tools()
+        
+        # Check plugin tools first
         tool_info = tools.get(tool_name)
-        return tool_info.instance if tool_info else None
+        if tool_info:
+            return tool_info.instance
+        
+        # Check external tools
+        external_tools = self._get_external_tools()
+        external_tool_info = external_tools.get(tool_name)
+        return external_tool_info.instance if external_tool_info else None
     
     def get_available_tools(self, user: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -54,6 +62,10 @@ class ToolRegistry:
         """
         plugin_manager = get_plugin_manager()
         tools = plugin_manager.get_all_tools()
+        
+        # Add external tools from hooks
+        external_tools = self._get_external_tools()
+        tools.update(external_tools)
         
         available_tools = []
         for tool_info in tools.values():
@@ -114,6 +126,51 @@ class ToolRegistry:
         """Refresh tool registry"""
         return self.refresh_tools()
     
+    def _get_external_tools(self) -> Dict[str, Any]:
+        """Get external tools from hooks safely"""
+        external_tools = {}
+        
+        try:
+            # Only try to load external tools if frappe is properly initialized
+            if not hasattr(frappe, 'get_hooks') or not hasattr(frappe, 'local'):
+                return external_tools
+            
+            # Get assistant_tools from hooks
+            assistant_tools = frappe.get_hooks("assistant_tools") or []
+            
+            for tool_path in assistant_tools:
+                try:
+                    # Import the tool class
+                    module_path, class_name = tool_path.rsplit(".", 1)
+                    import importlib
+                    module = importlib.import_module(module_path)
+                    tool_class = getattr(module, class_name)
+                    
+                    # Validate it's a BaseTool subclass
+                    if hasattr(tool_class, '__bases__') and issubclass(tool_class, BaseTool):
+                        tool_instance = tool_class()
+                        
+                        # Create a ToolInfo-like object
+                        from frappe_assistant_core.utils.plugin_manager import ToolInfo
+                        tool_info = ToolInfo(
+                            name=tool_instance.name,
+                            plugin_name="external",
+                            description=tool_instance.description,
+                            instance=tool_instance
+                        )
+                        
+                        external_tools[tool_instance.name] = tool_info
+                        
+                        self.logger.info(f"Loaded external tool '{tool_instance.name}' from {tool_instance.source_app}")
+                        
+                except Exception as e:
+                    self.logger.debug(f"Failed to load external tool from '{tool_path}': {e}")
+        
+        except Exception as e:
+            self.logger.debug(f"Error loading external tools: {e}")
+        
+        return external_tools
+
     def _check_tool_permission(self, tool_instance: BaseTool, user: str) -> bool:
         """Check if user has permission to use the tool"""
         try:
