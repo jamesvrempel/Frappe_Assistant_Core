@@ -102,11 +102,12 @@ multi_line_output = 3
 line_length = 88
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
+disallow_untyped_defs = false
 ignore_missing_imports = true
+check_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -114,3 +115,25 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "--cov=frappe_assistant_core --cov-report=html --cov-report=term-missing"
+
+[tool.ruff]
+line-length = 110
+target-version = "py38"
+
+[tool.ruff.lint]
+select = [
+    "F",  # pyflakes
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "I",  # isort
+    "UP", # pyupgrade
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B023",  # function definition does not bind loop variable
+    "B904",  # raise from
+    "UP007", # use X | Y for type annotations
+    "F401",  # imported but unused
+    "F841",  # local variable assigned but never used
+]

@@ -1,0 +1,107 @@
+name: Unit Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.py'
+      - '.github/workflows/unit-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.py'
+      - '.github/workflows/unit-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: travis
+          MYSQL_DATABASE: test_frappe
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+    - name: Checkout frappe_assistant_core
+      uses: actions/checkout@v4
+      with:
+        path: apps/frappe_assistant_core
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          redis-server \
+          libmariadb-dev \
+          libpython3-dev
+
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install Bench
+      run: pip install frappe-bench
+
+    - name: Initialize Bench
+      run: |
+        bench init frappe-bench --frappe-branch version-15 --skip-redis-config-generation --no-backups --no-auto-update --skip-assets
+        cd frappe-bench
+        bench set-mariadb-host 127.0.0.1
+
+    - name: Create test site
+      working-directory: frappe-bench
+      run: |
+        bench new-site test_site \
+          --mariadb-root-password travis \
+          --admin-password admin \
+          --no-mariadb-socket \
+          --force
+
+    - name: Copy and install frappe_assistant_core
+      run: |
+        cp -r apps/frappe_assistant_core frappe-bench/apps/
+        cd frappe-bench
+        bench get-app ./apps/frappe_assistant_core --skip-assets
+        bench --site test_site install-app frappe_assistant_core --force
+
+    - name: Run specific test modules
+      working-directory: frappe-bench
+      run: |
+        # Run each test module that was failing
+        echo "Running test_search_tools..."
+        bench --site test_site run-tests --app frappe_assistant_core --module frappe_assistant_core.tests.test_search_tools
+        
+        echo "Running test_report_tools..."
+        bench --site test_site run-tests --app frappe_assistant_core --module frappe_assistant_core.tests.test_report_tools
+        
+        echo "Running test_metadata_tools..."
+        bench --site test_site run-tests --app frappe_assistant_core --module frappe_assistant_core.tests.test_metadata_tools
+        
+        echo "Running test_workflow_tools..."
+        bench --site test_site run-tests --app frappe_assistant_core --module frappe_assistant_core.tests.test_workflow_tools
+        
+        echo "Running test_document_tools..."
+        bench --site test_site run-tests --app frappe_assistant_core --module frappe_assistant_core.tests.test_document_tools
+
+    - name: Run all tests
+      working-directory: frappe-bench
+      run: |
+        bench --site test_site run-tests --app frappe_assistant_core

@@ -67,12 +67,22 @@ def create_default_settings():
                 "ssl_enabled": 0,
                 "log_level": "INFO",
                 "max_log_entries": 10000,
-                "cleanup_logs_after_days": 30
+                "cleanup_logs_after_days": 30,
+                "enabled_plugins_list": json.dumps(["core"])  # Enable core plugin by default
             })
             doc.insert(ignore_permissions=True)
-            api_logger.info("Created default Assistant Core Settings")
+            api_logger.info("Created default Assistant Core Settings with core plugin enabled")
         else:
-            api_logger.info("Assistant Core Settings already exists")
+            # Update existing settings to ensure core plugin is enabled
+            settings = frappe.get_single("Assistant Core Settings")
+            enabled_plugins = json.loads(settings.enabled_plugins_list or "[]")
+            if "core" not in enabled_plugins:
+                enabled_plugins.append("core")
+                settings.enabled_plugins_list = json.dumps(enabled_plugins)
+                settings.save(ignore_permissions=True)
+                api_logger.info("Updated Assistant Core Settings to enable core plugin")
+            else:
+                api_logger.info("Assistant Core Settings already exists with core plugin enabled")
     except Exception as e:
         api_logger.warning(f"Could not create Assistant Core Settings: {e}")
 
@@ -250,7 +260,7 @@ def register_basic_plugins():
                     "description": plugin_info.get('description', ''),
                     "version": plugin_info.get('version', ''),
                     "module_path": plugin_info.get('module_path', ''),
-                    "enabled": False,  # Default to disabled
+                    "enabled": plugin_name == 'core',  # Enable core plugin by default
                     "can_enable": plugin_info.get('can_enable', False),
                     "validation_error": plugin_info.get('validation_error', ''),
                     "dependencies": json.dumps(plugin_info.get('dependencies', [])),
