@@ -58,10 +58,10 @@ analysis = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/paulclinton/frappe-assistant-core"
-Documentation = "https://github.com/paulclinton/frappe-assistant-core/wiki"
-Repository = "https://github.com/paulclinton/frappe-assistant-core.git"
-"Bug Tracker" = "https://github.com/paulclinton/frappe-assistant-core/issues"
+Homepage = "https://github.com/buildswithpaul/Frappe_Assistant_Core"
+Documentation = "https://github.com/buildswithpaul/Frappe_Assistant_Core/wiki"
+Repository = "https://github.com/buildswithpaul/Frappe_Assistant_Core.git"
+"Bug Tracker" = "https://github.com/buildswithpaul/Frappe_Assistant_Core/issues"
 
 [tool.setuptools]
 include-package-data = true
