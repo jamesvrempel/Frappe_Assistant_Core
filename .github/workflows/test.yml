@@ -83,14 +83,21 @@ jobs:
           --admin-password admin \
           --no-mariadb-socket
 
-    - name: Copy frappe_assistant_core to bench
+    - name: Setup frappe_assistant_core app
       run: |
+        # Copy the app to bench apps folder
         cp -r apps/frappe_assistant_core frappe-bench/apps/
+        
+        # Add to apps.txt
+        echo "frappe_assistant_core" >> frappe-bench/sites/apps.txt
+        
+        # Install dependencies
+        cd frappe-bench
+        pip install -e apps/frappe_assistant_core
 
-    - name: Install frappe_assistant_core
+    - name: Install frappe_assistant_core to site
       working-directory: frappe-bench
       run: |
-        bench get-app ./apps/frappe_assistant_core
         bench --site test_site install-app frappe_assistant_core
 
     - name: Run Tests
@@ -115,7 +122,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout frappe_assistant_core
+      uses: actions/checkout@v4
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -128,7 +136,6 @@ jobs:
     
     - name: Run linting
       run: |
-        cd apps/frappe_assistant_core
         # Run ruff for linting
         ruff check . || true
         # Run mypy for type checking  

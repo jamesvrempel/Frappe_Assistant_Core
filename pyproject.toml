@@ -119,6 +119,18 @@ addopts = "--cov=frappe_assistant_core --cov-report=html --cov-report=term-missi
 [tool.ruff]
 line-length = 110
 target-version = "py38"
+exclude = [
+    "docs/templates/",
+    "*.template.py",
+    "__pycache__",
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    "build",
+    "dist",
+    "*.egg-info",
+]
 
 [tool.ruff.lint]
 select = [

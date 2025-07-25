@@ -75,11 +75,17 @@ jobs:
           --no-mariadb-socket \
           --force
 
-    - name: Copy and install frappe_assistant_core
+    - name: Setup and install frappe_assistant_core
       run: |
+        # Copy the app to bench apps folder
         cp -r apps/frappe_assistant_core frappe-bench/apps/
+        
+        # Add to apps.txt
+        echo "frappe_assistant_core" >> frappe-bench/sites/apps.txt
+        
+        # Install dependencies and the app
         cd frappe-bench
-        bench get-app ./apps/frappe_assistant_core --skip-assets
+        pip install -e apps/frappe_assistant_core
         bench --site test_site install-app frappe_assistant_core --force
 
     - name: Run specific test modules

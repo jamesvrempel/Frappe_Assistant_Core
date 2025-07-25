@@ -47,14 +47,31 @@ black .
 
 As of the latest check:
 - **Total linting issues**: ~3,551
-- **Auto-fixable**: ~3,278
-- **Critical issues**: 15 (undefined names and syntax errors)
+- **Auto-fixable**: ~3,278 (mostly whitespace and import sorting)
+- **Critical issues**: 13 (undefined names in visualization tools)
 
 ## Known Issues
 
-1. **Template files**: The template files in `docs/templates/` contain placeholder syntax that causes parsing errors
-2. **Import issues**: Some modules use string type annotations that require imports
-3. **Whitespace**: Many files have trailing whitespace or blank lines with whitespace
+1. ✅ **Template files**: Fixed by excluding `docs/templates/` from linting
+2. **Import issues**: Some modules use string type annotations (`"pd.DataFrame"`) without importing pandas
+3. **Undefined names**: 13 critical issues in visualization and chart tools:
+   - `plt` (matplotlib.pyplot) used without import
+   - `sns` (seaborn) used without import  
+   - `pd` (pandas) used in string annotations
+   - `np` (numpy) used without import
+
+## Critical Issues to Fix
+
+The following files have undefined name errors that should be fixed:
+
+```
+frappe_assistant_core/plugins/data_science/tools/create_visualization.py
+- Lines 311, 313, 317: sns, plt used without import
+- Multiple lines: pd used in string annotations
+
+frappe_assistant_core/plugins/visualization/utils/chart_suggestions.py  
+- Lines 254, 255: np used without import
+```
 
 ## CI/CD Integration
 
