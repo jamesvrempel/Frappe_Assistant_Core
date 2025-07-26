@@ -272,13 +272,29 @@ Advanced analytics and visualization capabilities:
    - Advanced data analysis on query results
    - Business intelligence insights
 
-4. **Visualization** (`create_visualization.py`)
-   - Interactive chart creation (bar, line, pie, scatter, heatmap)
-   - Business dashboard generation
-   - Data visualization export
-
 **Dependencies:** pandas, numpy, matplotlib, seaborn, plotly, scipy
 **Environment Validation:** Automatic dependency checking on plugin load
+
+#### **Visualization Plugin** (`plugins/visualization/`) - Optional
+
+Professional dashboard and chart creation system:
+
+1. **Dashboard Creation** (`create_dashboard.py`)
+   - Create Frappe dashboards with multiple charts
+   - Chart configuration with proper mappings
+   - Time series support with date field detection
+
+2. **Chart Creation** (`create_dashboard_chart.py`)
+   - Create individual Dashboard Chart documents
+   - Support for bar, line, pie, donut, percentage, heatmap charts
+   - Time series configuration for temporal data
+   - Field validation using DocType metadata
+
+3. **Dashboard Management** (`list_user_dashboards.py`)
+   - List user's accessible Frappe dashboards
+   - Dashboard discovery and management
+
+**Dependencies:** matplotlib, pandas, numpy
 
 #### **WebSocket Plugin** (`plugins/websocket/`) - Optional
 

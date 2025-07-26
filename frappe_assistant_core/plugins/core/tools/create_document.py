@@ -40,7 +40,27 @@ class DocumentCreate(BaseTool):
     def __init__(self):
         super().__init__()
         self.name = "create_document"
-        self.description = "Create a new Frappe document (e.g., Customer, Sales Invoice, Item, etc.). Use this when users want to add new records to the system. Always check required fields for the doctype first."
+        self.description = """Create new Frappe documents with proper validation and child table support.
+
+📋 **WORKFLOW RECOMMENDATION:**
+1. Use get_doctype_info tool first to understand DocType structure
+2. Identify required fields and child tables 
+3. Format data correctly (especially for child tables)
+4. Create document with proper field values
+
+📊 **CHILD TABLE EXAMPLES:**
+• Purchase Order: {"supplier": "ABC Corp", "transaction_date": "2025-01-15", "items": [{"item_code": "ITEM001", "qty": 10, "rate": 100, "warehouse": "Store"}]}
+• Sales Invoice: {"customer": "Customer1", "posting_date": "2025-01-15", "items": [{"item_code": "ITEM001", "qty": 5, "rate": 200}]}
+• BOM: {"item": "PROD001", "items": [{"item_code": "RAW001", "qty": 2}]}
+
+⚠️ **IMPORTANT NOTES:**
+• Child tables must be lists of dictionaries: "items": [{"field": "value"}]
+• Always provide required fields (check with get_doctype_info)
+• Referenced records (customers, items, etc.) must exist in system
+• Use exact field names as shown in DocType metadata
+
+🔧 **ERROR RECOVERY:**
+If creation fails, the error response includes specific guidance and suggestions for resolution."""
         self.requires_permission = None  # Permission checked dynamically per DocType
         
         self.inputSchema = {
@@ -58,6 +78,11 @@ class DocumentCreate(BaseTool):
                     "type": "boolean",
                     "default": False,
                     "description": "Whether to submit the document after creation (for submittable doctypes like Sales Invoice). Use true only when explicitly requested."
+                },
+                "validate_only": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "Only validate the document without saving it. Use this to test data format and required fields before actual creation."
                 }
             },
             "required": ["doctype", "data"]
@@ -68,6 +93,7 @@ class DocumentCreate(BaseTool):
         doctype = arguments.get("doctype")
         data = arguments.get("data", {})
         submit = arguments.get("submit", False)
+        validate_only = arguments.get("validate_only", False)
         
         # Import security validation
         from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
@@ -148,9 +174,54 @@ class DocumentCreate(BaseTool):
             # Create document
             doc = frappe.new_doc(doctype)
             
-            # Set field values
+            # Get DocType metadata for proper field handling
+            meta = frappe.get_meta(doctype)
+            table_fields = {f.fieldname: f.options for f in meta.fields if f.fieldtype == 'Table'}
+            
+            # Validate required fields
+            required_fields = [f.fieldname for f in meta.fields if f.reqd and not f.default and f.fieldtype != 'Table']
+            missing_fields = [f for f in required_fields if f not in data or not data[f]]
+            
+            if missing_fields:
+                return {
+                    "success": False,
+                    "error": f"Missing required fields: {', '.join(missing_fields)}",
+                    "required_fields": required_fields,
+                    "provided_fields": list(data.keys()),
+                    "suggestion": f"Use get_doctype_info tool with doctype='{doctype}' to see all required fields and their types",
+                    "doctype": doctype
+                }
+            
+            # Set field values with proper child table handling
             for field, value in data.items():
-                setattr(doc, field, value)
+                if field in table_fields:
+                    # Handle child table fields properly
+                    if isinstance(value, list):
+                        for row_data in value:
+                            if isinstance(row_data, dict):
+                                doc.append(field, row_data)
+                            else:
+                                raise ValueError(f"Child table '{field}' requires list of dictionaries, got: {type(row_data)}")
+                    else:
+                        raise ValueError(f"Child table '{field}' requires a list, got: {type(value)}")
+                else:
+                    # Handle regular fields
+                    setattr(doc, field, value)
+            
+            # Handle validation-only mode
+            if validate_only:
+                # Run validation without saving
+                doc.run_method("validate")
+                
+                return {
+                    "success": True,
+                    "validation_passed": True,
+                    "doctype": doctype,
+                    "message": f"{doctype} data validation passed successfully",
+                    "fields_validated": list(data.keys()),
+                    "child_tables": list(table_fields.keys()) if table_fields else [],
+                    "next_step": "Use create_document with validate_only=false to actually create the document"
+                }
             
             # Save document
             doc.insert()
@@ -214,11 +285,47 @@ class DocumentCreate(BaseTool):
                 message=f"Error creating {doctype}: {str(e)}"
             )
             
+            error_msg = str(e)
+            
+            # Provide specific guidance based on error type
             result = {
                 "success": False,
-                "error": str(e),
+                "error": error_msg,
                 "doctype": doctype
             }
+            
+            # Add specific guidance for common errors
+            if "'dict' object has no attribute 'is_new'" in error_msg:
+                result.update({
+                    "error_type": "child_table_handling_error",
+                    "guidance": "This error occurs when child table data is not properly formatted. Child tables require lists of dictionaries.",
+                    "suggestion": f"1. Use get_doctype_info tool with doctype='{doctype}' to see child table fields\n2. Ensure child table fields are formatted as lists of dictionaries\n3. Example: {{'items': [{{'item_code': 'ITEM001', 'qty': 10}}]}}",
+                    "child_tables": list(frappe.get_meta(doctype).get_table_fields()) if doctype else []
+                })
+            elif "does not exist" in error_msg.lower():
+                result.update({
+                    "error_type": "validation_error", 
+                    "guidance": "Referenced record does not exist in the system.",
+                    "suggestion": f"1. Verify that referenced records (like customers, items, suppliers) exist\n2. Use search_documents tool to find correct record names\n3. Check spelling and exact names"
+                })
+            elif "mandatory" in error_msg.lower() or "required" in error_msg.lower():
+                result.update({
+                    "error_type": "missing_required_field",
+                    "guidance": "Required field is missing or empty.",
+                    "suggestion": f"1. Use get_doctype_info tool with doctype='{doctype}' to see all required fields\n2. Ensure all required fields are provided with valid values"
+                })
+            elif "permission" in error_msg.lower():
+                result.update({
+                    "error_type": "permission_error",
+                    "guidance": "Insufficient permissions for this operation.",
+                    "suggestion": "Contact your system administrator to grant necessary permissions for this DocType"
+                })
+            else:
+                result.update({
+                    "error_type": "general_error",
+                    "guidance": "Document creation failed due to validation or system error.",
+                    "suggestion": f"1. Use get_doctype_info tool with doctype='{doctype}' to understand field requirements\n2. Verify all field values are valid\n3. Check that referenced records exist"
+                })
             
             # Log failed creation
             audit_log_tool_access(frappe.session.user, self.name, arguments, result)

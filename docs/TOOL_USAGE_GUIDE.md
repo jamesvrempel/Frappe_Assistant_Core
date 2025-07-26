@@ -66,112 +66,48 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 - **When to use:** You need to understand report fields before execution or visualization
 - **Best practices:** Use before creating visualizations from report data
 
-### 📊 Visualization & Business Intelligence Plugin - Dashboard & Chart Tools  
-**Plugin:** `visualization` (always enabled)  
-**Primary Use Cases:** Professional dashboards, charts, KPIs, and business intelligence  
-**Total Tools:** 9 comprehensive visualization tools
+### 📊 Visualization Plugin - Dashboard & Chart Tools  
+**Plugin:** `visualization` (optional - enable through settings)  
+**Primary Use Cases:** Professional dashboards and chart creation  
+**Total Tools:** 3 essential visualization tools
 
-#### `create_chart` - 📈 Individual Chart Creation ✅ COMPREHENSIVE
-- **When to use:** User asks for specific charts, graphs, visual analysis
-- **Key patterns:** "chart", "graph", "visualize", "plot", "show me a chart"
-- **Chart Types Available:**
-  - **Basic Charts:** bar, line, pie, scatter
-  - **Statistical Charts:** histogram, box, heatmap, radar  
-  - **Performance Charts:** gauge, funnel, waterfall, treemap
-  - **Advanced Charts:** sunburst, sankey diagrams, network graphs
-- **Features:**
-  - Smart aggregation with sum/count/avg/min/max options
-  - Time period filtering (current/last week/month/quarter/year)
-  - Custom filtering and grouping
-  - Multiple export formats (PNG, SVG, PDF, HTML, JSON)
-  - Professional styling and color schemes
-  - Interactive elements and responsive design
-
-#### `create_kpi_card` - 📊 KPI Metric Cards
-- **When to use:** User wants KPI tracking, performance indicators, metric cards
-- **Key patterns:** "KPI", "metric card", "track performance", "show key metrics"
-- **Features:**
-  - Current value with trend indicators
-  - Period-over-period comparisons
-  - Target vs actual comparisons  
-  - Professional color schemes (green/red/amber indicators)
-  - Multiple format options (currency, percentage, number, decimal)
-
-#### `create_insights_dashboard` - 🏗️ Multi-Chart Dashboard Creation
+#### `create_dashboard` - 🏗️ Frappe Dashboard Creation
 - **When to use:** User wants comprehensive dashboards with multiple charts
 - **Key patterns:** "dashboard", "create a dashboard", "multiple charts", "overview"
 - **Features:**
+  - Creates Frappe Dashboard documents (not Insights dashboards)
   - Combines multiple chart types in one dashboard
-  - Insights app integration with Frappe Dashboard fallback
-  - Auto-refresh capabilities
-  - Mobile optimization
-  - Team sharing and collaboration
   - Professional layouts and styling
+  - Chart configuration with proper mappings
+  - Time series support with date field detection
+- **Best practices:**
+  - Provide multiple chart_configs for comprehensive dashboards
+  - Use appropriate chart types (bar, line, pie, donut, percentage, heatmap)
+  - Include time series configuration for time-based data
 
-#### `create_dashboard_from_template` - 🎯 Template-Based Dashboards ✅ BUSINESS-READY
-- **When to use:** User wants quick professional dashboards for business domains
-- **Key patterns:** "sales dashboard", "financial dashboard", "business analytics"
-- **Available Templates:**
-  - **Sales Template:** Revenue tracking, customer analysis, territory performance
-  - **Financial Template:** P&L tracking, cash flow, expense analysis
-  - **Inventory Template:** Stock monitoring, movement tracking, valuation
-  - **HR Template:** Employee metrics, department analysis, attendance
-  - **Executive Template:** High-level KPIs, growth tracking, strategic metrics
-- **Customization Options:**
-  - Override primary DocType
-  - Custom time periods
-  - Additional filters and modifications
-  - Chart additions/removals
-
-#### `create_bi_dashboard` - 🎯 Professional Business Intelligence ✅ INDUSTRY-STANDARD
-- **When to use:** User needs industry-standard BI dashboards with professional KPIs
-- **Key patterns:** "business intelligence", "professional dashboard", "industry standard"
-- **Business Domains:**
-  - **Sales:** Revenue Growth Rate, Sales Velocity, Win Rate, Average Deal Size
-  - **Finance:** Gross Margin, Operating Cash Flow, Current Ratio, DSO
-  - **Operations:** OEE, Cycle Time, Quality Rate, On-Time Delivery
-  - **HR:** Employee Retention, Time to Hire, Training ROI, Engagement Score
-  - **Executive:** Revenue Growth, Profit Margin, Market Share, Customer Satisfaction
+#### `create_dashboard_chart` - 📈 Individual Chart Creation
+- **When to use:** User asks for specific charts for dashboards
+- **Key patterns:** "chart", "graph", "visualize", "plot", "show me a chart for dashboard"
+- **Chart Types Available:**
+  - **Basic Charts:** bar, line, pie, donut, percentage, heatmap
 - **Features:**
-  - Modern Frappe Workspace integration
-  - Industry benchmarks and targets
-  - Executive/Management/Operational detail levels
-  - Professional BI layout principles
-
-#### `get_bi_recommendations` - 💡 BI Best Practices
-- **When to use:** User needs guidance on professional dashboard creation
-- **Key patterns:** "dashboard recommendations", "best practices", "how to create good dashboards"
-- **Provides:**
-  - Domain-specific KPI recommendations
-  - Audience-appropriate design principles
-  - Implementation best practices
-  - Common mistakes to avoid
-  - Next steps and action items
+  - Creates Dashboard Chart documents (not base64 images)
+  - Proper time series configuration for line charts
+  - Auto-detection of suitable date fields for time series
+  - Field validation using DocType metadata
+  - Can add charts to existing dashboards
+- **Best practices:**
+  - Use time_series configuration for time-based charts
+  - Validate that fields exist in the target DocType
+  - Use appropriate aggregation functions (Sum, Count, Average)
 
 #### `list_user_dashboards` - 📋 Dashboard Management
 - **When to use:** User wants to see existing dashboards
 - **Key patterns:** "my dashboards", "list dashboards", "show dashboards"
 - **Features:**
-  - Lists owned and shared dashboards
-  - Filters by dashboard type (insights/frappe)
-  - Shows access permissions and creation dates
-
-#### `clone_dashboard` - 📄 Dashboard Duplication
-- **When to use:** User wants to copy and modify existing dashboards
-- **Key patterns:** "copy dashboard", "clone", "duplicate dashboard"
-- **Features:**
-  - Copies all charts and configurations
-  - Optional filter modifications
-  - Permission copying options
-  - Chart customization during cloning
-
-#### `list_dashboard_templates` - 📚 Template Discovery
-- **When to use:** User wants to see available dashboard templates
-- **Key patterns:** "available templates", "dashboard templates", "what templates"
-- **Features:**
-  - Lists all business templates with descriptions
-  - Shows required permissions and features
-  - Category filtering (business/technical/custom)
+  - Lists user's accessible Frappe dashboards
+  - Shows dashboard names and basic information
+  - Helps users discover existing dashboard resources
 
 ### 🧪 Data Science Plugin - Advanced Analysis Tools  
 **Plugin:** `data_science` (optional - enable through settings)  
@@ -215,17 +151,17 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 ### 🔍 Data Exploration Workflow
 1. `list_documents` → Discover available data
 2. `analyze_business_data` → Get statistical insights  
-3. `create_chart` → Create individual charts for visual analysis
+3. `create_dashboard_chart` → Create individual charts for visual analysis
 
-### 📊 Business Intelligence Workflow
+### 📊 Dashboard Creation Workflow
 1. `generate_report` → Get business report data
-2. `create_bi_dashboard` → Create professional BI dashboard
-3. `get_bi_recommendations` → Get improvement suggestions
+2. `create_dashboard` → Create comprehensive dashboard with multiple charts
+3. `list_user_dashboards` → View and manage created dashboards
 
-### 🎯 Quick Dashboard Creation Workflow
-1. `list_dashboard_templates` → See available templates
-2. `create_dashboard_from_template` → Create from business template
-3. `clone_dashboard` → Customize for specific needs
+### 🎯 Chart-First Dashboard Workflow
+1. `create_dashboard_chart` → Create individual charts
+2. `create_dashboard` → Combine charts into dashboard
+3. `list_user_dashboards` → Manage dashboard collection
 
 ### 🏗️ Document Management Workflow
 1. `list_documents` → Find existing records
@@ -233,9 +169,9 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 3. `update_document` / `create_document` → Modify or create records
 
 ### 📈 Performance Tracking Workflow
-1. `list_documents` → Get KPI data
-2. `create_kpi_card` → Create metric cards with trends
-3. `create_insights_dashboard` → Combine into comprehensive dashboard
+1. `list_documents` → Get performance data
+2. `create_dashboard_chart` → Create metric charts with trends
+3. `create_dashboard` → Combine into comprehensive dashboard
 
 ## Field Name Guidelines
 
@@ -266,30 +202,28 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 
 ## Visualization Best Practices
 
-### Chart Creation Guidelines (`create_chart`)
-- **X-axis:** Categories (customer, item, territory, month)  
-- **Y-axis:** Numeric values (grand_total, qty, outstanding_amount)
+### Chart Creation Guidelines (`create_dashboard_chart`)
+- **Chart Types:** bar, line, pie, donut, percentage, heatmap
 - **Chart Type Selection:**
   - **Revenue analysis:** Bar charts (customer vs grand_total)
-  - **Time trends:** Line charts (posting_date vs values)
-  - **Market share:** Pie charts (territory distribution)  
-  - **Correlations:** Scatter plots (outstanding vs grand_total)
-  - **Performance distribution:** Histograms (invoice amounts)
-- **Export Formats:** PNG, SVG, PDF, HTML, JSON
-- **Time Filtering:** Use time_span for automatic date filtering
+  - **Time trends:** Line charts with time series (posting_date vs values)
+  - **Market share:** Pie or donut charts (territory distribution)  
+  - **Performance metrics:** Percentage charts for ratios
+  - **Correlation data:** Heatmap charts for multi-dimensional data
+- **Time Series Configuration:** Include `time_series_based_on` field for time-based charts
+- **Field Validation:** Ensure fields exist in target DocType before chart creation
 
-### Dashboard Creation Guidelines
-- **Template-based:** Use `create_dashboard_from_template` for quick business dashboards
-- **Custom dashboards:** Use `create_insights_dashboard` for multi-chart layouts  
-- **Professional BI:** Use `create_bi_dashboard` for industry-standard metrics
-- **KPI tracking:** Use `create_kpi_card` for performance indicators with trends
+### Dashboard Creation Guidelines (`create_dashboard`)
+- **Multi-chart approach:** Use `create_dashboard` for comprehensive dashboards with multiple charts
+- **Chart combination:** Mix different chart types (bar, line, pie) for diverse insights
+- **Time series support:** Include proper date field configuration for temporal data
+- **Field mapping:** Use correct chart type mappings (Bar→Bar, Line→Line, etc.)
 
-### Business Intelligence Best Practices
-- **Executive dashboards:** 5-7 key metrics maximum (use `create_bi_dashboard` with executive level)
-- **Management dashboards:** 8-12 metrics with detailed comparisons  
-- **Operational dashboards:** Real-time data with drill-down capabilities
-- **Color schemes:** Use consistent Red/Amber/Green indicators
-- **Mobile optimization:** Always enable for responsive design
+### Dashboard Best Practices
+- **Executive dashboards:** 5-7 key charts maximum for clarity
+- **Management dashboards:** 8-12 charts with detailed comparisons  
+- **Operational dashboards:** Real-time data with appropriate refresh settings
+- **Chart organization:** Group related metrics together in dashboard layout
 
 ## Error Handling & Debugging
 
@@ -330,28 +264,28 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 
 ### "Show me sales analysis"
 1. `generate_report` ("Sales Analytics")
-2. `create_chart` (bar chart of sales by customer)
-3. `create_kpi_card` (revenue trend card)
+2. `create_dashboard_chart` (bar chart of sales by customer)
+3. `create_dashboard` (combine multiple sales charts)
 
-### "Create a professional sales dashboard"
-1. `create_dashboard_from_template` (template: "sales")
-2. `get_bi_recommendations` (for improvement suggestions)
-3. `clone_dashboard` (create customized version)
+### "Create a comprehensive sales dashboard"
+1. `list_documents` ("Sales Invoice") to understand data structure
+2. `create_dashboard` (multi-chart dashboard with revenue, customer, and trend analysis)
+3. `list_user_dashboards` (view and manage created dashboard)
 
-### "I need business intelligence for executives"
-1. `create_bi_dashboard` (domain: "executive", audience: "executive")  
-2. `list_user_dashboards` (view created dashboard)
-3. `get_bi_recommendations` (get executive dashboard best practices)
+### "I need charts for my business presentation"
+1. `create_dashboard_chart` (revenue trend line chart with time series)
+2. `create_dashboard_chart` (customer distribution pie chart)
+3. `create_dashboard` (combine charts into presentation dashboard)
 
 ### "Find unpaid invoices and visualize them"
 1. `list_documents` ("Sales Invoice", filters: {"outstanding_amount": [">", 0]})
-2. `create_chart` (bar chart of outstanding by customer)
-3. `create_kpi_card` (total outstanding amount with trends)
+2. `create_dashboard_chart` (bar chart of outstanding by customer)
+3. `create_dashboard` (dashboard with outstanding analysis charts)
 
-### "Set up performance tracking"
-1. `create_kpi_card` (key performance metrics)
-2. `create_insights_dashboard` (combine multiple KPI cards)  
-3. `clone_dashboard` (create variations for different teams)
+### "Set up performance tracking dashboard"
+1. `create_dashboard_chart` (key performance metrics charts)
+2. `create_dashboard` (combine multiple performance charts)  
+3. `list_user_dashboards` (manage dashboard collection)
 
 ## 🔧 Recent Fixes & Improvements
 
@@ -360,33 +294,21 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 **Status**: ✅ FIXED - Now correctly returns document data  
 **Impact**: All document discovery and listing operations now work as expected
 
-### Visualization System Architecture (Restructured - January 2025) ✅ MAJOR UPDATE
-**Issues**: Tools architecture didn't follow one-tool-per-file pattern, missing tools from API  
-**Status**: ✅ COMPLETELY RESTRUCTURED - All visualization tools now follow proper architecture  
+### Visualization System Cleanup (Restructured - January 2025) ✅ MAJOR CLEANUP
+**Issues**: Too many redundant tools, misleading names, chart creation problems  
+**Status**: ✅ COMPLETELY CLEANED UP - Streamlined to 3 essential visualization tools  
 **Changes**:
-- **Split combined files:** Separated 4 combined files into 10 individual tool files
-- **Fixed tool registration:** All 9 visualization tools now properly returned by API
-- **Improved organization:** Clear naming conventions and proper imports
-- **Enhanced functionality:** Maintained all features while fixing architecture
+- **Tool consolidation:** Removed 8 redundant tools, kept 3 essential ones
+- **Fixed chart creation:** Proper time series support and field validation
+- **Clarified naming:** Tools now accurately reflect what they create
+- **Enhanced functionality:** Better error handling and field mapping
 
-**New Tool Files:**
-- `create_chart.py` - Individual chart creation
-- `create_kpi_card.py` - KPI metric cards
-- `create_insights_dashboard.py` - Multi-chart dashboards  
-- `create_dashboard_from_template.py` - Business templates
-- `create_bi_dashboard.py` - Professional BI dashboards
-- `get_bi_recommendations.py` - BI best practices
-- `list_user_dashboards.py` - Dashboard management
-- `list_dashboard_templates.py` - Template discovery
-- `clone_dashboard.py` - Dashboard duplication
+**Final Tool Set:**
+- `create_dashboard.py` - Create Frappe dashboards with multiple charts
+- `create_dashboard_chart.py` - Create individual Dashboard Chart documents  
+- `list_user_dashboards.py` - List user's accessible dashboards
 
-### Business Intelligence Tools (Added - January 2025) ✅ NEW FEATURES
-**Status**: ✅ ADDED - Professional BI capabilities with industry-standard KPIs  
-**Features**:
-- **Industry-standard KPIs:** Sales, Finance, Operations, HR, Executive domains
-- **Professional layouts:** Modern Frappe Workspace integration
-- **Audience-appropriate detail:** Executive, Management, Operational levels
-- **Best practices guidance:** Comprehensive BI recommendations
+**Removed Tools:** create_bi_dashboard, create_dashboard_from_template, clone_dashboard, create_chart, create_kpi_card, get_bi_recommendations, list_dashboard_templates, chart_recommendations
 
 ### Report Execution (Enhanced - December 2024)
 **Improvements**: Better debugging, automatic filter handling, comprehensive error reporting  
@@ -400,9 +322,9 @@ The Frappe Assistant Core provides powerful tools for interacting with Frappe/ER
 
 ## 📊 Current Tool Summary (January 2025)
 
-**Total Available Tools**: 23 tools across 3 categories
+**Total Available Tools**: 17 tools across 3 categories
 - **Core Operations**: 11 tools (document management, reports, workflows)
-- **Visualization & BI**: 9 tools (dashboards, charts, KPIs, templates) ✅ COMPLETE
+- **Visualization**: 3 tools (dashboards, charts, dashboard management) ✅ STREAMLINED
 - **Data Science**: 3 tools (analysis, Python code, SQL queries)
 
-This guide reflects the latest tool architecture and capabilities. All visualization tools are now fully functional with proper one-tool-per-file architecture and comprehensive business intelligence features.
+This guide reflects the latest streamlined tool architecture. The visualization plugin has been cleaned up to focus on essential functionality with proper chart creation and dashboard management capabilities.

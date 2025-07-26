@@ -29,21 +29,18 @@ from typing import Dict, Any, List, Optional
 from frappe_assistant_core.core.base_tool import BaseTool
 
 
-class DashboardManager(BaseTool):
+class CreateDashboard(BaseTool):
     """
-    Core dashboard creation and management tools.
+    Create Frappe dashboards with multiple charts.
     
-    Provides capabilities for:
-    - Creating dashboards in Insights app (primary)
-    - Fallback to Frappe Dashboard
-    - Dashboard listing and management
-    - Cloning and updating dashboards
-    - Permission management
+    Creates dashboards in Frappe's Dashboard DocType with proper chart configuration
+    and time series support. This is NOT for Insights app - it creates standard
+    Frappe dashboards.
     """
     
     def __init__(self):
         super().__init__()
-        self.name = "create_insights_dashboard"
+        self.name = "create_dashboard"
         self.description = self._get_description()
         self.requires_permission = None  # Permission checked dynamically per DocType
         
@@ -79,8 +76,8 @@ class DashboardManager(BaseTool):
                             "filters": {"type": "object", "description": "Chart-specific filters"},
                             "time_span": {
                                 "type": "string", 
-                                "enum": ["current_month", "current_quarter", "current_year", "last_6_months", "last_12_months"],
-                                "description": "Time span for date-based data"
+                                "enum": ["Last Year", "Last Quarter", "Last Month", "Last Week"],
+                                "description": "Time span for date-based data (matches Frappe Dashboard Chart timespan options)"
                             }
                         },
                         "required": ["chart_type", "title"]
@@ -124,42 +121,29 @@ class DashboardManager(BaseTool):
     
     def _get_description(self) -> str:
         """Get tool description"""
-        return """Create comprehensive business dashboards in Frappe Insights app with professional charts, KPI cards, and interactive widgets.
+        return """Create Frappe dashboards with multiple charts. This creates standard Frappe Dashboard documents, NOT Insights dashboards.
 
-🎯 **DASHBOARD CREATION:**
-• Insights App Integration - Primary dashboard platform
-• Frappe Dashboard Fallback - Ensures compatibility
-• Multi-chart Dashboards - Combine multiple visualizations
-• Template-based Creation - Use business-specific templates
+📊 **WHAT THIS TOOL DOES:**
+• Creates Frappe Dashboard DocType documents
+• Adds multiple Dashboard Chart documents to the dashboard
+• Configures sharing and permissions
+• Sets up proper time series for charts
 
-📊 **CHART TYPES SUPPORTED:**
-• Bar/Line Charts - Trends and comparisons
-• Pie Charts - Proportions and distributions  
-• KPI Cards - Key metrics with trend indicators
-• Gauge Charts - Progress and performance meters
-• Data Tables - Interactive data grids
-• Funnel Charts - Conversion analysis
-• Heatmaps - Correlation visualization
+⚠️ **IMPORTANT:**
+• This creates FRAPPE dashboards, not Insights dashboards
+• Use create_dashboard_chart to create individual charts
+• Charts must be created with proper time series configuration
+
+📈 **CHART CONFIGURATION:**
+• Each chart needs proper field mapping
+• Time series charts need time_series_based_on field
+• Filters are applied at chart level
 
 🔧 **FEATURES:**
-• Auto-refresh - Real-time data updates
-• Mobile Optimization - Responsive design
-• Sharing & Permissions - Team collaboration
-• Template System - Pre-built business dashboards
-• Export Capabilities - PDF, Excel, PNG formats
-
-💡 **BUSINESS TEMPLATES:**
-• Sales Dashboard - Revenue, customers, performance
-• Financial Dashboard - P&L, cash flow, budgets
-• Inventory Dashboard - Stock levels, movements
-• HR Dashboard - Employee metrics, performance
-• Executive Dashboard - High-level KPIs
-
-⚡ **INTELLIGENT FEATURES:**
-• Auto-field Detection - Smart chart configuration
-• Data Validation - Ensures chart compatibility
-• Permission Checks - Secure data access
-• Error Handling - Graceful failure management"""
+• Multi-chart dashboards
+• User/role based sharing
+• Mobile responsive
+• Export to PDF/Excel"""
     
     def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Create comprehensive dashboard"""
@@ -349,52 +333,161 @@ class DashboardManager(BaseTool):
     
     def _create_dashboard_chart(self, dashboard_id: str, doctype: str,
                              chart_config: Dict, global_filters: Dict) -> Dict[str, Any]:
-        """Create dashboard chart"""
+        """Create dashboard chart with proper configuration"""
         try:
             # Handle case where dashboard_id is None (creating charts before dashboard)
             suffix = dashboard_id if dashboard_id else "Chart"
             chart_name = f"{chart_config['title']} - {suffix}"
             
-            # Map chart types
+            # Get DocType metadata for field validation
+            meta = frappe.get_meta(doctype)
+            fields = {f.fieldname: f for f in meta.fields}
+            
+            # Proper chart type mapping
             chart_type_map = {
-                "bar": "Count",
-                "line": "Count", 
-                "pie": "Count",
-                "kpi_card": "Count",
-                "gauge": "Count"
+                "bar": "Bar",
+                "line": "Line", 
+                "pie": "Pie",
+                "donut": "Donut",
+                "percentage": "Percentage",
+                "heatmap": "Heatmap"
             }
             
-            type_map = {
-                "sum": "Bar",
-                "count": "Bar", 
-                "avg": "Line",
-                "min": "Line",
-                "max": "Line"
+            # Proper aggregation mapping
+            aggregate_map = {
+                "sum": "Sum",
+                "count": "Count", 
+                "avg": "Average",
+                "min": "Min",
+                "max": "Max"
             }
             
-            chart_doc = frappe.get_doc({
+            # Base chart configuration - CORRECTED FIELD MAPPINGS
+            # Combine and convert filters to proper format
+            combined_filters = {**global_filters, **chart_config.get("filters", {})}
+            frappe_filters = self._convert_filters_to_frappe_format(combined_filters, doctype)
+            
+            chart_doc_data = {
                 "doctype": "Dashboard Chart",
                 "chart_name": chart_name,
-                "chart_type": chart_type_map.get(chart_config.get("chart_type", "bar"), "Count"),
+                "chart_type": aggregate_map.get(chart_config.get("aggregate", "count"), "Count"),  # FIXED: aggregation function
+                "type": chart_type_map.get(chart_config.get("chart_type", "bar"), "Bar"),          # FIXED: visual chart type
                 "document_type": doctype,
-                "based_on": chart_config.get("x_field", "name"),
-                "value_based_on": chart_config.get("y_field"),
-                "type": type_map.get(chart_config.get("aggregate", "count"), "Bar"),
-                "filters_json": json.dumps({**global_filters, **chart_config.get("filters", {})})
-            })
+                "filters_json": json.dumps(frappe_filters)
+            }
+            
+            # Add grouping field for non-time series charts
+            if chart_config.get("chart_type") not in ["line", "heatmap"]:
+                chart_doc_data["group_by_based_on"] = chart_config.get("x_field", "name")
+            
+            # Add value field if specified
+            if chart_config.get("y_field"):
+                chart_doc_data["value_based_on"] = chart_config["y_field"]
+            
+            # Handle time series for line and heatmap charts
+            if chart_config.get("chart_type") in ["line", "heatmap"]:
+                # Auto-detect time field if not specified
+                time_field = chart_config.get("time_field")
+                if not time_field:
+                    # Try common date fields that actually exist
+                    priority_date_fields = ["posting_date", "transaction_date", "date", "creation", "modified"]
+                    for field in priority_date_fields:
+                        if field in fields:
+                            # Check if it's actually a date field
+                            field_obj = fields[field]
+                            if field_obj.fieldtype in ["Date", "Datetime"]:
+                                time_field = field
+                                break
+                        elif field in ["creation", "modified"]:
+                            # System fields always available
+                            time_field = field
+                            break
+                    
+                    # If no priority fields found, look for any date field
+                    if not time_field:
+                        for field_name, field_obj in fields.items():
+                            if field_obj.fieldtype in ["Date", "Datetime"]:
+                                time_field = field_name
+                                break
+                    
+                    # Final fallback
+                    if not time_field:
+                        time_field = "creation"
+                
+                if time_field:
+                    chart_doc_data["based_on"] = time_field  # CORRECT: based_on is for time series date field
+                    chart_doc_data["timeseries"] = 1  # CORRECT: timeseries is boolean flag to enable time series
+                    chart_doc_data["timespan"] = chart_config.get("time_span", "Last Month")
+                    chart_doc_data["time_interval"] = "Daily"  # Fixed value since create_dashboard doesn't expose this
+            
+            # Handle time-based filtering for other chart types
+            elif chart_config.get("time_span"):
+                # Find a suitable date field that actually exists
+                time_field = None
+                priority_date_fields = ["posting_date", "transaction_date", "date", "creation", "modified"]
+                for field in priority_date_fields:
+                    if field in fields:
+                        # Check if it's actually a date field
+                        field_obj = fields[field]
+                        if field_obj.fieldtype in ["Date", "Datetime"]:
+                            time_field = field
+                            break
+                    elif field in ["creation", "modified"]:
+                        # System fields always available
+                        time_field = field
+                        break
+                
+                # If no priority fields found, look for any date field
+                if not time_field:
+                    for field_name, field_obj in fields.items():
+                        if field_obj.fieldtype in ["Date", "Datetime"]:
+                            time_field = field_name
+                            break
+                
+                if time_field:
+                    chart_doc_data["based_on"] = time_field  # CORRECT: based_on is for time series date field
+                    chart_doc_data["timeseries"] = 1  # CORRECT: timeseries is boolean flag to enable time series
+                    chart_doc_data["timespan"] = chart_config.get("time_span")
+            
+            # Create the chart
+            chart_doc = frappe.get_doc(chart_doc_data)
             chart_doc.insert()
             
             return {
                 "success": True,
                 "chart_name": chart_name,
-                "chart_id": chart_doc.name
+                "chart_id": chart_doc.name,
+                "visual_chart_type": chart_doc.type,        # FIXED: Visual type (Bar, Line, etc.)
+                "aggregation_function": chart_doc.chart_type, # FIXED: Aggregation (Count, Sum, etc.)
+                "time_series_field": chart_doc_data.get("based_on") if chart_doc_data.get("timeseries") else None
             }
             
         except Exception as e:
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "chart_config": chart_config
             }
+    
+    def _convert_filters_to_frappe_format(self, filters: Dict, doctype: str) -> List:
+        """Convert filters from dict format to Frappe's list format"""
+        if not filters:
+            return []
+        
+        frappe_filters = []
+        for field, condition in filters.items():
+            if isinstance(condition, list) and len(condition) == 2:
+                # Convert {"field": ["operator", "value"]} to ["DocType", "field", "operator", "value"]
+                operator, value = condition
+                frappe_filters.append([doctype, field, operator, value])
+            elif isinstance(condition, (str, int, float)):
+                # Convert {"field": "value"} to ["DocType", "field", "=", "value"]
+                frappe_filters.append([doctype, field, "=", condition])
+            else:
+                # Handle other formats - convert to equality check
+                frappe_filters.append([doctype, field, "=", condition])
+        
+        return frappe_filters
     
     def _setup_dashboard_sharing(self, dashboard_id: str, share_with: List[str]) -> Dict[str, Any]:
         """Setup dashboard sharing and permissions"""

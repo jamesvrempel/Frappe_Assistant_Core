@@ -103,13 +103,14 @@ System Overview:
   - Custom DocTypes: Supported and detected
 ```
 
-### **✅ Advanced Analysis Tools (3/3 Operational)**
+### **✅ Advanced Analysis & Visualization Tools (4/4 Operational)**
 
 | Tool | Data Source | Analysis Type | Result Quality |
 |------|-------------|---------------|----------------|
 | `analyze_business_data` | Customer | Statistical summary | High precision |
 | `query_and_analyze` | Sales Invoice | SQL + Analysis | Real-time data |
-| `create_visualization` | Customer/Sales | Chart generation | Production-ready |
+| `create_dashboard` | Customer/Sales | Dashboard creation | Production-ready |
+| `create_dashboard_chart` | All DocTypes | Chart generation | Production-ready |
 
 **Advanced Analytics Demonstration:**
 ```python

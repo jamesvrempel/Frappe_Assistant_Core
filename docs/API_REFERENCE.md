@@ -446,16 +446,41 @@ Executes SQL queries and analyzes results.
 - `parameters` (object, optional): Query parameters
 - `limit` (integer, optional): Row limit
 
-#### create_visualization
+### Visualization Plugin Tools
 
-Creates charts from data.
+#### create_dashboard
+
+Creates Frappe dashboards with multiple charts.
 
 **Parameters:**
 
-- `data_source` (object, required): Data source configuration
-- `chart_config` (object, required): Chart configuration
-- `output_format` (string, optional): Output format
-- `limit` (integer, optional): Data point limit
+- `dashboard_name` (string, required): Name of the dashboard
+- `doctype` (string, required): Primary DocType for data source
+- `chart_configs` (array, required): Array of chart configurations
+- `filters` (object, optional): Global filters for all charts
+
+#### create_dashboard_chart
+
+Creates individual Dashboard Chart documents.
+
+**Parameters:**
+
+- `chart_name` (string, required): Name of the chart
+- `chart_type` (string, required): Chart type (bar, line, pie, donut, percentage, heatmap)
+- `doctype` (string, required): DocType for data source
+- `aggregate_field` (string, required): Field to aggregate
+- `aggregate_function` (string, required): Aggregation function (Sum, Count, Average)
+- `time_series` (object, optional): Time series configuration
+- `filters` (object, optional): Chart-specific filters
+
+#### list_user_dashboards
+
+Lists user's accessible dashboards.
+
+**Parameters:**
+
+- `dashboard_type` (string, optional): Filter by dashboard type
+- `include_shared` (boolean, optional): Include shared dashboards
 
 ## Error Handling
 

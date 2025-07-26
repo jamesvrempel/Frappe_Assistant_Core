@@ -161,6 +161,26 @@ frappe_assistant_core/
 ├── plugins/                     # Plugin system with runtime management
 │   ├── base_plugin.py           # Base plugin interface
 │   ├── core/                    # Core tools plugin (always enabled)
+│   │   ├── plugin.py            # Plugin definition
+│   │   └── tools/               # Core tool implementations
+│   │       ├── document_*.py    # Document operations
+│   │       ├── search_*.py      # Search tools
+│   │       ├── metadata_*.py    # Metadata tools
+│   │       ├── report_*.py      # Report tools
+│   │       └── workflow_*.py    # Workflow tools
+│   ├── data_science/            # Data science plugin (optional)
+│   │   ├── plugin.py            # Plugin definition
+│   │   └── tools/               # Analysis tool implementations
+│   │       ├── execute_python_code.py
+│   │       ├── analyze_frappe_data.py
+│   │       └── query_and_analyze.py
+│   ├── visualization/           # Visualization plugin (optional)
+│   │   ├── plugin.py            # Plugin definition
+│   │   └── tools/               # Visualization tool implementations
+│   │       ├── create_dashboard.py
+│   │       ├── create_dashboard_chart.py
+│   │       └── list_user_dashboards.py
+│   └── batch_processing/        # Batch processing plugin (optional)
 │   │   ├── plugin.py            # Core plugin definition
 │   │   └── tools/               # Essential tool implementations
 │   │       ├── document_tools.py    # Document CRUD operations
@@ -168,22 +188,8 @@ frappe_assistant_core/
 │   │       ├── metadata_tools.py    # Schema and permission queries
 │   │       ├── report_tools.py      # Report execution and management
 │   │       └── workflow_tools.py    # Workflow operations
-│   ├── data_science/            # Advanced analytics plugin
-│   │   ├── plugin.py            # Data science plugin definition
-│   │   └── tools/               # Analysis and visualization tools
-│   │       ├── run_python_code.py
-│   │       ├── analyze_business_data.py
-│   │       ├── run_database_query.py
-│   │       └── create_visualization.py
-│   ├── visualization/           # Enhanced visualization plugin (NEW)
-│   │   ├── plugin.py            # Visualization plugin definition
-│   │   ├── templates/           # Dashboard templates
-│   │   └── tools/               # Chart and dashboard tools
-│   │       ├── create_chart.py
-│   │       ├── create_bi_dashboard.py
-│   │       ├── create_kpi_card.py
-│   │       └── chart_recommendations.py
 │   └── batch_processing/        # Bulk operations plugin
+
 ├── utils/
 │   ├── plugin_manager.py        # Runtime plugin management
 │   └── logger.py                # Structured logging system
@@ -290,29 +296,16 @@ See [PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) for plugin development.
 ### 🧪 Data Science Plugin
 
 **Python Execution & Analysis**
+- `execute_python_code` - Secure Python execution with data science libraries
+- `analyze_frappe_data` - Statistical analysis of Frappe data
+- `query_and_analyze` - SQL query execution with analysis
 
-- `run_python_code` - Secure Python execution with 30+ libraries
-- `analyze_business_data` - Advanced statistical analysis of Frappe data
-- `run_database_query` - SQL query execution with analysis
-- `create_visualization` - Chart and graph generation (legacy)
+### 📊 Visualization Plugin
+**Dashboard & Chart Creation**
+- `create_dashboard` - Create Frappe dashboards with multiple charts
+- `create_dashboard_chart` - Create individual charts for dashboards
+- `list_user_dashboards` - List user's accessible dashboards
 
-### 📊 Visualization Plugin (NEW in v2.0.0)
-
-**Chart Creation**
-
-- `create_chart` - Advanced chart creation with multiple types
-- `create_kpi_card` - Professional KPI cards with trend indicators
-- `chart_recommendations` - AI-powered chart suggestions
-
-**Dashboard Management**
-
-- `create_bi_dashboard` - Business intelligence dashboards
-- `create_insights_dashboard` - Advanced analytics dashboards
-- `create_dashboard_from_template` - Template-based dashboard creation
-- `list_dashboard_templates` - Available dashboard templates
-- `list_user_dashboards` - User's dashboard management
-- `clone_dashboard` - Duplicate existing dashboards
-- `get_bi_recommendations` - Business intelligence recommendations
 
 ### ⚡ Batch Processing Plugin
 
