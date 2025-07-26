@@ -60,23 +60,32 @@ class CustomToolsPlugin(BasePlugin):
         """
         Get list of tools from external apps.
         
-        This method discovers tools from external apps using the
-        enhanced tool registry and returns their names.
+        This method discovers tools from external apps using hooks.
         """
         try:
-            from frappe_assistant_core.core.enhanced_tool_registry import get_tool_registry
-            
-            registry = get_tool_registry()
-            
-            # Get tools from non-core apps
             external_tools = []
-            for tool_name, tool in registry.get_all_tools().items():
-                # Skip core app tools
-                if tool.source_app != "frappe_assistant_core":
-                    external_tools.append(tool_name)
+            
+            # Safely check if frappe is initialized
+            if not hasattr(frappe, 'get_hooks'):
+                frappe.logger("custom_tools_plugin").debug("Frappe not initialized, returning empty tools")
+                return []
+            
+            # Get assistant_tools from hooks
+            assistant_tools = frappe.get_hooks("assistant_tools") or []
+            
+            for tool_path in assistant_tools:
+                try:
+                    # Extract tool name from path (last part before class name)
+                    parts = tool_path.split(".")
+                    if len(parts) >= 2:
+                        # Use the module name as tool identifier
+                        tool_name = parts[-2]  # e.g., "simple_greeting_tool" from "byot.assistant_tools.simple_greeting_tool.SimpleGreetingTool"
+                        external_tools.append(tool_name)
+                except Exception as e:
+                    frappe.logger("custom_tools_plugin").warning(f"Failed to parse tool path '{tool_path}': {e}")
             
             self._external_tools = external_tools
-            self._update_discovery_stats(registry)
+            self._update_discovery_stats()
             
             return external_tools
             
@@ -84,22 +93,36 @@ class CustomToolsPlugin(BasePlugin):
             frappe.logger("custom_tools_plugin").error(f"Failed to discover external tools: {str(e)}")
             return []
     
-    def _update_discovery_stats(self, registry):
+    def _update_discovery_stats(self):
         """Update discovery statistics"""
         try:
-            stats = registry.get_registry_stats()
-            
-            # Calculate external app statistics
-            external_apps = [app for app in stats.get("source_apps", []) 
-                           if app != "frappe_assistant_core"]
-            
-            self._discovery_stats = {
-                "external_apps": external_apps,
-                "external_app_count": len(external_apps),
-                "external_tool_count": len(self._external_tools),
-                "total_apps_scanned": len(stats.get("source_apps", [])),
-                "discovery_errors": stats.get("discovery_errors", 0)
-            }
+            # Get external apps from hooks
+            if hasattr(frappe, 'get_hooks'):
+                assistant_tools = frappe.get_hooks("assistant_tools") or []
+                external_apps = set()
+                
+                for tool_path in assistant_tools:
+                    try:
+                        # Extract app name (first part of path)
+                        app_name = tool_path.split(".")[0]
+                        if app_name != "frappe_assistant_core":
+                            external_apps.add(app_name)
+                    except Exception:
+                        pass
+                
+                self._discovery_stats = {
+                    "external_apps": list(external_apps),
+                    "external_app_count": len(external_apps),
+                    "external_tool_count": len(self._external_tools),
+                    "total_tools_from_hooks": len(assistant_tools)
+                }
+            else:
+                self._discovery_stats = {
+                    "external_apps": [],
+                    "external_app_count": 0,
+                    "external_tool_count": 0,
+                    "total_tools_from_hooks": 0
+                }
             
         except Exception as e:
             frappe.logger("custom_tools_plugin").warning(f"Failed to update discovery stats: {str(e)}")
@@ -131,7 +154,7 @@ class CustomToolsPlugin(BasePlugin):
         """Validate plugin environment"""
         try:
             # Check if enhanced tool registry is available
-            from frappe_assistant_core.core.enhanced_tool_registry import get_tool_registry
+            from frappe_assistant_core.core.tool_registry import get_tool_registry
             
             registry = get_tool_registry()
             
@@ -198,7 +221,7 @@ class CustomToolsPlugin(BasePlugin):
             Summary dictionary with app and tool information
         """
         try:
-            from frappe_assistant_core.core.enhanced_tool_registry import get_tool_registry
+            from frappe_assistant_core.core.tool_registry import get_tool_registry
             
             registry = get_tool_registry()
             all_tools = registry.get_all_tools()
@@ -252,7 +275,7 @@ class CustomToolsPlugin(BasePlugin):
             Refresh operation results
         """
         try:
-            from frappe_assistant_core.core.enhanced_tool_registry import get_tool_registry
+            from frappe_assistant_core.core.tool_registry import get_tool_registry
             
             registry = get_tool_registry()
             result = registry.refresh_tools(force=True)
