@@ -126,4 +126,4 @@ Thank you for contributing to Frappe Assistant Core! Together, we're building th
 
 ---
 
-**Questions?** Feel free to reach out via [GitHub Discussions](https://github.com/clinu/frappe-assistant-core/discussions) or email [jypaulclinton@gmail.com](mailto:jypaulclinton@gmail.com).
+**Questions?** Feel free to reach out via [GitHub Discussions](hhttps://github.com/buildswithpaul/Frappe_Assistant_Core/discussions) or email [jypaulclinton@gmail.com](mailto:jypaulclinton@gmail.com).
