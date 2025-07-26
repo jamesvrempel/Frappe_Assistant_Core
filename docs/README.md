@@ -83,8 +83,8 @@ Welcome to the comprehensive documentation for **Frappe Assistant Core** - the o
 
 We welcome contributions! Here's how to get involved:
 
-1. **🐛 Report Issues**: Use [GitHub Issues](https://github.com/clinu/frappe-assistant-core/issues)
-2. **💡 Suggest Features**: Join [GitHub Discussions](https://github.com/clinu/frappe-assistant-core/discussions)
+1. **🐛 Report Issues**: Use [GitHub Issues](hhttps://github.com/buildswithpaul/Frappe_Assistant_Core/issues)
+2. **💡 Suggest Features**: Join [GitHub Discussions](hhttps://github.com/buildswithpaul/Frappe_Assistant_Core/discussions)
 3. **🔧 Contribute Code**: Follow our [Contributing Guidelines](../CONTRIBUTING.md)
 4. **📚 Improve Docs**: Help us make documentation better
 
