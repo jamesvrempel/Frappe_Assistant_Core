@@ -51,7 +51,7 @@ class ExecutePythonCode(BaseTool):
             "properties": {
                 "code": {
                     "type": "string",
-                    "description": "Python code to execute"
+                    "description": "Python code to execute. IMPORTANT: Do NOT use import statements - all libraries are pre-loaded and ready to use: pd (pandas), np (numpy), plt (matplotlib), sns (seaborn), frappe, math, datetime, json, re, random. Example: df = pd.DataFrame({'A': [1,2,3]}); plt.plot([1,2,3])"
                 },
                 "data_query": {
                     "type": "object",
@@ -86,7 +86,18 @@ class ExecutePythonCode(BaseTool):
     
     def _get_dynamic_description(self) -> str:
         """Generate description based on current streaming settings"""
-        base_description = """Execute Python code safely with data science libraries (pandas, numpy, matplotlib, seaborn) and Frappe API access. Pre-loaded libraries ready to use without imports. Requires System Manager role."""
+        base_description = """Execute Python code safely with pre-loaded data science libraries. 
+
+🚫 **NO IMPORTS NEEDED** - All libraries are pre-loaded and ready to use:
+• pd (pandas) - Data manipulation: df = pd.DataFrame()
+• np (numpy) - Numerical operations: arr = np.array([1,2,3])  
+• plt (matplotlib) - Plotting: plt.plot([1,2,3]); plt.show()
+• sns (seaborn) - Statistical visualization: sns.scatterplot()
+• frappe - Frappe API: frappe.get_all('DocType')
+• Standard: math, datetime, json, re, random
+
+⚠️ **DO NOT use import statements** - they will cause "__import__ not found" errors.
+Just use the pre-loaded variables directly. Requires System Manager role."""
         
         try:
             from frappe_assistant_core.utils.streaming_manager import get_streaming_manager
@@ -140,8 +151,13 @@ class ExecutePythonCode(BaseTool):
                     "variables": {}
                 }
         
+        # Check for import statements and provide helpful error
+        import_check_result = self._check_and_handle_imports(code)
+        if not import_check_result["success"]:
+            return import_check_result
+        
         # Remove dangerous imports for security
-        code = self._remove_dangerous_imports(code)
+        code = self._remove_dangerous_imports(import_check_result["code"])
         
         # Capture output
         output = ""
@@ -206,6 +222,114 @@ class ExecutePythonCode(BaseTool):
                 "output": output,
                 "variables": {}
             }
+    
+    def _check_and_handle_imports(self, code: str) -> Dict[str, Any]:
+        """Check for import statements and provide helpful guidance"""
+        import re
+        
+        lines = code.split('\n')
+        import_lines = []
+        processed_lines = []
+        
+        # Common import patterns that can be safely removed (exact matches)
+        safe_replacements = {
+            'import pandas as pd': '# pandas is pre-loaded as "pd"',
+            'import numpy as np': '# numpy is pre-loaded as "np"', 
+            'import matplotlib.pyplot as plt': '# matplotlib is pre-loaded as "plt"',
+            'import seaborn as sns': '# seaborn is pre-loaded as "sns"',
+            'import frappe': '# frappe is pre-loaded',
+            'import math': '# math is pre-loaded',
+            'import datetime': '# datetime is pre-loaded',
+            'import json': '# json is pre-loaded',
+            'import re': '# re is pre-loaded',
+            'import random': '# random is pre-loaded'
+        }
+        
+        # Safe import prefixes (for partial matches)
+        safe_prefixes = {
+            'from datetime import': '# datetime is pre-loaded',
+            'from math import': '# math is pre-loaded'
+        }
+        
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            
+            # Check if this is an import statement
+            if stripped_line.startswith('import ') or stripped_line.startswith('from '):
+                import_lines.append((i + 1, stripped_line))
+                
+                # Try to replace with helpful comment
+                replaced = False
+                
+                # Check exact matches first
+                if stripped_line in safe_replacements:
+                    processed_lines.append(line.replace(stripped_line, safe_replacements[stripped_line]))
+                    replaced = True
+                else:
+                    # Check prefix matches
+                    for prefix, replacement in safe_prefixes.items():
+                        if stripped_line.startswith(prefix):
+                            processed_lines.append(line.replace(stripped_line, replacement))
+                            replaced = True
+                            break
+                
+                if not replaced:
+                    # Unknown import - provide helpful error
+                    processed_lines.append(f'# REMOVED: {stripped_line} - library not available or not needed')
+            else:
+                processed_lines.append(line)
+        
+        # If we found problematic imports, provide helpful guidance
+        if import_lines:
+            # Check if they're all safe imports that we can handle
+            problematic_imports = []
+            for line_num, import_stmt in import_lines:
+                is_safe = False
+                
+                # Check exact matches
+                if import_stmt in safe_replacements:
+                    is_safe = True
+                else:
+                    # Check prefix matches
+                    for prefix in safe_prefixes.keys():
+                        if import_stmt.startswith(prefix):
+                            is_safe = True
+                            break
+                
+                if not is_safe:
+                    problematic_imports.append((line_num, import_stmt))
+            
+            if problematic_imports:
+                error_msg = f"""Import statements detected that are not available or needed:
+
+❌ Problematic imports found:
+{chr(10).join(f'   Line {line_num}: {stmt}' for line_num, stmt in problematic_imports)}
+
+✅ Available pre-loaded libraries (use directly, no imports needed):
+   • pd (pandas) - Data manipulation
+   • np (numpy) - Numerical operations  
+   • plt (matplotlib) - Plotting
+   • sns (seaborn) - Statistical visualization
+   • frappe - Frappe API access
+   • math, datetime, json, re, random - Standard libraries
+
+💡 Example correct usage:
+   df = pd.DataFrame({{'A': [1,2,3]}})
+   arr = np.array([1,2,3])
+   plt.plot(arr)
+   plt.show()"""
+                
+                return {
+                    "success": False,
+                    "error": error_msg,
+                    "output": "",
+                    "variables": {}
+                }
+        
+        return {
+            "success": True,
+            "code": '\n'.join(processed_lines)
+        }
     
     def _remove_dangerous_imports(self, code: str) -> str:
         """Remove dangerous import statements for security, but allow safe ones"""

@@ -57,24 +57,9 @@ class VisualizationPlugin(BasePlugin):
         """Get list of tools provided by this plugin"""
         return [
             # Core dashboard management
-            'create_insights_dashboard',
-            'list_user_dashboards',
-            'clone_dashboard',
-            
-            # Template-based dashboard creation
-            'create_dashboard_from_template',
-            'list_dashboard_templates',
-            
-            # Individual chart creation
-            'create_chart',
-            'create_kpi_card',
-            
-            # Business Intelligence tools
-            'create_bi_dashboard',
-            'get_bi_recommendations',
-            
-            # AI-powered data exploration
-            'recommend_charts'
+            'create_dashboard',
+            'create_dashboard_chart', 
+            'list_user_dashboards'
         ]
     
     def validate_environment(self) -> Tuple[bool, Optional[str]]:

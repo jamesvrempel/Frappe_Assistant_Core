@@ -396,16 +396,23 @@ def force_test_logging() -> Dict[str, Any]:
 
 def _authenticate_request() -> Optional[str]:
     """
-    Handle both session-based and token-based authentication
+    Handle session-based, OAuth2.0 Bearer token, and API key authentication
     Returns the authenticated user or None if authentication fails
+    
+    Note: OAuth2.0 Bearer tokens are automatically validated by Frappe's auth system
+    and frappe.session.user is set before this function is called
     """
     
-    # First try session-based authentication
+    # Check if user is already authenticated (covers session and OAuth2.0 Bearer tokens)
     if frappe.session.user and frappe.session.user != "Guest":
-        api_logger.debug(f"Session authentication successful: {frappe.session.user}")
+        auth_header = frappe.get_request_header("Authorization", "") or ""
+        if auth_header.startswith("Bearer "):
+            api_logger.debug(f"OAuth2.0 Bearer token authentication successful: {frappe.session.user}")
+        else:
+            api_logger.debug(f"Session authentication successful: {frappe.session.user}")
         return frappe.session.user
     
-    # Then try token-based authentication
+    # Fallback to API key authentication for legacy clients
     auth_header = frappe.get_request_header("Authorization")
     api_logger.debug(f"Authorization header: {auth_header}")
     
@@ -426,23 +433,23 @@ def _authenticate_request() -> Optional[str]:
                 api_logger.debug(f"User data found: {bool(user_data)}")
                 
                 if user_data:
-                    user, stored_secret = user_data
+                    user, _ = user_data
                     # Compare the provided secret with stored secret
                     from frappe.utils.password import get_decrypted_password
                     decrypted_secret = get_decrypted_password("User", user, "api_secret")
                     
                     if api_secret == decrypted_secret:
                         # Set user context for this request
-                        frappe.set_user(user)
-                        api_logger.debug(f"Token authentication successful: {user}")
-                        return user
+                        frappe.set_user(str(user))
+                        api_logger.debug(f"API key authentication successful: {user}")
+                        return str(user)
                     else:
                         api_logger.debug("API secret mismatch")
                 else:
                     api_logger.debug("No user found with provided API key")
                 
         except Exception as e:
-            api_logger.error(f"Token authentication failed: {e}")
+            api_logger.error(f"API key authentication failed: {e}")
     else:
         api_logger.debug("No valid authorization header found")
     

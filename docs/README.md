@@ -60,32 +60,18 @@ Welcome to the comprehensive documentation for **Frappe Assistant Core** - the o
 - `run_python_code` - Custom Python code execution (System Manager only)
 - `run_database_query` - Custom SQL with analysis (System Manager only)
 
-### 🎨 Visualization - Always Available (3 tools)
-- `create_chart` - Create individual charts
-- `create_kpi_card` - Create KPI cards with trends
-- `recommend_charts` - AI-powered chart suggestions
+### 📊 Visualization Plugin (3 tools)
+- `create_dashboard` - Create Frappe dashboards with multiple charts
+- `create_dashboard_chart` - Create individual Dashboard Chart documents
+- `list_user_dashboards` - List user's accessible dashboards
 
-### 📊 Dashboard Tools - Insights App Required (6 tools)
-- `create_dashboard` - Build comprehensive dashboards
-- `show_my_dashboards` - List user's dashboards
-- `copy_dashboard` - Clone existing dashboards
-- `build_dashboard_from_template` - Use business templates
-- `show_dashboard_templates` - Browse available templates
-- `share_dashboard` - Share dashboards with users
-
-**Additional Dashboard Features:**
-- `export_dashboard` - Export dashboards to PDF/Excel
-- `create_interactive_widget` - Build interactive components
-- `link_dashboard_widgets` - Connect widget interactions
-- `migrate_old_charts` - Migrate legacy visualizations
-
-**Note**: Dashboard tools require the Insights app to be installed. Without Insights, only basic chart tools are available.
+**Note**: Visualization plugin must be enabled in settings. Creates Frappe Dashboard documents, not Insights dashboards.
 
 ## 🌟 Recent Major Improvements
 
 ### ✅ Fixed Issues
 - **Document List Tool**: Now returns correct results instead of 0 records
-- **Visualization Display**: Charts now display inline in AI conversations
+- **Visualization Plugin**: Streamlined to 3 essential tools with proper chart creation
 - **Report Execution**: Enhanced debugging and error handling
 
 ### 🆕 New Features
