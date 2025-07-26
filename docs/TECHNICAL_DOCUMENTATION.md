@@ -103,8 +103,13 @@ frappe_assistant_core/plugins/
 │   └── tools/
 │       ├── run_python_code.py      # Python code execution
 │       ├── analyze_business_data.py      # Data analysis
-│       ├── query_and_analyze.py        # SQL analysis
-│       └── create_visualization.py     # Chart generation
+│       └── query_and_analyze.py        # SQL analysis
+├── visualization/               # Visualization plugin (optional)
+│   ├── plugin.py                # Plugin definition
+│   └── tools/
+│       ├── create_dashboard.py         # Dashboard creation
+│       ├── create_dashboard_chart.py   # Chart creation
+│       └── list_user_dashboards.py    # Dashboard management
 ├── websocket/                   # WebSocket plugin (optional)
 └── batch_processing/            # Batch processing plugin (optional)
 ```
@@ -338,11 +343,22 @@ Advanced analytics and visualization capabilities:
 - `run_python_code` - Sandboxed Python execution with Frappe context
 - `analyze_business_data` - Statistical data analysis with pandas
 - `query_and_analyze` - SQL queries with advanced analysis
-- `create_visualization` - Chart generation with matplotlib (bar, line, pie, scatter, heatmap)
 
 **Dependencies:** pandas, numpy, matplotlib, seaborn, plotly, scipy
 
-#### 3. **WebSocket Plugin Tools** (`plugins/websocket/`) - Optional
+#### 3. **Visualization Plugin Tools** (`plugins/visualization/`) - Optional
+
+Professional dashboard and chart creation:
+
+**Dashboard & Chart Tools**
+
+- `create_dashboard` - Create Frappe dashboards with multiple charts
+- `create_dashboard_chart` - Create individual Dashboard Chart documents
+- `list_user_dashboards` - List user's accessible dashboards
+
+**Dependencies:** matplotlib, pandas, numpy
+
+#### 4. **WebSocket Plugin Tools** (`plugins/websocket/`) - Optional
 
 Real-time communication capabilities:
 
@@ -350,7 +366,7 @@ Real-time communication capabilities:
 - Real-time notifications
 - Interactive dashboard updates
 
-#### 4. **Batch Processing Plugin Tools** (`plugins/batch_processing/`) - Optional
+#### 5. **Batch Processing Plugin Tools** (`plugins/batch_processing/`) - Optional
 
 Background and bulk operations:
 

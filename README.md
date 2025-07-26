@@ -122,8 +122,13 @@ frappe_assistant_core/
 │   │   └── tools/               # Analysis tool implementations
 │   │       ├── execute_python_code.py
 │   │       ├── analyze_frappe_data.py
-│   │       ├── query_and_analyze.py
-│   │       └── create_visualization.py
+│   │       └── query_and_analyze.py
+│   ├── visualization/           # Visualization plugin (optional)
+│   │   ├── plugin.py            # Plugin definition
+│   │   └── tools/               # Visualization tool implementations
+│   │       ├── create_dashboard.py
+│   │       ├── create_dashboard_chart.py
+│   │       └── list_user_dashboards.py
 │   └── batch_processing/        # Batch processing plugin (optional)
 ├── utils/
 │   ├── plugin_manager.py        # Thread-safe plugin management
@@ -224,7 +229,12 @@ See [PLUGIN_DEVELOPMENT.md](docs/PLUGIN_DEVELOPMENT.md) for plugin development.
 - `execute_python_code` - Secure Python execution with data science libraries
 - `analyze_frappe_data` - Statistical analysis of Frappe data
 - `query_and_analyze` - SQL query execution with analysis
-- `create_visualization` - Chart and graph generation
+
+### 📊 Visualization Plugin
+**Dashboard & Chart Creation**
+- `create_dashboard` - Create Frappe dashboards with multiple charts
+- `create_dashboard_chart` - Create individual charts for dashboards
+- `list_user_dashboards` - List user's accessible dashboards
 
 ### ⚡ Batch Processing Plugin  
 **Bulk Operations**
