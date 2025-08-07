@@ -228,36 +228,6 @@ print(f"Average sale: {df['grand_total'].mean()}")
                                  current_user: str, audit_info: Dict[str, Any]) -> Dict[str, Any]:
         """Execute code with timeout and proper error handling"""
         
-        # Setup execution environment
-        execution_globals = self._setup_execution_environment()
-        
-        # Handle data query if provided
-        if data_query:
-            try:
-                data = self._fetch_data_from_query(data_query)
-                execution_globals['data'] = data
-            except Exception as e:
-                return {
-                    "success": False,
-                    "error": f"Error fetching data: {str(e)}",
-                    "output": "",
-                    "variables": {}
-                }
-        
-        # Sanitize Unicode characters before processing
-        sanitize_result = self._sanitize_unicode(code)
-        if not sanitize_result["success"]:
-            return sanitize_result
-        code = sanitize_result["code"]
-        unicode_warning = sanitize_result.get("warning")
-        
-        # Check for import statements and provide helpful error
-        import_check_result = self._check_and_handle_imports(code)
-        if not import_check_result["success"]:
-            return import_check_result
-        
-        # Remove dangerous imports for security
-        code = self._remove_dangerous_imports(import_check_result["code"])        
         # Capture output
         output = ""
         error = ""
@@ -331,6 +301,8 @@ print(f"Average sale: {df['grand_total'].mean()}")
                 }
             }
             
+            return result
+            
         except UnicodeEncodeError as unicode_error:
             error_msg = (f"🚫 Unicode Error: Code contains characters that cannot be encoded in UTF-8. "
                         f"Character '\\u{ord(unicode_error.object[unicode_error.start]):04x}' at position {unicode_error.start} "
@@ -351,14 +323,7 @@ print(f"Average sale: {df['grand_total'].mean()}")
                     "executed_by": current_user
                 }
             }
-
-            # Add Unicode warning if present
-            if unicode_warning:
-                result["unicode_warning"] = unicode_warning
-                
-            return result
             
-
         except Exception as e:
             error_msg = str(e)
             error_traceback = traceback.format_exc()
@@ -393,10 +358,6 @@ print(f"Average sale: {df['grand_total'].mean()}")
                 }
             }
             
-            # Add Unicode warning if it was processed but still failed
-            if unicode_warning:
-                result["unicode_warning"] = unicode_warning
-                
             return result
     
     def _sanitize_unicode(self, code: str) -> Dict[str, Any]:
@@ -1005,7 +966,3 @@ print(f"Average sale: {df['grand_total'].mean()}")
         except Exception:
             return f"<{type(value).__name__} object>"
     
-
-
-# Make sure class is available for discovery
-# The plugin manager will find ExecutePythonCode automatically
