@@ -21,6 +21,7 @@ import frappe
 from typing import Dict, Any, Optional
 from frappe import _
 from frappe.utils import now
+from frappe_assistant_core.api.mcp import get_app_version
 
 class assistantProtocolHandler:
     """Handles assistant JSON-RPC 2.0 protocol"""
@@ -92,7 +93,7 @@ class assistantProtocolHandler:
                 },
                 "serverInfo": {
                     "name": "Frappe Assistant Core",
-                    "version": frappe.get_version()
+                    "version": get_app_version("frappe_assistant_core") or "2.0.1"
                 }
             },
             "id": request_id
@@ -270,29 +271,28 @@ class assistantProtocolHandler:
         return True
     
     def _load_tools_registry(self) -> Dict[str, Dict[str, Any]]:
-        """Load tools from registry"""
+        """Load tools from plugin manager"""
         tools = {}
         
-        registry_entries = frappe.get_all(
-            "Assistant Tool Registry",
-            filters={"enabled": 1},
-            fields=["tool_name", "tool_description", "inputSchema", "required_permissions", "execution_timeout"]
-        )
-        
-        for entry in registry_entries:
-            try:
-                inputSchema = json.loads(entry.inputSchema or "{}")
-                required_permissions = json.loads(entry.required_permissions or "[]")
-                
-                tools[entry.tool_name] = {
-                    "description": entry.tool_description,
-                    "inputSchema": inputSchema,
-                    "required_permissions": required_permissions,
-                    "execution_timeout": entry.execution_timeout or 30
-                }
-            except json.JSONDecodeError:
-                frappe.log_error(f"Invalid JSON in tool registry: {entry.tool_name}")
-                continue
+        try:
+            from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+            plugin_manager = get_plugin_manager()
+            all_tools = plugin_manager.get_all_tools()
+            
+            for tool_name, tool_info in all_tools.items():
+                try:
+                    tool_metadata = tool_info.instance.get_metadata()
+                    tools[tool_name] = {
+                        "description": tool_metadata.get("description", ""),
+                        "inputSchema": tool_metadata.get("inputSchema", {}),
+                        "required_permissions": [],  # Permissions are handled by the tool itself
+                        "execution_timeout": 30
+                    }
+                except Exception as e:
+                    frappe.log_error(f"Error loading tool {tool_name}: {e}")
+                    continue
+        except Exception as e:
+            frappe.log_error(f"Error loading tools from plugin manager: {e}")
         
         return tools
     

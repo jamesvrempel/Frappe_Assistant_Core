@@ -21,7 +21,7 @@ from frappe.utils import now, time_diff_in_seconds
 from frappe import _
 
 class AssistantConnectionLog(Document):
-    """assistant Connection Log DocType controller"""
+    """Assistant Connection Log DocType controller"""
     
     def before_insert(self):
         """Set default values before inserting"""
@@ -66,15 +66,15 @@ class AssistantConnectionLog(Document):
 @frappe.whitelist()
 def get_connection_stats():
     """Get connection statistics for dashboard"""
-    active_connections = frappe.db.count("assistant Connection Log", 
+    active_connections = frappe.db.count("Assistant Connection Log", 
                                          filters={"status": "Connected"})
     
-    total_connections_today = frappe.db.count("assistant Connection Log", 
+    total_connections_today = frappe.db.count("Assistant Connection Log", 
                                              filters={"creation": [">=", frappe.utils.today()]})
     
     avg_duration = frappe.db.sql("""
         SELECT AVG(duration) as avg_duration 
-        FROM `tabassistant Connection Log` 
+        FROM `tabAssistant Connection Log` 
         WHERE status = 'Disconnected' 
         AND duration IS NOT NULL
     """)[0][0] or 0
@@ -86,8 +86,8 @@ def get_connection_stats():
     }
 
 def get_context(context):
-    context.title = _("assistant Connection Log")
+    context.title = _("Assistant Connection Log")
     context.docs = get_logs()
 
 def get_logs():
-    return frappe.get_all("assistant Connection Log", fields=["*"], order_by="creation desc")
+    return frappe.get_all("Assistant Connection Log", fields=["*"], order_by="creation desc")
