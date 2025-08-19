@@ -27,21 +27,45 @@ classifiers = [
 keywords = ["frappe", "erp", "ai", "assistant", "mcp", "analysis", "business-intelligence"]
 requires-python = ">=3.8"
 dependencies = [
+    # Core data science libraries
     "pandas>=1.3.0",
     "numpy>=1.20.0",
     "matplotlib>=3.4.0",
     "seaborn>=0.11.0",
     "plotly>=5.0.0",
     "scipy>=1.7.0",
+    "openpyxl>=3.0.0",  # Excel support for pandas
+    # Additional analysis libraries
+    "scikit-learn>=1.0.0",
+    "bokeh>=2.4.0",
+    "altair>=4.1.0",
+    "sympy>=1.8.0",
+    "networkx>=2.6.0",
+    "xlsxwriter>=3.0.0",
+    # Network and API dependencies
     "requests>=2.25.0",
+    "jsonschema>=4.0.0",
+    # SSE Bridge dependencies
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+    "python-dotenv>=1.0.0",
+    "python-multipart>=0.0.6",
     # File processing dependencies
     "PyPDF2>=3.0.0",
     "Pillow>=10.0.0",
     "python-docx>=0.8.11",
-    "openpyxl>=3.0.0",
     "pytesseract>=0.3.10",
-    "chardet>=5.2.0",
-    "jsonschema>=4.0.0",
+    "chardet>=5.1.0",  # Compatible with frappe ~=5.1.0 requirement
+    # Advanced file processing
+    "pdfplumber>=0.9.0",
+    "pymupdf>=1.23.0",
+    "easyocr>=1.7.0",
+    "python-magic>=0.4.27",
+    "beautifulsoup4>=4.12.0",
+    # AI/LLM integrations (optional use)
+    "anthropic>=0.7.0",
+    "openai>=1.0.0",
+    "langchain>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -52,33 +76,8 @@ dev = [
     "flake8>=3.9",
     "mypy>=0.910",
 ]
-analysis = [
-    "scipy>=1.7.0",
-    "scikit-learn>=1.0.0",
-    "plotly>=5.0.0",
-    "bokeh>=2.4.0",
-    "altair>=4.1.0",
-    "sympy>=1.8.0",
-    "networkx>=2.6.0",
-    "openpyxl>=3.0.0",
-    "xlsxwriter>=3.0.0",
-]
-sse-bridge = [
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0",
-    "python-dotenv>=1.0.0",
-    "python-multipart>=0.0.6",
-]
-file-processing = [
-    "pdfplumber>=0.9.0",
-    "pymupdf>=1.23.0",
-    "easyocr>=1.7.0",
-    "python-magic>=0.4.27",
-    "beautifulsoup4>=4.12.0",
-    "anthropic>=0.7.0",
-    "openai>=1.0.0",
-    "langchain>=0.1.0",
-]
+# All other dependencies have been moved to main dependencies
+# to ensure they are installed automatically on all servers
 
 [project.urls]
 Homepage = "https://github.com/buildswithpaul/Frappe_Assistant_Core"
