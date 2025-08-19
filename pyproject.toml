@@ -41,6 +41,7 @@ dependencies = [
     "openpyxl>=3.0.0",
     "pytesseract>=0.3.10",
     "chardet>=5.2.0",
+    "jsonschema>=4.0.0",
 ]
 
 [project.optional-dependencies]

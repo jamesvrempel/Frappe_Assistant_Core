@@ -8,7 +8,10 @@ import json
 import sys
 import requests
 import os
+import threading
+import queue
 from typing import Dict, Any
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
 class StdioMCPWrapper:
     def __init__(self):
@@ -31,6 +34,10 @@ class StdioMCPWrapper:
             "Authorization": f"token {self.api_key}:{self.api_secret}",
             "Content-Type": "application/json"
         }
+        
+        # Thread pool for handling concurrent requests
+        self.executor = ThreadPoolExecutor(max_workers=5)
+        self.output_lock = threading.Lock()
     
     def log_error(self, message: str):
         """Log error to stderr"""
@@ -46,11 +53,12 @@ class StdioMCPWrapper:
         try:
             self.log_debug(f"Sending to server: {request_data}")
             
+            # Reduce timeout to 5 seconds to stay under Claude's 6 second timeout
             response = requests.post(
                 f"{self.server_url}/api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request",
                 headers=self.headers,
                 json=request_data,
-                timeout=30
+                timeout=5
             )
             
             if response.status_code == 200:
@@ -74,6 +82,14 @@ class StdioMCPWrapper:
                     request_data.get("id")
                 )
                 
+        except requests.exceptions.Timeout:
+            self.log_error("Request timed out")
+            return self.format_error_response(
+                -32001,
+                "Request timed out",
+                "Server took too long to respond",
+                request_data.get("id")
+            )
         except requests.exceptions.ConnectionError:
             self.log_error("Cannot connect to assistant server. Make sure it's running on "+self.server_url)
             return self.format_error_response(
@@ -178,6 +194,39 @@ class StdioMCPWrapper:
             
         return response
     
+    def process_request(self, request: Dict[str, Any]):
+        """Process a single request in a separate thread"""
+        try:
+            method = request.get("method")
+            request_id = request.get("id")
+            
+            # Handle methods locally or forward to HTTP server
+            if method == "initialize":
+                response = self.handle_initialization(request)
+            elif method == "resources/list":
+                response = self.handle_resources_list(request)
+            else:
+                # Forward all other requests (including prompts/*) to HTTP server
+                response = self.send_to_server(request)
+            
+            # Only send response if request had an id (notifications don't get responses)
+            if request_id is not None:
+                with self.output_lock:
+                    print(json.dumps(response), flush=True)
+            else:
+                self.log_debug(f"Notification processed: {method}")
+                
+        except Exception as e:
+            self.log_error(f"Error processing request: {e}")
+            error_response = self.format_error_response(
+                -32603,
+                "Internal error",
+                str(e),
+                request.get("id")
+            )
+            with self.output_lock:
+                print(json.dumps(error_response), flush=True)
+    
     def run(self):
         """Main stdio loop"""
         self.log_debug("Starting Frappe assistant Stdio Wrapper")
@@ -192,23 +241,8 @@ class StdioMCPWrapper:
                     request = json.loads(line)
                     self.log_debug(f"Received request: {request}")
                     
-                    method = request.get("method")
-                    request_id = request.get("id")
-                    
-                    # Handle methods locally or forward to HTTP server
-                    if method == "initialize":
-                        response = self.handle_initialization(request)
-                    elif method == "resources/list":
-                        response = self.handle_resources_list(request)
-                    else:
-                        # Forward all other requests (including prompts/*) to HTTP server
-                        response = self.send_to_server(request)
-                    
-                    # Only send response if request had an id (notifications don't get responses)
-                    if request_id is not None:
-                        print(json.dumps(response), flush=True)
-                    else:
-                        self.log_debug(f"Notification processed: {method}")
+                    # Submit request to thread pool for concurrent processing
+                    self.executor.submit(self.process_request, request)
                     
                 except json.JSONDecodeError as e:
                     self.log_error(f"Invalid JSON received: {e}")
@@ -219,22 +253,14 @@ class StdioMCPWrapper:
                         None
                     )
                     print(json.dumps(error_response), flush=True)
-                
-                except Exception as e:
-                    self.log_error(f"Error processing request: {e}")
-                    error_response = self.format_error_response(
-                        -32603,
-                        "Internal error",
-                        str(e),
-                        None
-                    )
-                    print(json.dumps(error_response), flush=True)
                     
         except KeyboardInterrupt:
             self.log_debug("Wrapper stopped by user")
         except Exception as e:
             self.log_error(f"Fatal error: {e}")
             sys.exit(1)
+        finally:
+            self.executor.shutdown(wait=True)
 
 if __name__ == "__main__":
     wrapper = StdioMCPWrapper()
