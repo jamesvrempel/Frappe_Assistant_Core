@@ -42,6 +42,15 @@ def handle_mcp_request(request_data: str) -> str:
     Returns:
         JSON-RPC 2.0 response string
     """
+    # Check if user has assistant access enabled
+    if not _check_assistant_enabled(frappe.session.user):
+        return _create_error_response(
+            None,
+            -32000,
+            f"Assistant access is disabled for user {frappe.session.user}",
+            {"user": frappe.session.user, "assistant_enabled": False}
+        )
+    
     try:
         # Parse JSON request
         try:
@@ -287,6 +296,14 @@ def _create_error_response(request_id: Any, code: int, message: str, data: Any =
 # Legacy compatibility - handle old endpoint names
 @frappe.whitelist(allow_guest=False)
 def handle_request(request_data: str) -> str:
+    # Check if user has assistant access enabled
+    if not _check_assistant_enabled(frappe.session.user):
+        return _create_error_response(
+            None,
+            -32000,
+            f"Assistant access is disabled for user {frappe.session.user}",
+            {"user": frappe.session.user, "assistant_enabled": False}
+        )
     """Legacy compatibility wrapper"""
     return handle_mcp_request(request_data)
 
@@ -294,6 +311,15 @@ def handle_request(request_data: str) -> str:
 @frappe.whitelist(allow_guest=False)
 def get_server_info() -> Dict[str, Any]:
     """Get server information for diagnostics"""
+    # Check if user has assistant access enabled
+    if not _check_assistant_enabled(frappe.session.user):
+        return {
+            "success": False,
+            "error": f"Assistant access is disabled for user {frappe.session.user}",
+            "user": frappe.session.user,
+            "assistant_enabled": False
+        }
+        
     try:
         registry = get_tool_registry()
         tools = registry.get_available_tools()
@@ -325,6 +351,16 @@ def get_server_info() -> Dict[str, Any]:
 @frappe.whitelist(allow_guest=False)
 def validate_connection() -> Dict[str, Any]:
     """Validate MCP connection and permissions"""
+    # Check if user has assistant access enabled
+    if not _check_assistant_enabled(frappe.session.user):
+        return {
+            "success": False,
+            "connection_valid": False,
+            "error": f"Assistant access is disabled for user {frappe.session.user}",
+            "user": frappe.session.user,
+            "assistant_enabled": False
+        }
+        
     try:
         # Check basic permissions
         if not frappe.has_permission("System Manager") and not frappe.has_permission("Assistant Core Settings", "read"):
@@ -348,3 +384,31 @@ def validate_connection() -> Dict[str, Any]:
             "connection_valid": False,
             "error": str(e)
         }
+
+
+def _check_assistant_enabled(user: str) -> bool:
+    """
+    Check if the assistant_enabled field is enabled for the user.
+    
+    Args:
+        user: Username to check
+        
+    Returns:
+        bool: True if assistant is enabled, False otherwise
+    """
+    try:
+        # Get the assistant_enabled field value for the user
+        assistant_enabled = frappe.db.get_value("User", user, "assistant_enabled")
+        
+        # If the field doesn't exist or is not set, default to disabled for security
+        if assistant_enabled is None:
+            return False
+            
+        # Convert to boolean (handles 0/1, "0"/"1", and boolean values)
+        is_enabled = bool(int(assistant_enabled)) if assistant_enabled else False
+        
+        return is_enabled
+        
+    except Exception:
+        # If there's any error checking the field, default to disabled for security
+        return False
