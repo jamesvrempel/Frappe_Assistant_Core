@@ -85,11 +85,8 @@ jenv = {
 # Installation
 # ------------
 
-# before_install = "frappe_assistant_core.install.before_install"
-after_install = [
-    "frappe_assistant_core.install.after_install",
-    "frappe_assistant_core.utils.migration_hooks.after_install"
-]
+# before_install hooks can be added here if needed
+after_install = "frappe_assistant_core.utils.migration_hooks.after_install"
 
 # Uninstallation
 # ------------
@@ -251,6 +248,25 @@ before_migrate = "frappe_assistant_core.utils.migration_hooks.before_migrate"
 after_migrate = [
     "frappe_assistant_core.startup.startup",
     "frappe_assistant_core.utils.migration_hooks.after_migrate"
+]
+
+# Fixtures
+# --------
+
+fixtures = [
+    {
+        "doctype": "Custom Field",
+        "filters": {
+            "dt": "User",
+            "fieldname": ["in", ["assistant_enabled"]]
+        }
+    },
+    {
+        "doctype": "Role",
+        "filters": {
+            "role_name": ["in", ["Assistant User", "Assistant Admin"]]
+        }
+    }
 ]
 
 # Enhanced Plugin Architecture

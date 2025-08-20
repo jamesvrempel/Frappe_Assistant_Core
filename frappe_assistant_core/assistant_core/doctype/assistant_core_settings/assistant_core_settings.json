@@ -31,7 +31,7 @@
    "label": "Plugin Configuration"
   },
   {
-   "default": "[]",
+   "default": "[\"core\"]",
    "fieldname": "enabled_plugins_list",
    "fieldtype": "JSON",
    "hidden": 1,

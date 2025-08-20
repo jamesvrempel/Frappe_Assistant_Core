@@ -55,17 +55,12 @@ dependencies = [
     "Pillow>=10.0.0",
     "python-docx>=0.8.11",
     "pytesseract>=0.3.10",
-    "chardet>=5.1.0",  # Compatible with frappe ~=5.1.0 requirement
+    "chardet~=5.1.0",  # Compatible with frappe ~=5.1.0 requirement
     # Advanced file processing
     "pdfplumber>=0.9.0",
     "pymupdf>=1.23.0",
-    "easyocr>=1.7.0",
     "python-magic>=0.4.27",
-    "beautifulsoup4>=4.12.0",
-    # AI/LLM integrations (optional use)
-    "anthropic>=0.7.0",
-    "openai>=1.0.0",
-    "langchain>=0.1.0",
+    "beautifulsoup4~=4.12.2",  # Compatible with frappe ~=4.12.2 requirement
 ]
 
 [project.optional-dependencies]
