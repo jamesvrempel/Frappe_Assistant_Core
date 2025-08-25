@@ -63,7 +63,6 @@ class StdioMCPWrapper:
             
             if response.status_code == 200:
                 result = response.json()
-                self.log_debug(f"Received from server: {result}")
                 
                 # Frappe wraps responses in {"message": ...}
                 # Extract the actual JSON-RPC response

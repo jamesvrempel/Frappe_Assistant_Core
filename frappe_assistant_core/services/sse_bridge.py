@@ -210,7 +210,7 @@ class SSEMCPBridge:
             
             if response.status_code == 200:
                 result = response.json()
-                logger.debug(f"Received from server: {result}")
+                # logger.debug(f"Received from server: {result}")
                 
                 if isinstance(result, dict) and "message" in result:
                     extracted = result["message"]

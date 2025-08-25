@@ -38,7 +38,7 @@
       "args": [
         "${__dirname}/server/frappe_assistant_stdio_bridge.py"
       ],
-      "platforms": {
+      "platform_overrides": {
         "win32": {
           "command": "python"
         }
@@ -47,7 +47,7 @@
         "FRAPPE_SERVER_URL": "${user_config.server_url}",
         "FRAPPE_API_KEY": "${user_config.api_key}",
         "FRAPPE_API_SECRET": "${user_config.api_secret}",
-        "MCP_DEBUG": "${user_config.debug_mode}"
+        "MCP_DEBUG": "${user_config.debug_mode ? '1' : '0'}"
       }
     }
   },
@@ -55,32 +55,30 @@
     "server_url": {
       "type": "string",
       "title": "Frappe Server URL",
-      "description": "URL of your Frappe instance (e.g., https://your-domain.com)",
-      "required": true,
-      "pattern": "^https?://",
-      "placeholder": "https://your-frappe-instance.com"
+      "description": "Your Frappe instance URL",
+      "required": true
     },
     "api_key": {
       "type": "string",
       "title": "Frappe API Key",
-      "description": "Your Frappe API key for authentication",
+      "description": "Your Frappe API key",
       "sensitive": true,
       "required": true,
-      "placeholder": "e.g., 0a796774796e143"
+      "min": 10
     },
     "api_secret": {
       "type": "string",
       "title": "Frappe API Secret",
-      "description": "Your Frappe API secret for authentication",
+      "description": "Your Frappe API secret",
       "sensitive": true,
       "required": true,
-      "placeholder": "e.g., 2f137c33a0296ea"
+      "min": 10
     },
     "debug_mode": {
-      "type": "string",
+      "type": "boolean",
       "title": "Enable Debug Mode",
-      "description": "Set to '1' to enable detailed logging for troubleshooting",
-      "default": "0",
+      "description": "Enable debug logging",
+      "default": false,
       "required": false
     }
   },
@@ -172,6 +170,9 @@
       "darwin",
       "win32",
       "linux"
-    ]
+    ],
+    "runtime": {
+      "python": ">=3.8.0"
+    }
   }
 }
