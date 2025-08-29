@@ -281,34 +281,3 @@ graph LR
     class External,Webhook,Queue pattern3
     class Core core
 ```
-
-## Usage in README
-
-To include these diagrams in the README.md, you can either:
-
-1. **GitHub Native Mermaid** (if your repo is on GitHub):
-```markdown
-```mermaid
-[paste diagram code here]
-```
-
-2. **Generate PNG Images**:
-Use tools like:
-- Mermaid Live Editor (https://mermaid.live)
-- VS Code Mermaid Preview extension
-- CLI: `mmdc -i diagram.mmd -o diagram.png`
-
-3. **Embed as Images**:
-```markdown
-![Architecture Overview](screenshots/architecture-overview.png)
-```
-
-## Diagram Benefits
-
-These diagrams clearly show:
-- **What the product actually is**: Infrastructure, not AI
-- **LLM-agnostic design**: Works with any MCP-compatible system
-- **Plugin architecture**: Extensible and modular
-- **Enterprise features**: Security, audit trails, permissions
-- **Deployment flexibility**: From single server to cloud scale
-- **Integration options**: Multiple ways to connect LLMs

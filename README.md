@@ -33,7 +33,7 @@ bench --site [site-name] install-app frappe_assistant_core
 bench --site [site-name] set-config assistant_enabled 1
 ```
 
-**That's it!** Your AI assistant is now connected to your ERPNext data.
+**That's it!** Your ERPNext system is now accessible to any MCP-compatible LLM.
 
 ---
 
