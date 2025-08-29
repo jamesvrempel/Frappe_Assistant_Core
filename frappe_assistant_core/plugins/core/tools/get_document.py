@@ -72,7 +72,7 @@ class DocumentGet(BaseTool):
             }
         
         # Import security validation
-        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields
         
         # Validate document access with comprehensive permission checking
         validation_result = validate_document_access(
@@ -83,7 +83,6 @@ class DocumentGet(BaseTool):
         )
         
         if not validation_result["success"]:
-            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
             return validation_result
         
         user_role = validation_result["role"]
@@ -95,7 +94,6 @@ class DocumentGet(BaseTool):
                     "success": False,
                     "error": f"{doctype} '{name}' not found"
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Get document
@@ -116,7 +114,6 @@ class DocumentGet(BaseTool):
             }
             
             # Log successful access
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
             
         except Exception as e:
@@ -133,7 +130,6 @@ class DocumentGet(BaseTool):
             }
             
             # Log failed access
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
 
 

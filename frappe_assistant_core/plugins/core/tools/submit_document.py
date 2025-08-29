@@ -63,7 +63,7 @@ class DocumentSubmit(BaseTool):
         name = arguments.get("name")
         
         # Import security validation
-        from frappe_assistant_core.core.security_config import validate_document_access, audit_log_tool_access
+        from frappe_assistant_core.core.security_config import validate_document_access
         
         # Validate document access with comprehensive permission checking
         validation_result = validate_document_access(
@@ -74,7 +74,6 @@ class DocumentSubmit(BaseTool):
         )
         
         if not validation_result["success"]:
-            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
             return validation_result
         
         user_role = validation_result["role"]
@@ -86,7 +85,6 @@ class DocumentSubmit(BaseTool):
                     "success": False,
                     "error": f"{doctype} '{name}' not found"
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Get document
@@ -110,7 +108,6 @@ class DocumentSubmit(BaseTool):
                     "workflow_state": current_workflow_state,
                     "suggestion": f"Document is already {state_description}. Use document_get to view its current state."
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Check if DocType is submittable
@@ -121,7 +118,6 @@ class DocumentSubmit(BaseTool):
                     "error": f"{doctype} is not a submittable DocType",
                     "suggestion": f"Only submittable DocTypes can be submitted. {doctype} doesn't support submission."
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Perform submission
@@ -163,7 +159,6 @@ class DocumentSubmit(BaseTool):
                 ]
             
             # Log successful submission
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
             
         except Exception as e:
@@ -181,7 +176,6 @@ class DocumentSubmit(BaseTool):
             }
             
             # Log failed submission
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
 
 

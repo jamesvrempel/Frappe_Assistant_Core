@@ -208,8 +208,8 @@ def _handle_tools_call(params: Dict[str, Any]) -> Dict[str, Any]:
         if not tool:
             raise ValueError(f"Tool '{tool_name}' not found")
         
-        # Execute tool
-        result = tool.execute(arguments)
+        # Execute tool using _safe_execute to ensure audit logging consistency
+        result = tool._safe_execute(arguments)
         
         # Convert result to MCP content format
         if isinstance(result, dict) and "success" in result:

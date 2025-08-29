@@ -87,7 +87,7 @@ class DocumentList(BaseTool):
         current_user = frappe.session.user
         
         # Import security validation
-        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields
         
         # Validate document access with comprehensive permission checking
         validation_result = validate_document_access(
@@ -98,7 +98,6 @@ class DocumentList(BaseTool):
         )
         
         if not validation_result["success"]:
-            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
             return validation_result
         
         user_role = validation_result["role"]
@@ -162,7 +161,6 @@ class DocumentList(BaseTool):
             }
             
             # Log successful access
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
             
         except Exception as e:

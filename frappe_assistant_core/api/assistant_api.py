@@ -99,16 +99,8 @@ def handle_assistant_request() -> Dict[str, Any]:
             return response
         elif method == "tools/call":
             response = handle_tool_call(params, request_id)
-            status = "Success" if "error" not in response else "Error"
-            # Map tool call to appropriate action
-            tool_name = params.get("name", "")
-            if "create" in tool_name:
-                action = "create_document"
-            elif "get" in tool_name or "search" in tool_name:
-                action = "get_document" 
-            else:
-                action = "custom_tool"
-            _log_assistant_audit(action, params, response, status)
+            # Note: Tool execution audit logging is now handled by BaseTool._safe_execute
+            # No need for duplicate audit logging at the API level
             return response
         elif method == "prompts/list":
             response = handle_prompts_list(request_id)

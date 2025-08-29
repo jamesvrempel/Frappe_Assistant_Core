@@ -16,6 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 # assistant Server module
-# This module contains the core assistant protocol implementation
+# This module contains the core assistant implementation
 
-__all__ = ["server", "protocol_handler"]
+__all__ = ["server"]

@@ -94,7 +94,7 @@ def should_log_document(doctype):
 
 def log_tool_execution(tool_name: str, user: str, arguments: Dict[str, Any], 
                       success: bool, execution_time: float, source_app: str,
-                      error_message: Optional[str] = None):
+                      error_message: Optional[str] = None, output_data: Optional[Dict[str, Any]] = None):
     """
     Log tool execution for comprehensive audit trail.
     
@@ -106,27 +106,42 @@ def log_tool_execution(tool_name: str, user: str, arguments: Dict[str, Any],
         execution_time: Time taken in seconds
         source_app: App that provides the tool
         error_message: Error message if execution failed
+        output_data: Tool output data for audit trail
     """
     try:
-        # Create audit log entry
+        # Extract target information from arguments
+        target_doctype = None
+        target_name = None
+        
+        if arguments and isinstance(arguments, dict):
+            # For tools that work with specific documents
+            target_doctype = arguments.get('doctype')
+            target_name = arguments.get('name')
+        
+        # Use tool name directly as action (since action field is now Data type)
+        action = tool_name
+        
+        # Serialize output data for storage
+        try:
+            output_data_str = json.dumps(output_data, default=str) if output_data else None
+        except (TypeError, ValueError):
+            # Fallback: convert to string and truncate for large data
+            output_data_str = str(output_data)[:2000]
+        
         audit_doc = frappe.get_doc({
             "doctype": "Assistant Audit Log",
-            "action": "execute_tool",
+            "action": action,  # Now uses tool name directly
+            "tool_name": tool_name,
             "user": user,
             "status": "Success" if success else "Failed",
             "timestamp": now(),
-            "target_doctype": "Tool",
-            "target_name": tool_name,
+            "execution_time": execution_time,
+            "target_doctype": target_doctype,  # Populated from arguments
+            "target_name": target_name,        # Populated from arguments
             "ip_address": getattr(frappe.local, 'request_ip', None),
-            "details": json.dumps({
-                "tool_name": tool_name,
-                "source_app": source_app,
-                "execution_time": execution_time,
-                "arguments_count": len(arguments),
-                "error_message": error_message,
-                # Store argument keys but not values for privacy
-                "argument_keys": list(arguments.keys()) if arguments else []
-            }, default=str)
+            "input_data": json.dumps(arguments) if arguments else None,
+            "output_data": output_data_str,  # Now includes output
+            "error_message": error_message,
         })
         
         audit_doc.insert(ignore_permissions=True)

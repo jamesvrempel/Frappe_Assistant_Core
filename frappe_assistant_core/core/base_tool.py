@@ -355,6 +355,14 @@ class BaseTool(ABC):
         try:
             from frappe_assistant_core.utils.audit_trail import log_tool_execution
             
+            # Extract the actual tool result (not the wrapper) for audit logging
+            if result.get("success") and "result" in result:
+                actual_tool_output = result["result"]
+            else:
+                actual_tool_output = result
+                
+            sanitized_output = self._sanitize_data(actual_tool_output)
+            
             log_tool_execution(
                 tool_name=self.name,
                 user=frappe.session.user,
@@ -362,7 +370,8 @@ class BaseTool(ABC):
                 success=result.get("success", False),
                 execution_time=execution_time,
                 source_app=self.source_app,
-                error_message=result.get("error") if not result.get("success") else None
+                error_message=result.get("error") if not result.get("success") else None,
+                output_data=sanitized_output  # Direct tool output, not wrapper
             )
         except Exception as e:
             # Don't fail tool execution due to logging issues
@@ -380,3 +389,32 @@ class BaseTool(ABC):
                 sanitized[key] = value
         
         return sanitized
+    
+    def _sanitize_data(self, data: Any) -> Any:
+        """Helper method to sanitize data recursively"""
+        if isinstance(data, dict):
+            sanitized = {}
+            for key, value in data.items():
+                # Skip very large data arrays to prevent huge logs
+                if key == 'data' and isinstance(value, list) and len(value) > 10:
+                    sanitized[key] = f"[{len(value)} items - truncated for logging]"
+                # Redact sensitive information
+                elif any(sensitive in key.lower() for sensitive in ['password', 'api_key', 'secret', 'token', 'auth']):
+                    sanitized[key] = "***REDACTED***"
+                # Truncate very long strings
+                elif isinstance(value, str) and len(value) > 1000:
+                    sanitized[key] = value[:1000] + "[... truncated]"
+                # Recursively sanitize nested objects
+                elif isinstance(value, (dict, list)):
+                    sanitized[key] = self._sanitize_data(value)
+                else:
+                    sanitized[key] = value
+            return sanitized
+        elif isinstance(data, list):
+            # Truncate large lists but keep first few items
+            if len(data) > 10:
+                return [self._sanitize_data(item) for item in data[:3]] + [f"... and {len(data)-3} more items"]
+            else:
+                return [self._sanitize_data(item) for item in data]
+        else:
+            return data
