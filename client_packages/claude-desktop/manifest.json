@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "claude-for-frappe",
   "display_name": "Claude for Frappe ERP",
-  "version": "2.0.3",
+  "version": "2.1.0",
   "description": "AI-powered bridge connecting Claude Desktop to Frappe ERP via Frappe Assistant Core",
   "long_description": "This extension creates an intelligent bridge between Claude Desktop and your Frappe ERP system through the Frappe Assistant Core app. Enable AI-powered data analysis, automated report generation, and natural language interactions with your business data.",
   "author": {
@@ -38,7 +38,7 @@
       "args": [
         "${__dirname}/server/frappe_assistant_stdio_bridge.py"
       ],
-      "platforms": {
+      "platform_overrides": {
         "win32": {
           "command": "python"
         }
@@ -47,7 +47,7 @@
         "FRAPPE_SERVER_URL": "${user_config.server_url}",
         "FRAPPE_API_KEY": "${user_config.api_key}",
         "FRAPPE_API_SECRET": "${user_config.api_secret}",
-        "MCP_DEBUG": "${user_config.debug_mode}"
+        "MCP_DEBUG": "${user_config.debug_mode ? '1' : '0'}"
       }
     }
   },
@@ -55,43 +55,41 @@
     "server_url": {
       "type": "string",
       "title": "Frappe Server URL",
-      "description": "URL of your Frappe instance (e.g., https://your-domain.com)",
-      "required": true,
-      "pattern": "^https?://",
-      "placeholder": "https://your-frappe-instance.com"
+      "description": "Your Frappe instance URL",
+      "required": true
     },
     "api_key": {
       "type": "string",
       "title": "Frappe API Key",
-      "description": "Your Frappe API key for authentication",
+      "description": "Your Frappe API key",
       "sensitive": true,
       "required": true,
-      "placeholder": "e.g., 0a796774796e143"
+      "min": 10
     },
     "api_secret": {
       "type": "string",
       "title": "Frappe API Secret",
-      "description": "Your Frappe API secret for authentication",
+      "description": "Your Frappe API secret",
       "sensitive": true,
       "required": true,
-      "placeholder": "e.g., 2f137c33a0296ea"
+      "min": 10
     },
     "debug_mode": {
-      "type": "string",
+      "type": "boolean",
       "title": "Enable Debug Mode",
-      "description": "Set to '1' to enable detailed logging for troubleshooting",
-      "default": "0",
+      "description": "Enable debug logging",
+      "default": false,
       "required": false
     }
   },
   "tools": [
     {
       "name": "run_python_code",
-      "description": "Execute custom Python code for advanced data analysis, calculations, and business logic with full access to Frappe framework"
+      "description": "⚡ ADVANCED PYTHON CODING - For complex analysis when reports and analysis tools aren't sufficient. Use only when both generate_report and analyze_business_data fail to meet your needs."
     },
     {
       "name": "analyze_business_data",
-      "description": "Perform comprehensive statistical analysis on Frappe business data. Calculate averages, trends, correlations, and business insights from any DocType"
+      "description": "📊 CUSTOM DATA ANALYSIS - When standard reports don't meet your specific needs. Use only after checking available reports first with report_list and generate_report."
     },
     {
       "name": "run_database_query",
@@ -102,12 +100,16 @@
       "description": "Create interactive charts and visualizations from Frappe business data. Charts are displayed inline and saved as files"
     },
     {
-      "name": "generate_report",
-      "description": "Execute a Frappe report to get business data and analytics. Use this for financial reports, sales analysis, inventory reports, etc."
+      "name": "generate_report", 
+      "description": "🏆 PROFESSIONAL BUSINESS REPORTS - Your FIRST choice for sales analysis, financial reporting, and business intelligence! Execute pre-built business reports including Sales Analytics, P&L Statement, and 183+ other reports."
     },
     {
-      "name": "get_report_data",
-      "description": "Get detailed report data and structure for a specific report. Understand what data fields are available before executing"
+      "name": "report_list",
+      "description": "🔍 DISCOVER BUSINESS REPORTS - Find the perfect report for your business question! Browse 183+ available reports across Selling, Accounts, Stock, and HR modules."
+    },
+    {
+      "name": "report_requirements", 
+      "description": "📋 REPORT REQUIREMENTS ANALYZER - Understand what you need before running reports! Discover required filters, prevent errors, and get comprehensive report structure analysis."
     },
     {
       "name": "search_documents",
@@ -172,6 +174,9 @@
       "darwin",
       "win32",
       "linux"
-    ]
+    ],
+    "runtime": {
+      "python": ">=3.8.0"
+    }
   }
 }

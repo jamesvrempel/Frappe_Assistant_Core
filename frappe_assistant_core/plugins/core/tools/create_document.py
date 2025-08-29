@@ -96,7 +96,7 @@ If creation fails, the error response includes specific guidance and suggestions
         validate_only = arguments.get("validate_only", False)
         
         # Import security validation
-        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields
         
         # Validate document access with comprehensive permission checking
         validation_result = validate_document_access(
@@ -107,7 +107,6 @@ If creation fails, the error response includes specific guidance and suggestions
         )
         
         if not validation_result["success"]:
-            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
             return validation_result
         
         user_role = validation_result["role"]
@@ -134,7 +133,6 @@ If creation fails, the error response includes specific guidance and suggestions
                     "success": False,
                     "error": f"Cannot set restricted fields: {', '.join(restricted_fields_attempted)}. These fields require higher privileges."
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Enhanced submit permission checking based on user role
@@ -145,7 +143,6 @@ If creation fails, the error response includes specific guidance and suggestions
                         "success": False,
                         "error": f"Insufficient permissions to submit {doctype} documents. Current user: {frappe.session.user}"
                     }
-                    audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                     return result
                 
                 # Additional role-based restrictions
@@ -167,7 +164,6 @@ If creation fails, the error response includes specific guidance and suggestions
                             "success": False,
                             "error": f"Your role does not have submit permission for {doctype} documents. Document will be saved as draft."
                         }
-                        audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                         # Don't return error, just disable submit
                         submit = False
             
@@ -276,7 +272,6 @@ If creation fails, the error response includes specific guidance and suggestions
                 ]
             
             # Log successful creation
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
             
         except Exception as e:
@@ -328,7 +323,6 @@ If creation fails, the error response includes specific guidance and suggestions
                 })
             
             # Log failed creation
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
 
 

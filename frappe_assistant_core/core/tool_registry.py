@@ -88,7 +88,24 @@ class ToolRegistry:
         if not self._check_tool_permission(tool, frappe.session.user):
             raise PermissionError(f"Permission denied for tool '{tool_name}'")
         
-        return tool.execute(arguments)
+        # Use _safe_execute to ensure audit logging, timing, and error handling
+        result = tool._safe_execute(arguments)
+        
+        # For tools that return the new format with success/error info, extract the result
+        if isinstance(result, dict) and "success" in result:
+            if result.get("success"):
+                return result.get("result", result)
+            else:
+                # Raise appropriate exception based on error type
+                error_type = result.get("error_type", "ExecutionError")
+                if error_type == "PermissionError":
+                    raise PermissionError(result.get("error", "Permission denied"))
+                elif error_type == "ValidationError":
+                    raise frappe.ValidationError(result.get("error", "Validation failed"))
+                else:
+                    raise Exception(result.get("error", "Tool execution failed"))
+        
+        return result
     
     def has_tool(self, tool_name: str) -> bool:
         """Check if a tool is available"""

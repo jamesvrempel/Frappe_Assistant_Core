@@ -68,7 +68,7 @@ class DocumentUpdate(BaseTool):
         data = arguments.get("data", {})
         
         # Import security validation
-        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields, audit_log_tool_access
+        from frappe_assistant_core.core.security_config import validate_document_access, filter_sensitive_fields
         
         # Validate document access with comprehensive permission checking
         validation_result = validate_document_access(
@@ -79,7 +79,6 @@ class DocumentUpdate(BaseTool):
         )
         
         if not validation_result["success"]:
-            audit_log_tool_access(frappe.session.user, self.name, arguments, validation_result)
             return validation_result
         
         user_role = validation_result["role"]
@@ -91,7 +90,6 @@ class DocumentUpdate(BaseTool):
                     "success": False,
                     "error": f"{doctype} '{name}' not found"
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Get document
@@ -110,7 +108,6 @@ class DocumentUpdate(BaseTool):
                     "workflow_state": current_workflow_state,
                     "suggestion": "Use document_get to view the submitted document, or create a new document if needed."
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Check if document is cancelled
@@ -122,7 +119,6 @@ class DocumentUpdate(BaseTool):
                     "workflow_state": current_workflow_state,
                     "suggestion": "Use document_get to view the cancelled document, or create a new document if needed."
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Provide helpful information about document state
@@ -154,7 +150,6 @@ class DocumentUpdate(BaseTool):
                     "success": False,
                     "error": f"Cannot update restricted fields: {', '.join(restricted_updates)}. These fields require higher privileges."
                 }
-                audit_log_tool_access(frappe.session.user, self.name, arguments, result)
                 return result
             
             # Update field values
@@ -210,7 +205,6 @@ class DocumentUpdate(BaseTool):
                 ]
             
             # Log successful update
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
             
         except Exception as e:
@@ -227,7 +221,6 @@ class DocumentUpdate(BaseTool):
             }
             
             # Log failed update
-            audit_log_tool_access(frappe.session.user, self.name, arguments, result)
             return result
 
 

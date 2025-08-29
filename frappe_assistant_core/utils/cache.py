@@ -109,12 +109,10 @@ def get_cached_server_settings():
     settings = frappe.get_single("Assistant Core Settings")
     return {
         "server_enabled": settings.server_enabled,
-        "max_connections": settings.max_connections,
-        "authentication_required": settings.authentication_required,
-        "rate_limit": settings.rate_limit,
-        "allowed_origins": settings.allowed_origins,
-        "websocket_enabled": settings.websocket_enabled,
-        "cleanup_logs_after_days": settings.cleanup_logs_after_days
+        "enforce_artifact_streaming": getattr(settings, "enforce_artifact_streaming", True),
+        "response_limit_prevention": getattr(settings, "response_limit_prevention", True),
+        "streaming_line_threshold": getattr(settings, "streaming_line_threshold", 5),
+        "streaming_char_threshold": getattr(settings, "streaming_char_threshold", 1000)
     }
 
 @redis_cache(ttl=CACHE_TTL["dashboard_stats"], user=True)
@@ -125,32 +123,31 @@ def get_cached_dashboard_stats():
     # Batch all database queries for efficiency
     stats_data = {}
     
-    # Connection statistics in one query
-    connection_stats = frappe.db.sql("""
-        SELECT 
-            COUNT(CASE WHEN status = 'Connected' THEN 1 END) as active_connections,
-            COUNT(CASE WHEN DATE(creation) = %s THEN 1 END) as today_connections
-        FROM `tabAssistant Connection Log`
-    """, (today(),), as_dict=True)
+    # API usage statistics (replacing connection stats)
+    api_usage_today = frappe.db.count("Assistant Audit Log", 
+                                     filters={
+                                         "creation": [">=", today()]
+                                     })
     
-    if connection_stats:
-        stats_data["connections"] = {
-            "active": connection_stats[0]["active_connections"] or 0,
-            "today_total": connection_stats[0]["today_connections"] or 0
-        }
+    stats_data["connections"] = {
+        "active": 0,  # No persistent connections in HTTP-based MCP
+        "today_total": api_usage_today or 0  # API calls today
+    }
     
-    # Tool statistics in one query  
-    tool_stats = frappe.db.sql("""
-        SELECT 
-            COUNT(*) as total_tools,
-            COUNT(CASE WHEN enabled = 1 THEN 1 END) as enabled_tools
-        FROM `tabAssistant Tool Registry`
-    """, as_dict=True)
-    
-    if tool_stats:
+    # Tool statistics from plugin manager
+    try:
+        from frappe_assistant_core.utils.plugin_manager import get_plugin_manager
+        plugin_manager = get_plugin_manager()
+        all_tools = plugin_manager.get_all_tools()
+        
         stats_data["tools"] = {
-            "total": tool_stats[0]["total_tools"] or 0,
-            "enabled": tool_stats[0]["enabled_tools"] or 0
+            "total": len(all_tools),
+            "enabled": len(all_tools)  # All loaded tools are enabled
+        }
+    except Exception:
+        stats_data["tools"] = {
+            "total": 0,
+            "enabled": 0
         }
     
     # Action statistics for today
@@ -194,16 +191,50 @@ def get_cached_category_performance():
     """Cache category performance analytics"""
     from frappe.utils import today
     
+    # Since we no longer have tool categories in a registry, group by tool name patterns
     category_performance = frappe.db.sql("""
-        SELECT tr.category, AVG(al.execution_time) as avg_time, COUNT(*) as count
-        FROM `tabAssistant Audit Log` al
-        JOIN `tabAssistant Tool Registry` tr ON al.tool_name = tr.name
-        WHERE DATE(al.creation) = %s AND al.execution_time IS NOT NULL
-        GROUP BY tr.category
+        SELECT 
+            CASE 
+                WHEN tool_name LIKE 'document_%' THEN 'Document Operations'
+                WHEN tool_name LIKE 'report_%' THEN 'Reports'
+                WHEN tool_name LIKE 'search_%' THEN 'Search'
+                WHEN tool_name LIKE 'metadata_%' THEN 'Metadata'
+                WHEN tool_name LIKE 'execute_%' OR tool_name LIKE 'analyze_%' THEN 'Analysis'
+                ELSE 'Other'
+            END as category,
+            AVG(execution_time) as avg_time, 
+            COUNT(*) as count
+        FROM `tabAssistant Audit Log`
+        WHERE DATE(creation) = %s AND execution_time IS NOT NULL
+        GROUP BY category
         ORDER BY avg_time DESC
     """, (today(),), as_dict=True)
     
     return category_performance
+
+@frappe.whitelist()
+def clear_all_caches():
+    """Clear all assistant-related caches."""
+    try:
+        # Clear Redis caches
+        frappe.cache().delete_keys("assistant_*")
+        frappe.cache().delete_keys("tool_*")
+        frappe.cache().delete_keys("plugin_*")
+        
+        # Clear site cache if available
+        if hasattr(frappe.local, 'site_cache'):
+            frappe.local.site_cache.clear()
+        
+        return {
+            "success": True,
+            "message": "All caches cleared successfully"
+        }
+    except Exception as e:
+        frappe.log_error(f"Failed to clear caches: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @site_cache(ttl=CACHE_TTL["tool_registry"])
 def get_cached_tool_registry_stats():
@@ -254,8 +285,6 @@ def get_cached_system_health():
         # Quick health checks
         required_doctypes = [
             "Assistant Core Settings",
-            "Assistant Tool Registry", 
-            "Assistant Connection Log",
             "Assistant Audit Log"
         ]
         
@@ -270,8 +299,8 @@ def get_cached_system_health():
         else:
             health_status["checks_passed"] += len(required_doctypes)
         
-        # Check recent error rates
-        recent_errors = frappe.db.count("Assistant Connection Log", 
+        # Check recent error rates from audit logs
+        recent_errors = frappe.db.count("Assistant Audit Log", 
                                        filters={
                                            "status": "Error",
                                            "creation": [">=", today()]
@@ -305,8 +334,13 @@ def invalidate_settings_cache(doc=None, method=None):
     # Mark settings as modified for dependent caches
     frappe.cache.set_value("settings_modified", frappe.utils.now(), expires_in_sec=3600)
 
-def invalidate_dashboard_cache():
-    """Invalidate dashboard-related caches"""
+def invalidate_dashboard_cache(doc=None, method=None):
+    """Invalidate dashboard-related caches
+    
+    Args:
+        doc: Document instance (passed by hooks)
+        method: Method name (passed by hooks)
+    """
     # Clear all user-specific dashboard caches
     frappe.cache.delete_keys("get_cached_dashboard_stats_*")
     frappe.cache.delete_keys("assistant_dashboard_*")

@@ -13,7 +13,21 @@ Welcome to the comprehensive documentation for **Frappe Assistant Core** - the o
 - **[Development Guide](DEVELOPMENT_GUIDE.md)**: How to create custom tools (external apps or internal plugins)
 - **[Architecture Overview](ARCHITECTURE.md)**: System design and technical architecture
 - **[API Reference](API_REFERENCE.md)**: MCP protocol endpoints and tool APIs
+- **[SSE Bridge Integration](SSE_BRIDGE_INTEGRATION.md)**: Claude API Integration Guide
+  - Real-time streaming communication setup
+  - Development and production deployment
+  - Authentication and configuration
+  - Troubleshooting and monitoring
+  - Complete usage examples
 
+### 🛠️ Tool Reference
+- **[Tool Usage Guide](TOOL_USAGE_GUIDE.md)**: Comprehensive guide for using all available tools
+  - Tool categories and descriptions
+  - Usage patterns and workflows
+  - Best practices for LLMs
+  - Field naming conventions
+  - Error handling strategies
+  
 ### 🛠️ Specialized Guides
 - **[External App Development](EXTERNAL_APP_DEVELOPMENT.md)**: Create tools in your Frappe apps (recommended)
 - **[Internal Plugin Development](PLUGIN_DEVELOPMENT.md)**: Create internal plugins for core features

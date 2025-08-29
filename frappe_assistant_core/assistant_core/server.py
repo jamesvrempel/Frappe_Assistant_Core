@@ -103,17 +103,16 @@ class assistantServer:
             return {"success": False, "message": f"Failed to disable MCP API: {str(e)}"}
     
     def get_status(self):
-        """Get server status including WebSocket status"""
-        from frappe_assistant_core.utils.cache import get_cached_server_settings
+        """Get server status"""
+        # Read directly from database to avoid cache issues
+        settings = frappe.get_single("Assistant Core Settings")
         
-        settings = get_cached_server_settings()
-        
-        # Server is running if it's enabled (since API endpoints are always available)
-        is_running = bool(settings.get("server_enabled"))
+        # Check if Assistant Core is enabled
+        is_enabled = bool(settings.server_enabled)
         
         return {
-            "running": is_running,  # For backward compatibility
-            "enabled": settings.get("server_enabled"),
+            "running": is_enabled,  # For backward compatibility
+            "enabled": is_enabled,
             "api_endpoint": f"/api/method/frappe_assistant_core.api.assistant_api.handle_assistant_request",
             "ping_endpoint": f"/api/method/frappe_assistant_core.api.assistant_api.ping",
             "protocol": "mcp",
@@ -160,46 +159,30 @@ def get_server_status():
     server = get_server_instance()
     return server.get_status()
 
+@frappe.whitelist(allow_guest=False)
 def cleanup_old_logs():
     """Cleanup old log entries (scheduled task)"""
     try:
-        settings = frappe.get_single("Assistant Core Settings")
-        days_to_keep = settings.cleanup_logs_after_days or 30
+        # Default to 60 days for audit log cleanup (keep longer since they're more valuable)
+        days_to_keep = 60
         
-        # Cleanup connection logs
-        frappe.db.sql("""
-            DELETE FROM `tabAssistant Connection Log` 
-            WHERE creation < DATE_SUB(NOW(), INTERVAL %s DAY)
-        """, (days_to_keep,))
-        
-        # Cleanup audit logs (keep more audit logs)
-        audit_days = days_to_keep * 2
+        # Cleanup audit logs only
         frappe.db.sql("""
             DELETE FROM `tabAssistant Audit Log` 
             WHERE creation < DATE_SUB(NOW(), INTERVAL %s DAY)
-        """, (audit_days,))
+        """, (days_to_keep,))
         
         frappe.db.commit()
-        frappe.logger().info(f"Cleaned up assistant logs older than {days_to_keep} days")
+        frappe.logger().info(f"Cleaned up assistant audit logs older than {days_to_keep} days")
         
     except Exception as e:
         frappe.log_error(f"Failed to cleanup assistant logs: {str(e)}")
 
 def update_connection_stats():
-    """Update connection statistics (scheduled task)"""
-    try:
-        # Mark stale connections as disconnected
-        frappe.db.sql("""
-            UPDATE `tabAssistant Connection Log` 
-            SET status = 'Timeout', disconnected_at = NOW()
-            WHERE status = 'Connected' 
-            AND last_activity < DATE_SUB(NOW(), INTERVAL 1 HOUR)
-        """)
-        
-        frappe.db.commit()
-        
-    except Exception as e:
-        frappe.log_error(f"Failed to update connection stats: {str(e)}")
+    """Update connection statistics (scheduled task) - DEPRECATED"""
+    # NOTE: This function is deprecated since Assistant Connection Log was removed
+    # Keeping for backward compatibility, but it does nothing
+    pass
 
 def start_background_server():
     """Enable API in background job (legacy)"""
