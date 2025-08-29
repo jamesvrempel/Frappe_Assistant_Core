@@ -16,5 +16,5 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = "2.0.3"
+__version__ = "2.1.0"
 
