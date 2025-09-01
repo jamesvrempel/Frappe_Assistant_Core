@@ -379,6 +379,7 @@ The LLM will interact directly with your ERPNext data through the MCP tools.
 | [🔒 Security Guide](docs/COMPREHENSIVE_SECURITY_GUIDE.md) | Security features and best practices |
 | [📖 API Reference](docs/API_REFERENCE.md) | Complete API documentation |
 | [⚡ Performance Guide](docs/PERFORMANCE.md) | Optimization and monitoring |
+| [📋 Release Notes v2.1.0](RELEASE_2.1.0.md) | Latest version features and improvements |
 
 **New to AI + ERP?** Start with our [Getting Started Guide](docs/GETTING_STARTED.md)
 
