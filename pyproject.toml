@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "frappe_assistant_core"
-version = "2.0.0"
+version = "2.1.1"
 description = "AI-powered ERP assistant with comprehensive MCP integration for Frappe framework"
 readme = "README.md"
 license = {text = "AGPL-3.0-or-later"}
@@ -50,8 +50,9 @@ dependencies = [
     "uvicorn>=0.20.0",
     "python-dotenv>=1.0.0",
     "python-multipart>=0.0.6",
+    "httpx>=0.24.0",
     # File processing dependencies
-    "PyPDF2>=3.0.0",
+    "pypdf>=3.0.0",
     "Pillow>=10.0.0",
     "python-docx>=0.8.11",
     "pytesseract>=0.3.10",
@@ -166,3 +167,6 @@ ignore = [
     "F401",  # imported but unused
     "F841",  # local variable assigned but never used
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"frappe_assistant_core/plugins/base_plugin.py" = ["B027"]
